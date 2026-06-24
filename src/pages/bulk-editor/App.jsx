@@ -1,0 +1,475 @@
+import { useState, useEffect, useMemo } from 'react'
+import { History, Search, X, AlertCircle, Loader, CheckCircle } from 'lucide-react'
+import AppNav, { SettingsButton } from '../../components/AppNav.jsx'
+import CourseSelector from '../../components/CourseSelector.jsx'
+import Modal from '../../components/Modal.jsx'
+import PreviewDiff from '../../components/PreviewDiff.jsx'
+import AssignmentTable from '../../features/assignments/AssignmentTable.jsx'
+import BulkActionBar from '../../features/assignments/BulkActionBar.jsx'
+import ChangeLog from '../../features/assignments/ChangeLog.jsx'
+import { buildChanges, applyFilters, sortAssignments } from '../../features/assignments/bulkEditorHelpers.js'
+import { getCourses } from '../../api/courses.js'
+import { getAssignments, updateAssignment } from '../../api/assignments.js'
+import { getAssignmentGroups } from '../../api/assignmentGroups.js'
+import { getModules } from '../../api/modules.js'
+import { getPreferences, setLastUsedCourse } from '../../storage/preferences.js'
+import { applyTheme } from '../../utils/color.js'
+import { Checkbox } from '../../components/FormControls.jsx'
+import { addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
+
+const EMPTY_SPEC = { dueAt: null, unlockAt: null, lockAt: null, points: null, published: null }
+
+export default function App() {
+  const [courses, setCourses] = useState([])
+  const [selectedCourseId, setSelectedCourseId] = useState(null)
+  const [selectedCourseName, setSelectedCourseName] = useState('')
+  const [assignments, setAssignments] = useState([])
+  const [groups, setGroups] = useState([])
+  const [modules, setModules] = useState([])
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [search, setSearch] = useState('')
+  const [filterGroups, setFilterGroups] = useState([])
+  const [filterStatus, setFilterStatus] = useState([])
+  const [sortKey, setSortKey] = useState('position')
+  const [sortDir, setSortDir] = useState('asc')
+  const [buttonColor, setButtonColor] = useState('#4f46e5')
+  const [bulkSpec, setBulkSpec] = useState(EMPTY_SPEC)
+  const [shiftAllTogether, setShiftAllTogether] = useState(true)
+  const [loadingCourses, setLoadingCourses] = useState(true)
+  const [loadingAssignments, setLoadingAssignments] = useState(false)
+  const [error, setError] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [applyResult, setApplyResult] = useState(null)
+  const [showChangeLog, setShowChangeLog] = useState(false)
+
+  // Load courses and preferences on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const [fetchedCourses, prefs] = await Promise.all([getCourses(), getPreferences()])
+        setCourses(fetchedCourses)
+        setShiftAllTogether(prefs.shiftAllDatesTogether)
+        setSortKey(prefs.bulkEditorDefaultSort ?? 'position')
+        setSortDir(prefs.bulkEditorDefaultSortDir ?? 'asc')
+        const color = prefs.buttonColor ?? '#4f46e5'
+        setButtonColor(color)
+        applyTheme(color)
+
+        // ?courseId=X from the content script takes priority over saved preferences
+        const params = new URLSearchParams(window.location.search)
+        // getCourses() returns String IDs — keep the param as a string for comparison
+        const urlCourseId = params.get('courseId') ?? null
+
+        const initialId = urlCourseId && fetchedCourses.find(c => c.id === urlCourseId)
+          ? urlCourseId
+          : prefs.defaultCourse === 'last_used' && prefs.lastUsedCourseId
+            ? prefs.lastUsedCourseId
+            : fetchedCourses[0]?.id ?? null
+        if (initialId) selectCourse(initialId, fetchedCourses)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoadingCourses(false)
+      }
+    }
+    load()
+  }, [])
+
+  async function selectCourse(courseId, courseList = courses) {
+    const course = courseList.find(c => c.id === courseId)
+    setSelectedCourseId(courseId)
+    setSelectedCourseName(course?.name ?? '')
+    setSelectedIds(new Set())
+    setBulkSpec(EMPTY_SPEC)
+    setSearch('')
+    setFilterGroups([])
+    setFilterStatus([])
+    setLoadingAssignments(true)
+    setError(null)
+    try {
+      const [fetched, grps, mods] = await Promise.all([
+        getAssignments(courseId),
+        getAssignmentGroups(courseId),
+        getModules(courseId),
+      ])
+      setAssignments(fetched)
+      setGroups(grps)
+      setModules(mods)
+      await setLastUsedCourse(courseId)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoadingAssignments(false)
+    }
+  }
+
+  const filtered = useMemo(() => {
+    const f = applyFilters(assignments, { search, groups: filterGroups, status: filterStatus })
+    return sortAssignments(f, sortKey, sortDir)
+  }, [assignments, search, filterGroups, filterStatus, sortKey, sortDir])
+
+  const selectedAssignments = useMemo(
+    () => assignments.filter(a => selectedIds.has(a.id)),
+    [assignments, selectedIds],
+  )
+
+  const pendingChanges = useMemo(
+    () => buildChanges(selectedAssignments, bulkSpec),
+    [selectedAssignments, bulkSpec],
+  )
+
+  function handleSort(key) {
+    setSortKey(key)
+    setSortDir(prev => (sortKey === key && prev === 'asc') ? 'desc' : 'asc')
+  }
+
+  function toggleId(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll(checked) {
+    setSelectedIds(checked ? new Set(filtered.map(a => a.id)) : new Set())
+  }
+
+  async function applyChanges() {
+    setApplying(true)
+    setShowPreview(false)
+    const succeeded = []
+    const failed = []
+
+    // Group changes by assignment
+    const byAssignment = {}
+    for (const change of pendingChanges) {
+      if (!byAssignment[change.assignmentId]) byAssignment[change.assignmentId] = {}
+      byAssignment[change.assignmentId][change.field] = change.newValue
+    }
+
+    for (const [assignmentId, fields] of Object.entries(byAssignment)) {
+      try {
+        await updateAssignment(selectedCourseId, assignmentId, fields)
+        succeeded.push(assignmentId)
+      } catch (err) {
+        failed.push({ id: assignmentId, error: err.message })
+      }
+    }
+
+    // Update local assignment state with new values
+    setAssignments(prev => prev.map(a => {
+      if (!byAssignment[a.id]) return a
+      return { ...a, ...byAssignment[a.id] }
+    }))
+
+    // Write change log
+    if (succeeded.length > 0) {
+      const successfulChanges = pendingChanges.filter(c => succeeded.includes(c.assignmentId))
+      const entry = await buildChangeLogEntry({
+        courseId: selectedCourseId,
+        courseName: selectedCourseName,
+        changes: successfulChanges,
+      })
+      await addChangeLogEntry(entry)
+    }
+
+    setApplying(false)
+    setBulkSpec(EMPTY_SPEC)
+    setSelectedIds(new Set())
+    setApplyResult({ succeeded, failed, changes: pendingChanges })
+  }
+
+  const activeFilterCount = [
+    search ? 1 : 0,
+    filterGroups.length,
+    filterStatus.length,
+  ].reduce((a, b) => a + b, 0)
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-48">
+      {/* Top bar */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: buttonColor }}>
+              <span className="text-white text-xs font-black">C</span>
+            </div>
+            <span className="text-sm font-semibold text-gray-900 hidden sm:block shrink-0">Canvas Power Tools</span>
+            <span className="text-gray-300 hidden sm:block">|</span>
+            <CourseSelector
+              courses={courses}
+              selectedId={selectedCourseId}
+              onChange={id => selectCourse(id)}
+              loading={loadingCourses}
+            />
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {selectedCourseId && (
+              <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => setShowChangeLog(true)}>
+                <History size={15} /> Change Log
+              </button>
+            )}
+            <AppNav current="bulk-editor" />
+            <SettingsButton />
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Error banner */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 text-sm text-red-700">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">Something went wrong</p>
+              <p className="mt-0.5 text-red-600">{error}</p>
+            </div>
+            <button className="ml-auto text-red-400 hover:text-red-600" onClick={() => setError(null)}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Page heading + filter bar */}
+        <div className="mb-4">
+          <h1 className="text-xl font-bold text-gray-900 mb-4">Bulk Assignment Editor</h1>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search assignments..."
+                className="input pl-9"
+              />
+              {search && (
+                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearch('')}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <GroupFilter groups={groups} selected={filterGroups} onChange={setFilterGroups} />
+            <StatusFilter selected={filterStatus} onChange={setFilterStatus} />
+
+            {activeFilterCount > 0 && (
+              <button
+                className="btn-ghost text-sm text-gray-500"
+                onClick={() => { setSearch(''); setFilterGroups([]); setFilterStatus([]) }}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Count bar */}
+        {!loadingAssignments && selectedCourseId && (
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500">
+              Showing {filtered.length} of {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
+              {selectedIds.size > 0 && <span className="ml-2 font-medium" style={{ color: 'var(--cpt-color)' }}>{selectedIds.size} selected</span>}
+            </span>
+            {filtered.length > 0 && (
+              <button
+                className="text-xs font-medium"
+                style={{ color: 'var(--cpt-color)' }}
+                onClick={() => toggleAll(selectedIds.size < filtered.length)}
+              >
+                {selectedIds.size === filtered.length && filtered.length > 0 ? 'Deselect all' : 'Select all'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Loading state */}
+        {(loadingCourses || loadingAssignments) && (
+          <div className="card p-16 flex flex-col items-center gap-3 text-gray-400">
+            <Loader size={32} className="animate-spin text-indigo-400" />
+            <span className="text-sm">{loadingCourses ? 'Loading courses...' : 'Loading assignments...'}</span>
+          </div>
+        )}
+
+        {/* Assignment table */}
+        {!loadingCourses && !loadingAssignments && selectedCourseId && (
+          <div className="card overflow-hidden">
+            <AssignmentTable
+              assignments={filtered}
+              selectedIds={selectedIds}
+              onToggle={toggleId}
+              onToggleAll={toggleAll}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
+          </div>
+        )}
+
+        {/* No course selected */}
+        {!loadingCourses && !selectedCourseId && (
+          <div className="card p-16 text-center text-gray-400">
+            <p className="text-sm">Select a course above to get started.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          selectedCount={selectedIds.size}
+          bulkSpec={bulkSpec}
+          onChange={setBulkSpec}
+          onPreview={() => setShowPreview(true)}
+          shiftAllTogether={shiftAllTogether}
+          onShiftAllToggle={setShiftAllTogether}
+        />
+      )}
+
+      {/* Preview modal */}
+      {showPreview && (
+        <Modal
+          title="Preview Changes"
+          onClose={() => setShowPreview(false)}
+          size="lg"
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setShowPreview(false)}>Cancel</button>
+              <button className="btn-primary" onClick={applyChanges} disabled={applying}>
+                {applying ? <><Loader size={14} className="animate-spin" /> Applying...</> : 'Confirm & Apply'}
+              </button>
+            </>
+          }
+        >
+          <PreviewDiff changes={pendingChanges} />
+        </Modal>
+      )}
+
+      {/* Result modal */}
+      {applyResult && (
+        <Modal
+          title="Changes Applied"
+          onClose={() => setApplyResult(null)}
+          footer={<button className="btn-primary" onClick={() => setApplyResult(null)}>Done</button>}
+        >
+          <div className="space-y-4">
+            {applyResult.succeeded.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+                  <CheckCircle size={16} />
+                  Successfully updated: {applyResult.succeeded.length} assignment{applyResult.succeeded.length !== 1 ? 's' : ''}
+                </div>
+                {applyResult.succeeded.map(id => {
+                  const name = assignments.find(a => a.id === id)?.name ?? id
+                  return <div key={id} className="pl-6 text-sm text-gray-700">{name}</div>
+                })}
+              </div>
+            )}
+            {applyResult.failed.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 text-red-700 font-medium mb-2">
+                  <AlertCircle size={16} />
+                  Failed: {applyResult.failed.length} assignment{applyResult.failed.length !== 1 ? 's' : ''}
+                </div>
+                {applyResult.failed.map(f => {
+                  const name = assignments.find(a => a.id === f.id)?.name ?? f.id
+                  return (
+                    <div key={f.id} className="pl-6 text-sm text-gray-700">
+                      {name} — <span className="text-red-600">{f.error}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Change log panel */}
+      {showChangeLog && selectedCourseId && (
+        <ChangeLog
+          courseId={selectedCourseId}
+          courseName={selectedCourseName}
+          onClose={() => setShowChangeLog(false)}
+          onRevertComplete={() => selectCourse(selectedCourseId)}
+        />
+      )}
+    </div>
+  )
+}
+
+function GroupFilter({ groups, selected, onChange }) {
+  const [open, setOpen] = useState(false)
+  if (groups.length === 0) return null
+  return (
+    <div className="relative">
+      <button
+        className="btn-secondary text-sm"
+        style={selected.length > 0 ? {
+          borderColor: 'var(--cpt-color)',
+          color: 'var(--cpt-color)',
+          backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
+        } : undefined}
+        onClick={() => setOpen(!open)}
+      >
+        Group{selected.length > 0 ? ` (${selected.length})` : ''}
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
+          {groups.map(g => (
+            <div
+              key={g.id}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+              onClick={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
+            >
+              <Checkbox
+                checked={selected.includes(g.id)}
+                onChange={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
+              />
+              {g.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatusFilter({ selected, onChange }) {
+  const [open, setOpen] = useState(false)
+  const options = [{ value: 'published', label: 'Published' }, { value: 'unpublished', label: 'Unpublished' }]
+  return (
+    <div className="relative">
+      <button
+        className="btn-secondary text-sm"
+        style={selected.length > 0 ? {
+          borderColor: 'var(--cpt-color)',
+          color: 'var(--cpt-color)',
+          backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
+        } : undefined}
+        onClick={() => setOpen(!open)}
+      >
+        Status{selected.length > 0 ? ` (${selected.length})` : ''}
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
+          {options.map(o => (
+            <div
+              key={o.value}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+              onClick={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
+            >
+              <Checkbox
+                checked={selected.includes(o.value)}
+                onChange={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
+              />
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,42 @@
+const MAX_ENTRIES_PER_COURSE = 10
+
+function storageKey(courseId) {
+  return `changeLog_${courseId}`
+}
+
+export async function getChangeLog(courseId) {
+  const result = await chrome.storage.local.get(storageKey(courseId))
+  return result[storageKey(courseId)] ?? []
+}
+
+export async function addChangeLogEntry(entry) {
+  const existing = await getChangeLog(entry.courseId)
+  const updated = [entry, ...existing].slice(0, MAX_ENTRIES_PER_COURSE)
+  await chrome.storage.local.set({ [storageKey(entry.courseId)]: updated })
+  return updated
+}
+
+export async function buildChangeLogEntry({ courseId, courseName, changes, type = 'edit', revertedFromId = null }) {
+  const id = `clog_${Date.now()}`
+  return {
+    id,
+    timestamp: new Date().toISOString(),
+    courseId,
+    courseName,
+    summary: summarize(changes),
+    type,
+    revertedFromId,
+    changes,
+  }
+}
+
+export async function clearAllChangeLogs() {
+  const all = await chrome.storage.local.get(null)
+  const keys = Object.keys(all).filter(k => k.startsWith('changeLog_'))
+  if (keys.length > 0) await chrome.storage.local.remove(keys)
+}
+
+function summarize(changes) {
+  const assignmentIds = new Set(changes.map(c => c.assignmentId))
+  return `${changes.length} change${changes.length !== 1 ? 's' : ''} across ${assignmentIds.size} assignment${assignmentIds.size !== 1 ? 's' : ''}`
+}
