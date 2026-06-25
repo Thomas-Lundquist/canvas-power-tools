@@ -1,4 +1,4 @@
-const MAX_ENTRIES_PER_COURSE = 10
+import { getPreferences } from './preferences.js'
 
 function storageKey(courseId) {
   return `changeLog_${courseId}`
@@ -10,8 +10,10 @@ export async function getChangeLog(courseId) {
 }
 
 export async function addChangeLogEntry(entry) {
+  const prefs = await getPreferences()
+  const maxEntries = prefs.changeLogRetentionPerCourse ?? 10
   const existing = await getChangeLog(entry.courseId)
-  const updated = [entry, ...existing].slice(0, MAX_ENTRIES_PER_COURSE)
+  const updated = [entry, ...existing].slice(0, maxEntries)
   await chrome.storage.local.set({ [storageKey(entry.courseId)]: updated })
   return updated
 }
