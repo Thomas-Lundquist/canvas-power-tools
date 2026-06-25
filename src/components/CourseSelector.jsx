@@ -2,14 +2,14 @@ import { ChevronDown } from 'lucide-react'
 
 export default function CourseSelector({ courses, selectedId, onChange, loading }) {
   return (
-    <div className="relative">
+    <div className="relative shrink-0 w-fit">
       <select
         value={selectedId ?? ''}
         onChange={e => onChange(e.target.value)}
         disabled={loading || courses.length === 0}
-        className="appearance-none pl-3 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-sm
+        className="appearance-none pl-3 pr-9 py-2 bg-white border border-gray-300 rounded-lg text-sm
                    font-medium text-gray-900 shadow-sm
-                   disabled:opacity-50 disabled:cursor-not-allowed min-w-[260px]"
+                   disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading && <option value="">Loading courses...</option>}
         {!loading && courses.length === 0 && <option value="">No courses found</option>}
@@ -24,7 +24,7 @@ export default function CourseSelector({ courses, selectedId, onChange, loading 
           </>
         )}
       </select>
-      <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
     </div>
   )
 }
