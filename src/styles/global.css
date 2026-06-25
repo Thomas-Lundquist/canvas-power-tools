@@ -12,6 +12,7 @@
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
+    scrollbar-gutter: stable;
   }
   /* Checkboxes and radio buttons pick up the brand color automatically */
   input[type='checkbox'],
@@ -52,6 +53,19 @@
     border-color: var(--cpt-color);
     box-shadow: 0 0 0 2px rgba(var(--cpt-color-rgb), 0.2);
   }
+  /* Replace native OS arrow with a consistent custom SVG chevron.
+     appearance:none removes the OS arrow; background-image provides ours.
+     background-position places the arrow 12px from the right border.
+     padding-right: 2.5rem keeps text from running under the arrow. */
+  select.input {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px 12px;
+  }
   /* Native selects outside .input also get a themed focus ring */
   select:focus {
     outline: none;
@@ -68,3 +82,112 @@
     @apply text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3;
   }
 }
+
+/* ─── Dark mode ────────────────────────────────────────────────────────────────
+   Applied when html.dark class is present (set by theme-init.js + applyDarkMode).
+   These rules override Tailwind utilities via higher specificity (html.dark .class
+   beats .class) so most JSX doesn't need dark: variants.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+html.dark body { background-color: #0f172a; color: #e2e8f0; }
+
+/* Native selects */
+html.dark select {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+  color-scheme: dark;
+}
+/* .input selects use appearance:none + custom SVG — override arrow to light color */
+html.dark select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+html.dark select option { background-color: #1e293b; }
+
+/* Custom component classes */
+html.dark .card { background-color: #1e293b; border-color: #334155; }
+html.dark .btn-secondary { background-color: #1e293b; color: #e2e8f0; border-color: #475569; }
+html.dark .btn-secondary:hover:not(:disabled) { background-color: #334155; border-color: #64748b; }
+html.dark .btn-ghost { color: #cbd5e1; }
+html.dark .btn-ghost:hover { background-color: #334155; }
+html.dark .input { background-color: #1e293b; border-color: #475569; color: #e2e8f0; }
+html.dark .input::placeholder { color: #94a3b8; }
+html.dark .input:disabled { background-color: #0f172a; }
+html.dark .label { color: #94a3b8; }
+html.dark .section-title { color: #94a3b8; }
+
+/* ── Background overrides ── */
+html.dark .bg-white    { background-color: #1e293b; }
+html.dark .bg-gray-50  { background-color: #0f172a; }
+html.dark .bg-gray-100 { background-color: #334155; }
+html.dark .bg-gray-200 { background-color: #475569; }
+html.dark .bg-gray-300 { background-color: #64748b; }
+
+/* ── Text overrides ── */
+html.dark .text-gray-900 { color: #f1f5f9; }
+html.dark .text-gray-800 { color: #e2e8f0; }
+html.dark .text-gray-700 { color: #cbd5e1; }
+html.dark .text-gray-600 { color: #94a3b8; }  /* ~6:1 on #0f172a */
+html.dark .text-gray-500 { color: #94a3b8; }  /* ~6:1 — bumped from #64748b (was 3.2:1, fails AA) */
+html.dark .text-gray-400 { color: #64748b; }  /* ~3.2:1 — acceptable for decorative/disabled only */
+
+/* ── Border overrides ── */
+html.dark .border-gray-50  { border-color: #0f172a; }
+html.dark .border-gray-100 { border-color: #1e293b; }
+html.dark .border-gray-200 { border-color: #334155; }
+html.dark .border-gray-300 { border-color: #475569; }
+
+/* ── Divide overrides ── */
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b; }
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+
+/* ── Hover overrides ── */
+html.dark .hover\:bg-gray-50:hover  { background-color: #334155; }
+html.dark .hover\:bg-gray-100:hover { background-color: #475569; }
+html.dark .hover\:text-gray-700:hover { color: #e2e8f0; }
+html.dark .hover\:text-gray-800:hover { color: #f1f5f9; }
+
+/* ── Status colors ── */
+html.dark .bg-yellow-50     { background-color: rgba(78, 62, 0, 0.25); }
+html.dark .border-yellow-200 { border-color: rgba(161, 138, 0, 0.35); }
+html.dark .text-yellow-800  { color: #fde68a; }
+html.dark .text-yellow-700  { color: #fde68a; }
+
+html.dark .bg-green-50      { background-color: rgba(0, 61, 20, 0.25); }
+html.dark .border-green-200 { border-color: rgba(0, 130, 60, 0.35); }
+html.dark .text-green-700   { color: #86efac; }
+html.dark .text-green-600   { color: #86efac; }
+
+html.dark .bg-red-50        { background-color: rgba(90, 0, 0, 0.25); }
+html.dark .border-red-200   { border-color: rgba(200, 0, 0, 0.35); }
+html.dark .text-red-600     { color: #fca5a5; }
+html.dark .text-red-700     { color: #fca5a5; }
+html.dark .hover\:text-red-600:hover { color: #fca5a5; }
+html.dark .hover\:bg-red-50:hover    { background-color: rgba(90, 0, 0, 0.25); }
+
+html.dark .bg-blue-50       { background-color: rgba(0, 30, 80, 0.25); }
+html.dark .border-blue-200  { border-color: rgba(0, 80, 200, 0.35); }
+html.dark .text-blue-700    { color: #93c5fd; }
+html.dark .text-blue-600    { color: #93c5fd; }
+
+/* ── AppNav trigger and dropdown ── */
+.cpt-nav-trigger {
+  background-color: rgba(var(--cpt-color-rgb), 0.1);
+  color: var(--cpt-color);
+}
+/* In dark mode, brand color text fails contrast for most palette colors.
+   Use near-white text on a more opaque brand tint instead (~15:1 contrast ratio). */
+html.dark .cpt-nav-trigger {
+  background-color: rgba(var(--cpt-color-rgb), 0.25);
+  color: #f1f5f9;
+}
+/* Dropdown border becomes invisible when bg-white maps to #1e293b.
+   Explicit border restores visual separation. */
+html.dark .cpt-nav-dropdown {
+  border-color: #334155;
+}
+
+/* ── Scrollbar (Webkit) ── */
+html.dark ::-webkit-scrollbar { width: 6px; height: 6px; }
+html.dark ::-webkit-scrollbar-track { background: #0f172a; }
+html.dark ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }

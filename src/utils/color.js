@@ -21,3 +21,12 @@ export function applyTheme(hex = '#4f46e5') {
   root.style.setProperty('--cpt-color-rgb', hexToRgb(hex))
   try { localStorage.setItem('cpt_color', hex) } catch { /* storage unavailable */ }
 }
+
+// Applies or removes the 'dark' class on <html> based on mode.
+// Persists mode to localStorage so theme-init.js applies it before first paint.
+export function applyDarkMode(mode = 'system') {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const isDark = mode === 'dark' || (mode === 'system' && prefersDark)
+  document.documentElement.classList.toggle('dark', isDark)
+  try { localStorage.setItem('cpt_theme', mode) } catch { /* storage unavailable */ }
+}
