@@ -576,3 +576,296 @@ assignment. This is valid and intentional for undated assignments.
 rather than the updated assignments directly. Polling this progress object
 may be required for large batches. Monitor Canvas API documentation for
 current behavior.
+
+---
+
+## Token Verification Strategy
+
+Token verification does not use timed background checks. Chrome MV3 service
+workers are not persistent — they shut down after approximately 30 seconds of
+inactivity and cannot reliably run scheduled tasks.
+
+Instead, token verification happens at two specific moments:
+
+**On page open:** Every time a teacher opens an extension page, a lightweight
+verification call is made in the background. If it fails, the token failure
+modal is shown before the teacher attempts any action.
+
+**On auth failure:** Any API call that returns a 401 Unauthorized error
+immediately triggers the token failure flow regardless of when the last
+verification occurred.
+
+This is more reliable than timed verification and requires no persistent
+background process.
+
+```javascript
+// src/api/auth.js
+
+export async function verifyOnPageOpen() {
+  try {
+    await verifyToken(canvasUrl, decryptedToken)
+    await updateVerificationStatus('valid')
+  } catch (error) {
+    if (error instanceof AuthError) {
+      await updateVerificationStatus('failed')
+      showTokenFailureModal()
+    }
+    // Network errors are not treated as auth failures
+  }
+}
+```
+
+The Settings option for verificationFrequency is simplified to two choices:
+- On every page open (default)
+- On auth failure only (for teachers on slow connections)
+
+---
+
+## Storage Migration System
+
+Every time a new version of the extension changes the stored data structure,
+existing users need their storage migrated safely. Without this, new settings
+fields are missing, changed formats cause errors, and the extension breaks
+silently on update.
+
+### Version Tracking
+
+The meta object tracks the storage schema version separately from the
+extension version:
+
+```javascript
+meta: {
+  version: "1.0.0",        // extension version from manifest
+  schemaVersion: 1,         // storage data structure version
+  setupComplete: true
+}
+```
+
+### Migration Runner
+
+Runs on every extension page open, before any other code executes.
+
+```javascript
+// src/storage/migrations.js
+
+const MIGRATIONS = [
+  {
+    version: 2,
+    description: "Add defaultShiftAmount to bulkEditor settings",
+    migrate: async (storage) => {
+      if (storage.settings?.bulkEditor &&
+          storage.settings.bulkEditor.defaultShiftAmount === undefined) {
+        storage.settings.bulkEditor.defaultShiftAmount = 7
+      }
+      return storage
+    }
+  },
+  {
+    version: 3,
+    description: "Add developer settings section",
+    migrate: async (storage) => {
+      if (!storage.settings.developer) {
+        storage.settings.developer = {
+          unlocked: false,
+          logSelectorResolutions: false,
+          logApiRequests: false
+        }
+      }
+      return storage
+    }
+  }
+]
+
+export async function runMigrations() {
+  const stored = await chrome.storage.local.get('meta')
+  const currentVersion = stored.meta?.schemaVersion || 1
+
+  const pending = MIGRATIONS.filter(m => m.version > currentVersion)
+  if (pending.length === 0) return
+
+  let storage = await chrome.storage.local.get(null)
+
+  for (const migration of pending) {
+    try {
+      storage = await migration.migrate(storage)
+    } catch (error) {
+      console.error(`Migration v${migration.version} failed:`, error)
+      // Continue with remaining migrations — do not abort
+    }
+  }
+
+  const latestVersion = pending[pending.length - 1].version
+  storage.meta = { ...storage.meta, schemaVersion: latestVersion }
+
+  await chrome.storage.local.set(storage)
+  await chrome.storage.sync.set({ settings: storage.settings })
+}
+```
+
+Migrations are additive — they add or transform, never delete data without
+an explicit migration entry. A failed migration is logged but does not stop
+the extension from loading.
+
+---
+
+## Large Course Performance — Virtual Scrolling
+
+Canvas courses can have hundreds of assignments. Rendering all rows in the
+DOM simultaneously causes performance problems at scale.
+
+### Solution
+
+Only render rows currently visible on screen plus a small buffer. As the
+teacher scrolls, rows swap in and out of the DOM. To the teacher everything
+appears to be there. To the browser only 20-30 rows exist at any time.
+
+**Library:** @tanstack/react-virtual
+
+```javascript
+import { useVirtualizer } from '@tanstack/react-virtual'
+
+const rowVirtualizer = useVirtualizer({
+  count: filteredAssignments.length,
+  getScrollElement: () => parentRef.current,
+  estimateSize: () => 48,  // row height in pixels
+  overscan: 5              // render 5 extra rows above and below viewport
+})
+```
+
+### Thresholds
+
+| Assignment Count | Strategy |
+|---|---|
+| Under 100 | Standard rendering |
+| 100 to 500 | Virtual scrolling |
+| Over 500 | Virtual scrolling plus group-based pagination |
+
+Thresholds are applied automatically. The teacher never toggles this.
+
+### Search and Filter Performance
+
+Filtering runs client-side on the fetched assignment list. Text search is
+debounced by 150ms to avoid re-rendering on every keystroke.
+
+```javascript
+const debouncedSearch = useMemo(
+  () => debounce(setSearchTerm, 150),
+  []
+)
+```
+
+---
+
+## Offline Behavior
+
+### Detection
+
+```javascript
+window.addEventListener('offline', () => showOfflineState())
+window.addEventListener('online', () => hideOfflineState())
+
+// Also check before any API call
+if (!navigator.onLine) {
+  showOfflineState()
+  return
+}
+```
+
+### Behavior Per State
+
+**On page load while offline:**
+Show offline state screen. Do not attempt API calls. Settings, templates, and
+change log remain accessible from local storage.
+
+```
+[Offline icon]
+
+You appear to be offline.
+
+Canvas Power Tools needs a connection to your Canvas
+instance to load assignments and apply changes.
+
+Your settings, templates, and change log are safe.
+
+[Try Again]
+```
+
+**Going offline mid-session:**
+A persistent banner appears at the top of the page. The UI becomes read-only.
+Bulk action controls are disabled.
+
+```
+[Offline icon]  You are offline. Changes cannot be saved to Canvas.
+```
+
+**Coming back online:**
+The banner dismisses automatically. If the teacher had pending unsaved changes
+they are prompted to apply them now. The page refreshes its Canvas data.
+
+**Canvas unreachable but internet works:**
+Treated as an API error, not an offline state. The message distinguishes:
+"Canvas appears to be unreachable. This may be a Canvas outage." versus the
+standard offline message.
+
+---
+
+## Concurrent Tab Handling
+
+If a teacher opens the bulk editor in two tabs simultaneously, storage writes
+could conflict.
+
+### Session Lock
+
+```javascript
+// src/storage/session-lock.js
+
+const LOCK_KEY = 'sessionLock'
+const LOCK_TTL = 30000        // 30 seconds
+const REFRESH_INTERVAL = 10000 // refresh every 10 seconds
+
+export async function acquireSessionLock(pageKey) {
+  const result = await chrome.storage.local.get(LOCK_KEY)
+  const existing = result[LOCK_KEY]
+
+  if (existing && existing.page === pageKey) {
+    const age = Date.now() - existing.timestamp
+    if (age < LOCK_TTL) {
+      return false  // Lock held by another tab
+    }
+  }
+
+  await chrome.storage.local.set({
+    [LOCK_KEY]: { page: pageKey, timestamp: Date.now() }
+  })
+  return true
+}
+
+export function startLockRefresh(pageKey) {
+  return setInterval(async () => {
+    await chrome.storage.local.set({
+      [LOCK_KEY]: { page: pageKey, timestamp: Date.now() }
+    })
+  }, REFRESH_INTERVAL)
+}
+
+export async function releaseLock() {
+  await chrome.storage.local.remove(LOCK_KEY)
+}
+```
+
+### Teacher Warning
+
+If a second tab tries to open the bulk editor while it is already open:
+
+```
+Already Open
+
+The Bulk Assignment Editor is already open in another tab.
+Using both simultaneously may cause unexpected behavior.
+
+[Switch to Other Tab]    [Continue Anyway]
+```
+
+Continue Anyway proceeds with last-write-wins behavior. No data corrupts
+but the teacher may see stale data in the other tab. The lock is released
+when either tab closes.

@@ -12,6 +12,13 @@ publish status all at once — without clicking into each assignment individuall
 Canvas has no native bulk editing capability for assignments. This feature alone
 justifies the extension.
 
+
+---
+
+## Module Context
+
+The Bulk Edit Tool lives in the **Assignments Module**. It is the first Tool teachers encounter and the foundation for the extension's shared Component library. Every reusable piece built here — the multi-select table, column filters, date picker, preview diff modal, and change log — is available to all subsequent Tools.
+
 ---
 
 ## How It Is Accessed
@@ -25,7 +32,7 @@ extension itself.
 
 ## Page Structure
 
-The page has four main sections:
+The Bulk Edit Tool has four main sections:
 
 1. Top bar — logo, course selector, navigation links
 2. Filter bar — search and column filters
@@ -365,3 +372,61 @@ every subsequent feature:
 | Result summary screen | Any write operation |
 | Change log system | Grading, Groups when added |
 | Bulk action bar pattern | Any bulk operation feature |
+
+---
+
+## Filter and Sort Persistence
+
+Filters and sort state are remembered for the duration of the browser session.
+If a teacher applies a date range filter, navigates to the template library,
+and returns to the bulk editor, their filters are still active.
+
+When the teacher starts a new browser session the next day, filters reset to
+the defaults defined in Settings. This prevents teachers from arriving to a
+previous session's filters unexpectedly.
+
+Active filters are always shown as removable chips above the table regardless
+of whether they were set in the current session or restored from settings
+defaults. The teacher always knows what is active.
+
+### What Is Remembered Per Session
+
+| State | Remembered |
+|---|---|
+| Active filters | Yes — per course, for session duration |
+| Sort column and direction | Yes — per course, for session duration |
+| Scroll position in table | Yes — per course, for session duration |
+| Selected assignments | No — cleared on navigate away |
+| Bulk action field values | No — cleared on navigate away |
+| Last used course | Yes — persisted to storage across sessions |
+
+Session state is held in React component state at the page level, not in
+storage. Navigation within the extension preserves state. Closing and reopening
+the tab starts fresh, but stored preferences (last course) are restored.
+
+---
+
+## Loading State — Assignment Table
+
+The assignment table uses skeleton loading rather than a spinner. Skeleton
+loaders show placeholder rows in the shape of real content while data loads.
+
+```
+┌────┬──────────────────────┬────────┬──────────┬──────┐
+│    │ ████████████████     │ ██████ │ ████████ │ ████ │
+│    │ ████████████         │ ██████ │ ████████ │ ████ │
+│    │ ██████████████████   │ ██████ │ ████████ │ ████ │
+│    │ ████████             │ ██████ │ ████████ │ ████ │
+└────┴──────────────────────┴────────┴──────────┴──────┘
+(animated gray placeholder rows)
+```
+
+For large courses a count indicator accompanies the skeleton:
+```
+Loading assignments... 47 of 200
+[████████░░░░░░░░░░░░]
+```
+
+All other loading states in the extension (dropdowns, apply progress, deploy
+progress) use the standard spinner component. The skeleton is specific to the
+assignment table.

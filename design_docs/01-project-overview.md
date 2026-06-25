@@ -5,201 +5,356 @@
 ## What It Is
 
 Canvas Power Tools is a Chrome browser extension that gives teachers a faster,
-smarter interface for common Canvas LMS workflows. It does not replace Canvas —
-it sits on top of it, adding functionality that Instructure has been slow to
-implement. The core value proposition is reducing friction on high-frequency,
-tedious tasks that teachers perform every day.
+smarter interface for common Canvas LMS workflows. Rather than replacing Canvas,
+it augments it — adding functionality that Instructure has been slow to ship.
+
+The product is organized as a single-page application that opens in a new
+browser tab. Teachers navigate between modules using a persistent collapsible
+sidebar. Every feature lives within this unified shell rather than opening as
+isolated tabs.
+
+---
+
+## Core Value Proposition
+
+Canvas's native UI requires too many clicks for too many common tasks. Canvas
+Power Tools reduces that friction systematically, starting with the highest-
+frequency pain points — assignment management and bulk editing — and expanding
+outward into grading, communication, people management, and course design.
+
+---
+
+## Design Principles
+
+These principles govern every feature, every screen, and every line of code.
+When a decision is unclear, these are the tiebreakers.
+
+**Privacy first.**
+No data leaves the teacher's device except to their own Canvas instance.
+No analytics, no external logging, no third-party data access. This is both
+an ethical commitment and a practical FERPA compliance strategy.
+
+**FERPA alignment.**
+Student PII — names, grades, emails — is fetched on demand from Canvas and
+never persisted by the extension. The extension stores no student data.
+
+**Preview before write.**
+No bulk operation executes without a confirmation step showing the teacher
+exactly what will change. Old values and new values are shown side by side.
+This is non-negotiable regardless of how simple an operation seems.
+
+**Revert everything.**
+Every write operation is recoverable. A change log tracks the last 10
+operations per course. Any entry can be reverted. Reverts are themselves
+logged and are therefore also revertable.
+
+**Security by default.**
+An optional PIN system gates all write operations. Every write is logged in
+an audit trail regardless of PIN status. High-stakes operations carry
+additional confirmation requirements.
+
+**Reusable architecture.**
+API functions, UI components, and data patterns are built once and reused
+across every feature. No logic is duplicated. When Canvas changes an endpoint,
+one file is updated and every feature benefits.
+
+**Minimal permissions.**
+The Chrome manifest requests only the permissions each feature strictly
+requires. Permissions are never requested speculatively for future features.
+
+**Professional presentation.**
+Icons from a consistent library — Lucide or Heroicons. No emojis anywhere
+in the UI, documentation, or codebase. The extension should feel like
+software a school would be comfortable recommending officially.
+
+**Depth before breadth.**
+One feature done excellently ships before the next feature begins. A shallow
+tool that does many things poorly serves no one.
+
+---
+
+## Application Structure
+
+Canvas Power Tools is organized into Modules, Tools, and Components.
+
+**Module** — a top-level navigation section grouping related Tools.
+**Tool** — an individual feature within a Module.
+**Component** — a reusable UI or logic element shared across Tools.
+
+```
+Canvas Power Tools
+│
+├── Assignments  (Module)
+│   ├── Bulk Edit          (Tool)
+│   ├── Templates          (Tool)
+│   ├── Rubrics            (Tool)
+│   ├── Assignment Groups  (Tool)
+│   ├── Duplicate          (Tool)
+│   ├── QTI Import         (Tool)  ← V3
+│   └── Peer Review        (Tool)  ← V3
+│
+├── Grading  (Module)
+│   ├── Overview           (Tool)
+│   ├── Missing Work       (Tool)
+│   ├── Adjustments        (Tool)
+│   ├── Late Policy        (Tool)
+│   └── At-Risk            (Tool)  ← V3
+│
+├── Communication  (Module)
+│   ├── Nudges             (Tool)
+│   ├── Threshold          (Tool)
+│   └── Announcements      (Tool)
+│
+├── People  (Module)
+│   ├── Groups             (Tool)
+│   ├── Sections           (Tool)
+│   ├── Accommodations     (Tool)
+│   └── Roster             (Tool)  ← V3
+│
+├── Content  (Module)  ← V3
+│   ├── Modules            (Tool)
+│   ├── Pages              (Tool)
+│   └── Discussions        (Tool)
+│
+└── Setup  (Module)  ← V3
+    ├── Rollover           (Tool)
+    ├── Course Settings    (Tool)
+    ├── Blueprints         (Tool)
+    └── Standards          (Tool)
+
+SpeedGrader  (Injected — not a Module)
+  Configured via Settings. Injects Tools directly into Canvas's
+  SpeedGrader page. Cannot be a Module because it operates inside
+  Canvas's own UI rather than within the extension shell.
+
+Library  (Module)  ← Future
+  A unified view of all teacher-created content across all Tools —
+  rubrics, templates, comment bank entries, blueprints, and question
+  banks — with a single export for backup and cross-device portability.
+```
+
+---
+
+## Navigation Shell
+
+The extension opens as a single-page application in one browser tab. A
+persistent sidebar provides navigation. The header provides global controls.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ [Icon] Canvas Power Tools     [Course: Biology 101 ▼]    [⚙]   [?]  │
+├──────────────┬───────────────────────────────────────────────────────┤
+│ [← Hide]     │                                                       │
+│              │                                                       │
+│ Assignments  │                                                       │
+│  Bulk Edit   │   Active Tool renders here                            │
+│  Templates   │                                                       │
+│  Rubrics     │                                                       │
+│  ...         │                                                       │
+│              │                                                       │
+│ Grading      │                                                       │
+│ Communication│                                                       │
+│ People       │                                                       │
+│ Content  V3  │                                                       │
+│ Setup    V3  │                                                       │
+│              │                                                       │
+│ SpeedGrader  │                                                       │
+│ Settings     │                                                       │
+└──────────────┴───────────────────────────────────────────────────────┘
+```
+
+**Header** — persistent across all Tools. Contains the app logo and name,
+the active course selector, a settings icon, and a help icon. The course
+selector applies globally to whichever Tool is active.
+
+**Sidebar** — collapsible. Modules expand and collapse to show their Tools.
+The hide button collapses the sidebar to a thin strip, giving the active
+Tool full screen width. Sidebar state is remembered across sessions.
+
+**Main content area** — the active Tool renders here. Navigation between
+Tools is instant since the application shell is already loaded.
+
+**V3 modules** — visible in the sidebar but visually distinguished (grayed
+or labeled) until their release. This familiarizes teachers with the roadmap
+without implying current availability.
 
 ---
 
 ## Delivery Architecture
 
-The extension uses Chrome Manifest V3. Content scripts are injected into Canvas
-pages, but their only job is to add a trigger button to the Canvas UI. All real
-functionality lives on separate full extension pages that open in a new tab when
-the teacher clicks that button. This means:
+**Extension type:** Chrome Manifest V3
 
-- The extension does not fight with Canvas's own CSS or JavaScript
-- UI has full screen real estate rather than being cramped into a panel
-- Canvas UI updates only affect the small injection point, not the whole tool
-- All pages are fully controlled by the extension
+**Content scripts** are injected into specific Canvas pages. Their sole
+responsibility is injecting trigger buttons into the Canvas UI. They make
+no API calls and contain no feature logic.
 
-The extension talks directly to the Canvas REST API using the teacher's own API
-token. There is no backend server for V1. Everything runs client-side in the
-teacher's browser.
+**The extension shell** (the single-page application) does all real work —
+rendering Tools, calling the Canvas API, managing storage, and handling
+user interactions.
 
----
+**SpeedGrader Tools** are an exception. They inject panels and controls
+directly into Canvas's SpeedGrader page because SpeedGrader's workflow
+requires operating inside Canvas's own UI. They are configured in Settings
+but deployed via content script injection.
 
-## Core Design Principles
-
-These apply to every feature, every screen, and every line of code.
-
-**Privacy First**
-No data ever leaves the teacher's device except to their own Canvas instance.
-No analytics. No external logging. No third party services touching teacher or
-student data. This is not just an ethical decision — it is a selling point and
-a FERPA compliance strategy.
-
-**FERPA Aligned**
-Student names, grades, emails, and any other PII are fetched on demand from
-Canvas and never persisted by the extension. The extension does not store
-student data. Ever.
-
-**Preview Before Write**
-No bulk operation executes without showing the teacher exactly what will change
-first. Every write operation goes through a preview confirmation step showing
-old values and new values side by side.
-
-**Revert Everything**
-Every write operation is recoverable. A change log tracks the last 10 operations
-per course. Any entry can be reverted. Reverts are themselves logged so they are
-also recoverable.
-
-**Reusable Architecture**
-Functions like getCourses(), getAssignments(), and updateAssignment() are built
-once in a shared API layer and used by every feature. UI components like the
-multi-select list, date picker, modal, and bulk action bar are built once and
-reused everywhere. This reduces bugs, speeds development, and makes the codebase
-maintainable.
-
-**Minimal Permissions**
-The Chrome manifest requests only the permissions strictly required for each
-feature. No broad host permissions beyond what is needed.
-
-**Professional UI**
-Clean, professional interface. Icons from a consistent library such as Lucide or
-Heroicons. No emojis anywhere in the UI, documentation, or codebase.
-
-**Depth Before Breadth**
-Ship one feature done excellently before building the next. Do not spread effort
-thin across many half-finished features.
+**No backend is required for V1 or V2.** All Canvas API calls are made
+directly from the extension to Canvas using the teacher's API token. A
+lightweight backend is introduced in V2 only for optional anonymous
+telemetry.
 
 ---
 
 ## Tech Stack
 
-| Component | Technology | Notes |
+| Component | Technology | Rationale |
 |---|---|---|
-| Extension Standard | Chrome Manifest V3 | Required for Chrome Web Store |
-| Language | JavaScript ES6+ | Migrate to TypeScript in a later version |
-| UI Framework | React | Best fit for complex table and form UI |
-| Styling | Tailwind CSS | Utility-first, no conflicts with Canvas styles |
-| Build Tool | Vite | Fast, modern, excellent MV3 support |
-| Extension Plugin | CRXJS (Vite plugin) | Handles MV3 manifest and hot reload |
-| Package Manager | npm | Standard, widely documented |
-| Local Storage | chrome.storage.local | Fast local cache |
-| Sync Storage | chrome.storage.sync | Source of truth, follows teacher across devices |
-| Encryption | Web Crypto API / crypto.subtle | Token encryption, built into the browser |
-| HTTP Client | Fetch API (native) | No dependencies, MV3 compatible |
-| Testing V1 | Manual against Canvas sandbox | Formal test suite added in a later version |
-| Version Control | Git + GitHub | Public repository |
+| Extension standard | Chrome Manifest V3 | Required for Chrome Web Store |
+| Language | JavaScript ES6+ | Accessible for a beginner; migrate to TypeScript later |
+| UI framework | React | Necessary for the complexity of a single-page app with module navigation |
+| Routing | React Router | Handles module and tool navigation within the single-page shell |
+| Styling | Tailwind CSS | Utility-first; no conflicts with Canvas styles since the extension runs in its own tab |
+| Build tool | Vite + CRXJS | Fast builds; native MV3 support; hot reload during development |
+| Package manager | npm | Standard; widely documented |
+| Primary storage | chrome.storage.local | Fast; 5MB limit; no per-item size restriction |
+| Sync storage | chrome.storage.sync | Settings and lightweight indexes only; 100KB total limit; 8KB per-item limit |
+| Encryption | Web Crypto API (crypto.subtle) | Browser-native; no dependencies; used for token and PIN hash storage |
+| HTTP client | Fetch API | Browser-native; MV3 compatible; no dependencies |
+| Icons | Lucide or Heroicons | Consistent; accessible; tree-shakeable |
+| Version control | Git + GitHub | Public repository |
+
+**Note on React Router:** Adding React Router is the primary architectural
+change introduced by the single-page app navigation model. It handles
+routing between modules and tools (e.g. /assignments/bulk-edit,
+/grading/overview) within the extension shell without requiring page reloads.
 
 ---
 
 ## Storage Architecture
 
-Two storage layers work together:
+Chrome provides two storage areas with different characteristics and purposes.
 
-chrome.storage.sync is the source of truth. It follows the teacher across all
-their Chrome instances. When they log into Chrome on a different computer their
-settings and templates are already there.
+**chrome.storage.local** is the primary data store. It holds all application
+data — templates, change logs, rubrics, comment banks, the DOM recovery log,
+and the API response cache. It is fast, has a 5MB limit, and imposes no
+per-item size restriction. Data stored here does not sync across devices.
 
-chrome.storage.local is a speed cache. The extension reads from local first for
-instant load times, then syncs in the background. If local and sync ever differ,
-sync wins.
+**chrome.storage.sync** holds only settings and lightweight content indexes.
+Its 100KB total limit and 8KB per-item limit make it unsuitable for full
+content storage. It is used for settings (which are small and benefit from
+cross-device sync) and for indexes — lightweight lists of content IDs and
+names that allow the Library module and sidebar to reflect the teacher's
+content structure on any device. Full content always lives in local storage.
 
-**Write strategy:** update sync first, then refresh local cache.
-**Read strategy:** read local immediately, sync in background and update UI if
-different.
+When a teacher switches devices, their settings and content structure sync
+automatically. Full content — rubrics, templates, comment banks — requires
+a manual export and import via the Library module's backup feature.
 
 ---
 
 ## Complete Storage Schema
 
-```
+```javascript
+// chrome.storage.local — primary data store
+
 {
   account: {
     canvasUrl: "https://yourschool.instructure.com",
-    apiToken: "encrypted_token_string",
-    lastVerified: "2025-10-01T14:32:00Z",
+    apiToken: "encrypted_string",        // AES-encrypted via crypto.subtle
+    lastVerified: "ISO_timestamp",
     verificationStatus: "valid" | "failed" | "unchecked"
-    // Future: institutions array for multi-institution support
   },
 
-  preferences: {
-    shiftAllDatesTogether: true,
-    defaultCourse: "last_used" | "ask",
-    lastUsedCourseId: "12345"
-    // Future: per-course overrides object
-  },
-
-  changeLogs: {
-    "courseId_1": [
-      {
-        id: "unique_id",
-        timestamp: "2025-10-01T14:32:00Z",
-        courseId: "12345",
-        courseName: "Biology 101 - Fall 2025",
-        summary: "3 changes across 2 assignments",
-        type: "edit" | "revert",
-        revertedFromId: null,
-        changes: [
-          {
-            assignmentId: "67890",
-            assignmentName: "Quiz 1",
-            field: "dueDate" | "availableFrom" | "availableUntil" |
-                   "points" | "published",
-            previousValue: "2025-10-01",
-            newValue: "2025-10-08"
-          }
-        ]
-      }
-    ]
-    // Up to 10 entries per course
-    // Oldest entry dropped when 11th is added
+  security: {
+    pinHash: "sha256_hash",              // SHA-256; plain text never stored
+    pinEnabled: false,
+    pinMode: "inactivity" | "every_write",
+    inactivityTimeoutMinutes: 30,
+    failedAttemptCount: 0,
+    lockoutUntil: null
   },
 
   templates: {
-    folders: [
-      {
-        id: "folder_1",
-        name: "Quizzes",
-        createdAt: "2025-09-01T00:00:00Z"
+    folders: [{ id, name, createdAt }],
+    items: [{
+      id, folderId, name, createdAt, lastUsed,
+      sourceAssignmentId,
+      fields: {
+        name, description, points, submissionType,
+        allowedFormats, assignmentGroup, gradingType,
+        peerReview
+        // Future: rubricId
       }
-    ],
-    items: [
-      {
-        id: "template_1",
-        folderId: "folder_1",
-        name: "Weekly Quiz",
-        createdAt: "2025-09-01T00:00:00Z",
-        lastUsed: "2025-10-01T00:00:00Z",
-        sourceAssignmentId: "12345",
-        fields: {
-          name: "Weekly Quiz",
-          description: "Complete all questions.",
-          points: 20,
-          submissionType: "online",
-          allowedFormats: ["online_text_entry", "online_upload"],
-          assignmentGroup: "Quizzes",
-          gradingType: "points",
-          peerReview: false
-          // Future: rubricId
-        }
-      }
-    ]
+    }]
+  },
+
+  rubrics: {
+    categories: [{ id, name }],
+    items: [{
+      id, categoryId, name, createdAt, lastUsed,
+      pointsPossible,
+      criteria: [{
+        id, description, longDescription,
+        points,
+        ratings: [{ id, description, points }]
+      }]
+    }]
+  },
+
+  commentBank: {
+    categories: [{ id, name }],
+    items: [{
+      id, categoryId, text, createdAt, lastUsed
+    }]
+  },
+
+  announcementTemplates: {
+    items: [{
+      id, name, subject, body, createdAt, lastUsed
+    }]
+  },
+
+  changeLogs: {
+    "courseId": [ /* up to 10 entries per course */ ]
+  },
+
+  auditLog: [ /* up to 50 entries, always active */ ],
+
+  sentLog: [ /* up to 50 communication entries */ ],
+
+  domLog: [ /* up to 100 DOM health entries */ ],
+
+  sessionState: {
+    lastUsedCourseId: "12345",
+    lastUsedModule: "assignments",
+    lastUsedTool: "bulk-edit",
+    sidebarCollapsed: false
   },
 
   meta: {
     version: "1.0.0",
-    setupComplete: true
+    schemaVersion: 1,
+    setupComplete: true,
+    firstInstallTimestamp: "ISO_timestamp"
+  }
+}
+
+// chrome.storage.sync — lightweight sync only
+
+{
+  settings: { /* all user preferences — see Document 08 */ },
+
+  indexes: {
+    templates: [{ id, name, folderId }],
+    rubrics: [{ id, name, categoryId }],
+    commentBank: [{ id, categoryId, text_preview }],
+    announcementTemplates: [{ id, name }]
   }
 }
 ```
 
 ---
 
-## Project Folder Structure
+## Project File Structure
 
 ```
 canvas-power-tools/
@@ -207,70 +362,104 @@ canvas-power-tools/
 ├── manifest.json
 │
 ├── src/
-│   ├── content_scripts/
-│   │   ├── main.js              Entry point, detects page context
-│   │   └── ui-injector.js       Injects trigger button into Canvas
+│   ├── shell/                     Application shell
+│   │   ├── App.jsx                Root component with React Router
+│   │   ├── Sidebar.jsx            Module and tool navigation
+│   │   ├── Header.jsx             Logo, course selector, icons
+│   │   └── routes.js              All route definitions
 │   │
-│   ├── api/
-│   │   ├── auth.js              Token storage, retrieval, verification
-│   │   ├── assignments.js       Assignment CRUD and bulk operations
-│   │   ├── courses.js           Course fetching
-│   │   └── request.js           Base fetch wrapper, rate limiting, errors
+│   ├── content_scripts/           Injected into Canvas pages
+│   │   ├── main.js                Page detection and router
+│   │   └── ui-injector.js         Trigger button injection
 │   │
-│   ├── dom/
-│   │   ├── selectors.js         Central selector registry
-│   │   ├── selector-engine.js   Smart finder with cascade fallbacks
-│   │   ├── health-check.js      Local integration health status
-│   │   └── recovery-log.js      Failure logging
+│   ├── api/                       Canvas API layer
+│   │   ├── auth.js
+│   │   ├── assignments.js
+│   │   ├── courses.js
+│   │   ├── grading.js
+│   │   ├── people.js
+│   │   ├── communication.js
+│   │   └── request.js             Base fetch wrapper
 │   │
-│   ├── reporting/
-│   │   ├── manual-export.js     GitHub issue generator
-│   │   └── privacy-filter.js    Strips PII before any reporting
+│   ├── storage/                   Storage management
+│   │   ├── encryption.js
+│   │   ├── migrations.js
+│   │   └── defaults.js
 │   │
-│   ├── components/
-│   │   ├── Modal.js
-│   │   ├── BulkSelector.js
-│   │   ├── DatePicker.js
-│   │   ├── PreviewDiff.js
-│   │   └── FilterBar.js
+│   ├── security/                  PIN and audit system
+│   │   ├── pin.js
+│   │   ├── audit-log.js
+│   │   └── usePinGate.js
 │   │
-│   ├── features/
+│   ├── dom/                       DOM resilience (see Doc 06)
+│   │   ├── selectors.js
+│   │   ├── selector-engine.js
+│   │   ├── health-check.js
+│   │   └── recovery-log.js
+│   │
+│   ├── components/                Reusable UI Components
+│   │   ├── Modal.jsx
+│   │   ├── Toast.jsx
+│   │   ├── PreviewDiff.jsx
+│   │   ├── FilterBar.jsx
+│   │   ├── MultiSelect.jsx
+│   │   ├── DatePicker.jsx
+│   │   ├── SkeletonRow.jsx
+│   │   ├── EmptyState.jsx
+│   │   └── PinPrompt.jsx
+│   │
+│   ├── modules/                   One folder per Module
 │   │   ├── assignments/
-│   │   │   ├── BulkEditor.js
-│   │   │   └── bulkEditorHelpers.js
-│   │   └── templates/
-│   │       ├── TemplateLibrary.js
-│   │       ├── TemplateEditor.js
-│   │       ├── DeployTemplate.js
-│   │       └── templateHelpers.js
+│   │   │   ├── BulkEdit.jsx
+│   │   │   ├── Templates.jsx
+│   │   │   ├── Rubrics.jsx
+│   │   │   ├── AssignmentGroups.jsx
+│   │   │   ├── Duplicate.jsx
+│   │   │   ├── QTIImport.jsx      (V3)
+│   │   │   └── PeerReview.jsx     (V3)
+│   │   ├── grading/
+│   │   │   ├── Overview.jsx
+│   │   │   ├── MissingWork.jsx
+│   │   │   ├── Adjustments.jsx
+│   │   │   ├── LatePolicy.jsx
+│   │   │   └── AtRisk.jsx         (V3)
+│   │   ├── communication/
+│   │   │   ├── Nudges.jsx
+│   │   │   ├── Threshold.jsx
+│   │   │   └── Announcements.jsx
+│   │   ├── people/
+│   │   │   ├── Groups.jsx
+│   │   │   ├── Sections.jsx
+│   │   │   ├── Accommodations.jsx
+│   │   │   └── Roster.jsx         (V3)
+│   │   ├── content/               (V3)
+│   │   │   ├── Modules.jsx
+│   │   │   ├── Pages.jsx
+│   │   │   └── Discussions.jsx
+│   │   └── setup/                 (V3)
+│   │       ├── Rollover.jsx
+│   │       ├── CourseSettings.jsx
+│   │       ├── Blueprints.jsx
+│   │       └── Standards.jsx
 │   │
-│   ├── pages/
-│   │   ├── bulk-editor/
-│   │   │   ├── index.html
-│   │   │   └── index.js
-│   │   ├── templates/
-│   │   │   ├── index.html
-│   │   │   └── index.js
-│   │   ├── settings/
-│   │   │   ├── index.html
-│   │   │   └── index.js
-│   │   └── onboarding/
-│   │       ├── index.html
-│   │       └── index.js
+│   ├── speedgrader/               SpeedGrader injection Tools
+│   │   ├── injector.js
+│   │   ├── CommentBank.jsx
+│   │   ├── ProgressPanel.jsx
+│   │   ├── BulkGradeActions.jsx
+│   │   └── shortcuts.js
+│   │
+│   ├── settings/
+│   │   └── Settings.jsx
 │   │
 │   └── popup/
 │       ├── popup.html
-│       └── popup.js
+│       └── Popup.jsx
 │
 ├── public/
 │   └── icons/
-│       ├── icon-16.png
-│       ├── icon-32.png
-│       ├── icon-48.png
-│       └── icon-128.png
 │
 ├── docs/
-│   └── screenshots/
 │
 ├── README.md
 ├── CONTRIBUTING.md
@@ -281,95 +470,113 @@ canvas-power-tools/
 
 ---
 
-## Canvas API Endpoints Used in V1
+## Canvas API Coverage
 
-| Action | Method | Endpoint |
-|---|---|---|
-| Verify token / get user info | GET | /api/v1/users/self |
-| List courses | GET | /api/v1/courses |
-| List assignments | GET | /api/v1/courses/:id/assignments |
-| Create assignment | POST | /api/v1/courses/:id/assignments |
-| Update assignment | PUT | /api/v1/courses/:id/assignments/:id |
-| Delete assignment | DELETE | /api/v1/courses/:id/assignments/:id |
-| Bulk update dates | PUT | /api/v1/courses/:id/assignments/bulk_update |
-| Duplicate assignment | POST | /api/v1/courses/:id/assignments/:id/duplicate |
-| List assignment groups | GET | /api/v1/courses/:id/assignment_groups |
-| List modules | GET | /api/v1/courses/:id/modules |
+### V1.0
+| Action | Endpoint |
+|---|---|
+| Verify token | GET /api/v1/users/self |
+| List courses | GET /api/v1/courses |
+| List assignments | GET /api/v1/courses/:id/assignments |
+| Update assignment | PUT /api/v1/courses/:id/assignments/:id |
+| Bulk update dates | PUT /api/v1/courses/:id/assignments/bulk_update |
+| List assignment groups | GET /api/v1/courses/:id/assignment_groups |
+| List modules | GET /api/v1/courses/:id/modules |
 
-All requests include the Authorization header:
-Authorization: Bearer YOUR_API_TOKEN
+### V1.5
+| Action | Endpoint |
+|---|---|
+| Create assignment | POST /api/v1/courses/:id/assignments |
+| Duplicate assignment | POST /api/v1/courses/:id/assignments/:id/duplicate |
 
-Canvas paginates responses. The request wrapper must handle Link headers to
-fetch all pages, not just the first.
+### V2 (additional)
+| Action | Endpoint |
+|---|---|
+| List students | GET /api/v1/courses/:id/students |
+| List sections | GET /api/v1/courses/:id/sections |
+| List submissions | GET /api/v1/courses/:id/submissions |
+| Update submission | PUT /api/v1/courses/:id/assignments/:id/submissions/:id |
+| List groups | GET /api/v1/courses/:id/groups |
+| Create group | POST /api/v1/courses/:id/groups |
+| Create assignment override | POST /api/v1/courses/:id/assignments/:id/overrides |
+| List rubrics | GET /api/v1/courses/:id/rubrics |
+| Create rubric | POST /api/v1/courses/:id/rubrics |
+| Send conversation | POST /api/v1/conversations |
+| Create announcement | POST /api/v1/courses/:id/discussion_topics |
+
+### V3 (additional)
+| Action | Endpoint |
+|---|---|
+| List outcomes | GET /api/v1/courses/:id/outcome_group_links |
+| Create outcome alignment | POST /api/v1/courses/:id/outcome_alignments |
+| Import QTI content | POST /api/v1/courses/:id/content_migrations |
+| List discussions | GET /api/v1/courses/:id/discussion_topics |
+| Update module | PUT /api/v1/courses/:id/modules/:id |
+| List pages | GET /api/v1/courses/:id/pages |
 
 ---
 
 ## Distribution
 
-**Primary:** Chrome Web Store — free listing, one-time $5 developer registration
-fee. Gives teachers one-click install and automatic updates.
+**Chrome Web Store** — primary distribution. Free listing. One-time $5
+developer registration. Provides one-click install and automatic updates.
 
-**Secondary:** GitHub releases — downloadable zip for manual installation via
-chrome://extensions with Developer Mode enabled. For teachers who want to
-inspect the code before installing.
+**Microsoft Edge Add-ons Store** — secondary distribution. Edge uses the
+same Chromium engine as Chrome and accepts Chrome extensions with minimal
+additional submission work. No code changes required.
 
-Both distribution channels are maintained simultaneously. The Web Store listing
-links to the GitHub repository. The GitHub repository links to the Web Store.
+**GitHub Releases** — tertiary distribution. Downloadable zip for manual
+installation via chrome://extensions with Developer Mode enabled. Serves
+teachers who want to inspect the source before installing.
 
 ---
 
-## Monetization Plan
+## Monetization
 
-**V1:** Fully free. Donation option via Ko-fi or similar, linked in Settings
-and the GitHub repository. Goal is adoption, feedback, and proving value before
-charging anything.
+**V1.0 and V1.5:** Fully free. A donation link (Ko-fi or similar) appears
+in Settings. The goal at this stage is adoption and feedback, not revenue.
 
-**V2+:** Freemium with one-time payment. Free tier remains genuinely useful.
-Paid tier unlocks the full feature set.
+**V2+:** Freemium with a one-time payment for the full feature set.
 
-Free tier includes:
-- Bulk Assignment Editor (core functionality)
-- Assignment Templates (up to 5 templates)
-- Onboarding and Settings
+The free tier includes the complete Bulk Edit Tool and full change log. These
+are core features and safety infrastructure — restricting them would make the
+free experience feel deliberately broken, which damages trust and adoption.
 
-Paid tier (one-time purchase) includes:
-- Unlimited templates
-- Template folders
-- Cross-course template deployment
-- Grading Dashboard
-- Group Manager
-- Change log and revert system
-- Advanced column filters
+| Tier | Includes |
+|---|---|
+| Free | Bulk Edit (complete), Templates (up to 5), Onboarding, Settings |
+| Paid — one time | Unlimited templates, all Modules and Tools from V2 onward |
 
-Pricing not yet determined. To be decided once V1 has real users and feedback.
+Exact pricing is deferred until V1 has real users and feedback.
 
 ---
 
 ## Open Source
 
-License: MIT. Maximum freedom — anyone can use, modify, and distribute the
-code. This is intentional. Teachers and institutions can inspect exactly what
-the extension does. Developers can contribute features from the roadmap.
-The open source nature is a primary trust signal, especially in an educational
-context where FERPA compliance matters.
+**License:** MIT. Anyone may use, modify, and distribute the code. This is
+intentional — teachers and institutions can inspect what the extension does,
+and developers can contribute features from the roadmap.
 
-Repository will be public on GitHub from day one.
+The repository is public on GitHub from day one. Transparency is a trust
+signal, particularly in an educational context where FERPA compliance matters.
 
 ---
 
-## Future Architecture Consideration — LTI
+## Branding
 
-Long term, the ideal delivery mechanism is LTI (Learning Tools Interoperability)
-— the official standard for embedding third party tools natively inside Canvas.
-LTI tools appear in the Canvas left navigation sidebar exactly like native
-Canvas features. They require a backend server and institutional admin approval,
-which is why they are not the V1 approach.
+**Name:** Canvas Power Tools. Working title — may be revisited before launch.
 
-The browser extension is the right first step. It validates the product with
-real teachers, builds deep Canvas API knowledge, and generates a user base.
-The LTI version is the mature product that follows. All feature designs,
-data structures, and UI patterns transfer directly — only the delivery
-mechanism changes.
+**Icon direction:** A stylized lightning bolt or CPT monogram. Must be
+legible at 16x16 pixels since that is the Chrome toolbar size. Use a blue
+or teal that is visually distinct from Canvas's own brand blue to avoid
+implying an official affiliation with Instructure.
+
+**Required assets before Chrome Web Store submission:**
+
+| Asset | Dimensions |
+|---|---|
+| Icon | 16×16, 32×32, 48×48, 128×128 PNG |
+| Screenshots | 1280×800 PNG (minimum 3) |
 
 ---
 
@@ -377,9 +584,10 @@ mechanism changes.
 
 | Risk | Mitigation |
 |---|---|
-| Canvas UI updates break injected elements | Resilient DOM selector system with cascade fallbacks |
-| API token security | Encrypted with crypto.subtle, never leaves device |
-| Canvas rate limiting | Request queue with backoff in the API layer |
-| Institution-specific Canvas configuration | Test across multiple sandbox configurations |
-| Sole developer maintenance burden | Open source invites contributors over time |
-| Chrome MV3 restrictions | Architecture designed around MV3 from the start |
+| Canvas UI updates break injection points | Resilient selector system with cascade fallbacks and automatic recovery logging |
+| API token compromised | Encrypted via crypto.subtle; never transmitted outside Canvas API calls |
+| Canvas rate limiting | Request queue with automatic backoff in the API layer |
+| Institution-specific Canvas configuration | Test against multiple sandbox configurations before release |
+| Single developer maintenance burden | Open source structure invites contributors as the user base grows |
+| chrome.storage.sync item size limit | Full content stored in local; only lightweight indexes in sync |
+| MV3 service worker limitations | No persistent background tasks; token verification triggered by page open and auth failures only |

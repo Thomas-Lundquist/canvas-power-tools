@@ -1,3 +1,14 @@
+---
+
+## Module Context
+
+The Templates Tool lives in the **Assignments Module**, alongside Bulk Edit,
+Rubrics, Assignment Groups, and Duplicate. Templates are a creation tool —
+teachers think of them in the context of making assignments, which is why
+they live in Assignments rather than a separate library. The template library
+UI and folder architecture built here are reused by Rubrics and Announcement
+Templates.
+
 # Canvas Power Tools — 03: Assignment Templates
 
 ---
@@ -87,28 +98,38 @@ reserved in the data structure for this purpose.
 
 ## Storage
 
-**Source of truth:** chrome.storage.sync
-Templates follow the teacher across all their Chrome instances automatically.
+**Primary store:** chrome.storage.local
+Full template data — including descriptions, instructions, and all fields —
+is stored in chrome.storage.local. This avoids the 8KB per-item size limit
+in chrome.storage.sync, which a template with detailed instructions could
+easily exceed.
 
-**Speed cache:** chrome.storage.local
-Templates are read from local cache first for instant load. Sync updates in
-the background. If local and sync differ, sync wins and local is updated.
+**Sync layer:** chrome.storage.sync — template index only
+A lightweight index containing only template IDs, names, and folder
+assignments syncs across devices. This allows the library structure to follow
+the teacher between machines.
+
+**Cross-device behavior:**
+When a teacher opens the extension on a new device, their template library
+structure (folder names and template names) appears immediately via the sync
+index. The full template content is not available until the teacher imports
+a settings backup from their other device via the Settings export feature.
 
 **Write strategy:**
-1. Write to chrome.storage.sync
-2. On success, update chrome.storage.local cache
+1. Write full template to chrome.storage.local
+2. Update the lightweight index in chrome.storage.sync
 3. Update UI
 
 **Read strategy:**
-1. Read chrome.storage.local immediately and render
-2. Read chrome.storage.sync in background
-3. If sync differs from local, update local and re-render
+1. Read chrome.storage.local for full template data
+2. Read chrome.storage.sync for index to confirm structure is current
+3. If index and local differ, prompt teacher to re-sync or import
 
 ---
 
 ## Pages and Flows
 
-The template feature consists of four distinct interfaces:
+The Templates Tool consists of four distinct views, all rendered within the Assignments Module:
 
 1. Template Library — browse, organize, manage all templates
 2. Template Editor — create or edit a template from scratch
@@ -119,8 +140,7 @@ The template feature consists of four distinct interfaces:
 
 ## 1. Template Library
 
-The main page for the templates feature. Accessible from the extension popup
-or from a nav link in any extension page.
+The default view when a teacher navigates to Assignments → Templates.
 
 ### Layout
 

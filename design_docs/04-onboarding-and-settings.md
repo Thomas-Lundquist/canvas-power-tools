@@ -229,7 +229,7 @@ This screen also triggers the storage write:
   course and make your first bulk edit in under
   a minute.
 
-          [Open Bulk Assignment Editor]
+          [Open Canvas Power Tools]
 
                [Go to Settings]
 ```
@@ -301,6 +301,14 @@ Instructions are collapsed by default. "View full setup guide" links to a
 help page hosted in the GitHub repository docs folder.
 
 ---
+
+
+### Navigation Preferences
+
+Settings includes a section for navigation defaults — which Module and Tool
+open by default when the extension launches, and whether the sidebar starts
+expanded or collapsed. These preferences are stored in sessionState within
+chrome.storage.local.
 
 ## Settings Page
 
