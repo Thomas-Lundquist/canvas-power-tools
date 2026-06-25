@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle, AlertCircle, Loader, ExternalLink } from 'lucide-react'
 import { Checkbox } from '../../components/FormControls.jsx'
+import { useToast } from '../../components/Toast.jsx'
 import { getCourses } from '../../api/courses.js'
 import { saveTemplate } from '../../storage/templates.js'
 import { getPreferences } from '../../storage/preferences.js'
@@ -8,10 +9,12 @@ import { deployTemplateToCourse } from './templateHelpers.js'
 import { addAssignmentToModule } from '../../api/moduleItems.js'
 
 export default function DeployTemplate({ template, initialCourseId, moduleId, onDone, onBack }) {
+  const toast = useToast()
   const [courses, setCourses] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [dates, setDates] = useState({ dueAt: '', unlockAt: '', lockAt: '' })
+  const [publishState, setPublishState] = useState('unpublished')
   const [deploying, setDeploying] = useState(false)
   const [results, setResults] = useState(null)
 
@@ -29,6 +32,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
       })
       .catch(() => {})
       .finally(() => setLoadingCourses(false))
+    getPreferences().then(p => setPublishState(p.templateDefaultPublishOnDeploy ?? 'unpublished'))
   }, [initialCourseId])
 
   function toggleCourse(id) {
@@ -51,7 +55,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
     setDeploying(true)
     const selected = courses.filter(c => selectedIds.has(c.id))
     const deployResults = await Promise.all(
-      selected.map(course => deployTemplateToCourse(template, course, dates))
+      selected.map(course => deployTemplateToCourse(template, course, dates, publishState))
     )
 
     // Auto-add to module if launched from a module button and pref is enabled
@@ -85,7 +89,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   }
 
   const allSelected = courses.length > 0 && courses.every(c => selectedIds.has(c.id))
-  const isPublished = !!dates.dueAt
+  const resolvedPublished = publishState === 'published' ? true : publishState === 'unpublished' ? false : !!dates.dueAt
 
   if (results) {
     const { deployResults, moduleAddResults } = results
@@ -150,7 +154,11 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           <button className="btn-secondary flex items-center gap-1.5" onClick={openBulkEditor}>
             <ExternalLink size={14} /> View in Bulk Editor
           </button>
-          <button className="btn-primary" onClick={onDone}>Done</button>
+          <button className="btn-primary" onClick={() => {
+            const succeeded = results.deployResults.filter(r => r.success).length
+            if (succeeded > 0) toast(`Deployed to ${succeeded} course${succeeded !== 1 ? 's' : ''}`, 'success')
+            onDone()
+          }}>Done</button>
         </div>
       </div>
     )
@@ -224,11 +232,28 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
             <input type="date" value={dates.lockAt} onChange={e => setDate('lockAt', e.target.value)} className="input text-sm" />
           </div>
         </div>
-        <p className="text-xs text-gray-400">
-          {isPublished
-            ? 'Assignment will be published with the due date set.'
-            : 'Leaving Due Date blank creates the assignment as undated and unpublished. You can set dates later using the Bulk Assignment Editor.'}
-        </p>
+        <div className="pt-2 border-t border-gray-100">
+          <label className="label mb-1.5">Publish state</label>
+          <div className="flex items-center gap-1.5">
+            {[
+              { value: 'unpublished', label: 'Unpublished' },
+              { value: 'published',   label: 'Published' },
+              { value: 'auto',        label: 'Auto (if due date set)' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setPublishState(opt.value)}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  publishState === opt.value ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+                style={publishState === opt.value ? { backgroundColor: 'var(--cpt-color)' } : undefined}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Preview */}
@@ -247,7 +272,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           <p className="text-xs text-gray-500">
             {template.fields.points != null ? `${template.fields.points} pts` : 'Ungraded'}
             {template.fields.assignmentGroup ? ` · Group: ${template.fields.assignmentGroup}` : ''}
-            {' · '}Status: {isPublished ? 'Published' : 'Unpublished'}
+            {' · '}Status: {resolvedPublished ? 'Published' : 'Unpublished'}
           </p>
         </div>
       )}

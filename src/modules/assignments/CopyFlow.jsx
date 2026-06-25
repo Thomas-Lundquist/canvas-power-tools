@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Search, X, ArrowRight, ArrowLeft, Check, AlertCircle, Loader, CheckCircle } from 'lucide-react'
+﻿import { useState, useEffect, useMemo } from 'react'
+import { Search, X, ArrowRight, ArrowLeft, Check, AlertCircle, CheckCircle } from 'lucide-react'
+import { useToast } from '../../components/Toast.jsx'
 import AssignmentTable from '../assignments/AssignmentTable.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
@@ -8,6 +9,7 @@ import { sortAssignments } from '../assignments/bulkEditorHelpers.js'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments, createAssignment } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
+import { getPreferences } from '../../storage/preferences.js'
 
 function ModePill({ label, active, onClick }) {
   return (
@@ -50,6 +52,7 @@ function applyDateHandling(assignment, dateMode, shiftSign, shiftDays) {
 }
 
 export default function CopyFlow({ initialCourseId }) {
+  const toast = useToast()
   const [step, setStep] = useState('source')
 
   // Source step
@@ -65,9 +68,9 @@ export default function CopyFlow({ initialCourseId }) {
 
   // Target step
   const [targetIds, setTargetIds] = useState(new Set())
-  const [dateMode, setDateMode] = useState('clear')
+  const [dateMode, setDateMode] = useState('keep')
   const [shiftSign, setShiftSign] = useState('+')
-  const [shiftDays, setShiftDays] = useState('')
+  const [shiftDays, setShiftDays] = useState('7')
   const [publishMode, setPublishMode] = useState('keep')
 
   // Copy state
@@ -76,9 +79,12 @@ export default function CopyFlow({ initialCourseId }) {
   const [results, setResults] = useState([])
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
         setCourses(list)
+        setDateMode(prefs.copyDefaultDateMode ?? 'keep')
+        setShiftDays(prefs.copyDefaultShiftDays > 0 ? String(prefs.copyDefaultShiftDays) : '7')
+        setPublishMode(prefs.copyDefaultPublishMode ?? 'keep')
         const startId = initialCourseId && list.find(c => c.id === String(initialCourseId))
           ? String(initialCourseId)
           : list[0]?.id ?? null
@@ -217,9 +223,16 @@ export default function CopyFlow({ initialCourseId }) {
       })
     }
 
+    const totalSucceeded = courseResults.reduce((n, r) => n + r.succeeded, 0)
+    const totalFailed = courseResults.reduce((n, r) => n + (r.assignments.length - r.succeeded), 0)
     setResults(courseResults)
     setCopying(false)
     setCopyProgress('')
+    if (totalFailed === 0) {
+      toast(`${totalSucceeded} assignment${totalSucceeded !== 1 ? 's' : ''} copied`, 'success')
+    } else {
+      toast(`${totalSucceeded} copied, ${totalFailed} failed`, 'warning')
+    }
   }
 
   function resetToSource() {
@@ -232,7 +245,7 @@ export default function CopyFlow({ initialCourseId }) {
     setPublishMode('keep')
   }
 
-  // ── SOURCE STEP ──────────────────────────────────────────────────────────────
+  // â"€â"€ SOURCE STEP â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   if (step === 'source') {
     return (
@@ -254,8 +267,8 @@ export default function CopyFlow({ initialCourseId }) {
           />
         </div>
 
-        <div className="flex items-center gap-3 mb-3">
-          <div className="relative flex-1 max-w-sm">
+        <div className="mb-3">
+          <div className="relative max-w-sm">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -273,34 +286,51 @@ export default function CopyFlow({ initialCourseId }) {
               </button>
             )}
           </div>
-          {assignments.length > 0 && (
-            <span className="text-sm text-gray-400 shrink-0">
-              {filteredAssignments.length === assignments.length
-                ? `${assignments.length} assignments`
-                : `${filteredAssignments.length} of ${assignments.length}`}
-            </span>
-          )}
         </div>
 
         <div className="card overflow-hidden mb-4">
-          {loadingAssignments ? (
-            <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
-              <Loader size={14} className="animate-spin" /> Loading assignments...
-            </div>
-          ) : sortedFiltered.length === 0 ? (
-            <div className="text-sm text-gray-400 p-6">
-              {search ? 'No assignments match your search.' : 'No assignments found in this course.'}
-            </div>
+          {!sourceCourseId ? (
+            <div className="text-sm text-gray-400 p-6">Select a source course to load assignments.</div>
           ) : (
-            <AssignmentTable
-              assignments={sortedFiltered}
-              selectedIds={selectedIds}
-              onToggle={toggleAssignment}
-              onToggleAll={toggleAllAssignments}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-            />
+            <>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+                {!loadingAssignments && sortedFiltered.length > 0 ? (
+                  <button
+                    className="text-xs font-medium"
+                    style={{ color: 'var(--cpt-color)' }}
+                    onClick={() => toggleAllAssignments(selectedIds.size < sortedFiltered.length)}
+                  >
+                    {selectedIds.size === sortedFiltered.length && sortedFiltered.length > 0 ? 'Deselect all' : 'Select all'}
+                  </button>
+                ) : <span />}
+                {loadingAssignments ? (
+                  <span className="text-xs text-gray-400">Loading assignments...</span>
+                ) : (
+                  <span className="text-xs text-gray-500">
+                    {sortedFiltered.length === assignments.length
+                      ? `${assignments.length} assignment${assignments.length !== 1 ? 's' : ''}`
+                      : `${sortedFiltered.length} of ${assignments.length}`}
+                    {selectedIds.size > 0 && <span className="ml-2 font-medium" style={{ color: 'var(--cpt-color)' }}>{selectedIds.size} selected</span>}
+                  </span>
+                )}
+              </div>
+              {(loadingAssignments || sortedFiltered.length > 0) ? (
+                <AssignmentTable
+                  assignments={sortedFiltered}
+                  selectedIds={selectedIds}
+                  onToggle={toggleAssignment}
+                  onToggleAll={toggleAllAssignments}
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  loading={loadingAssignments}
+                />
+              ) : (
+                <div className="text-sm text-gray-400 p-6">
+                  {search ? 'No assignments match your search.' : 'No assignments found in this course.'}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -323,7 +353,7 @@ export default function CopyFlow({ initialCourseId }) {
     )
   }
 
-  // ── TARGET STEP ──────────────────────────────────────────────────────────────
+  // â"€â"€ TARGET STEP â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   if (step === 'targets') {
     const sourceCourse = courses.find(c => c.id === sourceCourseId)
@@ -443,7 +473,7 @@ export default function CopyFlow({ initialCourseId }) {
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
               Dates: {dateMode === 'keep' ? 'Kept from source' : dateMode === 'clear' ? 'Cleared' : `Shifted ${shiftSign}${shiftDays || 0} days`}
-              {' · '}Status: {publishMode === 'keep' ? 'Keep original' : 'Force unpublished'}
+              {' Â· '}Status: {publishMode === 'keep' ? 'Keep original' : 'Force unpublished'}
             </p>
           </div>
         )}
@@ -465,7 +495,7 @@ export default function CopyFlow({ initialCourseId }) {
     )
   }
 
-  // ── RESULTS STEP ─────────────────────────────────────────────────────────────
+  // â"€â"€ RESULTS STEP â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   if (copying) {
     return (
@@ -535,3 +565,5 @@ export default function CopyFlow({ initialCourseId }) {
     </div>
   )
 }
+
+

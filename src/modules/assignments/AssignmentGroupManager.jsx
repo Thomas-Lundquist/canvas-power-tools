@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, AlertCircle, Loader } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, AlertCircle,
+         Loader, ChevronRight, Copy, GitMerge } from 'lucide-react'
+import { useToast } from '../../components/Toast.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import Modal from '../../components/Modal.jsx'
+import { formatDate } from '../../components/DateInput.jsx'
 import { getCourses } from '../../api/courses.js'
+import { getAssignments, updateAssignment } from '../../api/assignments.js'
 import {
   getAssignmentGroups,
   createAssignmentGroup,
@@ -10,16 +14,50 @@ import {
   deleteAssignmentGroup,
 } from '../../api/assignmentGroups.js'
 
+const GROUP_SKELETON_WIDTHS = [
+  ['w-8', 'w-32', 'w-12', 'w-24', 'w-20'],
+  ['w-8', 'w-40', 'w-12', 'w-20', 'w-20'],
+  ['w-8', 'w-28', 'w-10', 'w-24', 'w-20'],
+  ['w-8', 'w-36', 'w-12', 'w-20', 'w-20'],
+  ['w-8', 'w-44', 'w-8',  'w-24', 'w-20'],
+]
+
+function SkeletonRow({ widths }) {
+  return (
+    <tr className="border-b border-gray-100">
+      {widths.map((w, i) => (
+        <td key={i} className="px-3 py-3.5">
+          <div className={`h-3.5 ${w} rounded bg-gray-200 animate-pulse`} />
+        </td>
+      ))}
+    </tr>
+  )
+}
+
 export default function AssignmentGroupManager({ initialCourseId }) {
+  const toast = useToast()
+
   const [courses, setCourses]             = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [courseId, setCourseId]           = useState(null)
   const [groups, setGroups]               = useState([])
   const [loadingGroups, setLoadingGroups] = useState(false)
-  const [editingId, setEditingId]         = useState(null)   // group id | 'new' | null
+  const [assignments, setAssignments]     = useState([])
+  const [loadingAssignments, setLoadingAssignments] = useState(false)
+
+  const [expandedGroupId, setExpandedGroupId] = useState(null)
+  const [movingId, setMovingId]           = useState(null)
+
+  const [editingId, setEditingId]         = useState(null)
   const [editForm, setEditForm]           = useState({ name: '', groupWeight: '' })
-  const [deleteTarget, setDeleteTarget]   = useState(null)   // group to delete
+
+  const [deleteTarget, setDeleteTarget]   = useState(null)
   const [deleteMoveToId, setDeleteMoveToId] = useState(null)
+
+  const [mergeSource, setMergeSource]     = useState(null)
+  const [mergeTargetId, setMergeTargetId] = useState(null)
+  const [merging, setMerging]             = useState(false)
+
   const [saving, setSaving]               = useState(false)
   const [error, setError]                 = useState(null)
 
@@ -30,26 +68,48 @@ export default function AssignmentGroupManager({ initialCourseId }) {
         const start = initialCourseId && list.find(c => c.id === String(initialCourseId))
           ? String(initialCourseId)
           : list[0]?.id ?? null
-        if (start) loadGroups(start)
+        if (start) loadCourseData(start)
       })
       .finally(() => setLoadingCourses(false))
   }, [])
 
-  async function loadGroups(cId) {
+  async function loadCourseData(cId) {
     setCourseId(cId)
     setGroups([])
+    setAssignments([])
     setEditingId(null)
+    setExpandedGroupId(null)
     setError(null)
     setLoadingGroups(true)
+    setLoadingAssignments(true)
     try {
-      const data = await getAssignmentGroups(cId)
-      setGroups(data)
+      const [groupData, assignmentData] = await Promise.all([
+        getAssignmentGroups(cId),
+        getAssignments(cId),
+      ])
+      setGroups(groupData)
+      setAssignments(assignmentData)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoadingGroups(false)
+      setLoadingAssignments(false)
     }
   }
+
+  const assignmentsByGroup = useMemo(() => {
+    const map = {}
+    for (const a of assignments) {
+      const gId = a.assignmentGroupId
+      if (gId) {
+        if (!map[gId]) map[gId] = []
+        map[gId].push(a)
+      }
+    }
+    return map
+  }, [assignments])
+
+  // ── Edit ────────────────────────────────────────────────────────────────────
 
   function startEdit(group) {
     setEditingId(group.id)
@@ -75,9 +135,11 @@ export default function AssignmentGroupManager({ initialCourseId }) {
       if (editingId === 'new') {
         const created = await createAssignmentGroup(courseId, { ...fields, position: groups.length + 1 })
         setGroups(prev => [...prev, created])
+        toast('Group created', 'success')
       } else {
         const updated = await updateAssignmentGroup(courseId, editingId, fields)
         setGroups(prev => prev.map(g => g.id === editingId ? updated : g))
+        toast('Group updated', 'success')
       }
       setEditingId(null)
     } catch (err) {
@@ -86,6 +148,8 @@ export default function AssignmentGroupManager({ initialCourseId }) {
       setSaving(false)
     }
   }
+
+  // ── Reorder ──────────────────────────────────────────────────────────────────
 
   async function swapPositions(indexA, indexB) {
     const a = groups[indexA]
@@ -107,6 +171,52 @@ export default function AssignmentGroupManager({ initialCourseId }) {
     }
   }
 
+  // ── Copy ─────────────────────────────────────────────────────────────────────
+
+  async function copyGroup(group) {
+    setError(null)
+    try {
+      const created = await createAssignmentGroup(courseId, {
+        name:        `${group.name} (copy)`,
+        groupWeight: group.groupWeight,
+        position:    groups.length + 1,
+      })
+      setGroups(prev => [...prev, created])
+      toast(`"${group.name}" duplicated`, 'success')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  // ── Merge ─────────────────────────────────────────────────────────────────────
+
+  function openMergeModal(group) {
+    const fallback = groups.find(g => g.id !== group.id)?.id ?? null
+    setMergeSource(group)
+    setMergeTargetId(fallback)
+  }
+
+  async function confirmMerge() {
+    setMerging(true)
+    setError(null)
+    try {
+      await deleteAssignmentGroup(courseId, mergeSource.id, mergeTargetId)
+      setAssignments(prev => prev.map(a =>
+        a.assignmentGroupId === mergeSource.id ? { ...a, assignmentGroupId: mergeTargetId } : a
+      ))
+      setGroups(prev => prev.filter(g => g.id !== mergeSource.id))
+      if (expandedGroupId === mergeSource.id) setExpandedGroupId(null)
+      setMergeSource(null)
+      toast('Groups merged', 'success')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setMerging(false)
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────────
+
   function openDeleteModal(group) {
     const fallback = groups.find(g => g.id !== group.id)?.id ?? null
     setDeleteTarget(group)
@@ -119,7 +229,9 @@ export default function AssignmentGroupManager({ initialCourseId }) {
     try {
       await deleteAssignmentGroup(courseId, deleteTarget.id, deleteMoveToId)
       setGroups(prev => prev.filter(g => g.id !== deleteTarget.id))
+      if (expandedGroupId === deleteTarget.id) setExpandedGroupId(null)
       setDeleteTarget(null)
+      toast('Group deleted', 'success')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -127,23 +239,44 @@ export default function AssignmentGroupManager({ initialCourseId }) {
     }
   }
 
+  // ── Move assignment ────────────────────────────────────────────────────────────
+
+  async function moveAssignment(assignmentId, newGroupId) {
+    setMovingId(assignmentId)
+    setError(null)
+    try {
+      await updateAssignment(courseId, assignmentId, { assignmentGroupId: newGroupId })
+      setAssignments(prev => prev.map(a =>
+        a.id === assignmentId ? { ...a, assignmentGroupId: newGroupId } : a
+      ))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setMovingId(null)
+    }
+  }
+
+  // ── Derived ───────────────────────────────────────────────────────────────────
+
   const totalWeight   = groups.reduce((s, g) => s + (g.groupWeight ?? 0), 0)
   const weightDisplay = Math.round(totalWeight * 10) / 10
   const weightOk      = Math.abs(weightDisplay - 100) < 0.1
   const weightNonZero = weightDisplay > 0
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Assignment Groups</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage assignment groups and grade weights. Reorder, rename, or adjust weights for a course.
+          Manage assignment groups and grade weights. Expand a group to see its assignments or move them to another group.
         </p>
       </div>
 
       <div className="card p-4 mb-6 flex items-center gap-4">
         <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
-        <CourseSelector courses={courses} selectedId={courseId} onChange={loadGroups} loading={loadingCourses} />
+        <CourseSelector courses={courses} selectedId={courseId} onChange={loadCourseData} loading={loadingCourses} />
       </div>
 
       {error && (
@@ -154,80 +287,105 @@ export default function AssignmentGroupManager({ initialCourseId }) {
       )}
 
       <div className="card overflow-hidden mb-4">
-        {loadingGroups ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
-            <Loader size={14} className="animate-spin" /> Loading groups...
-          </div>
-        ) : (
-          <>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="w-16 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Order</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Group Name</th>
-                  <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
-                  <th className="w-24 px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {groups.map((group, index) =>
-                  editingId === group.id ? (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="w-8 px-3 py-3" />
+              <th className="w-16 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Order</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Group</th>
+              <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
+              <th className="w-36 px-3 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loadingGroups
+              ? GROUP_SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
+              : (
+                <>
+                  {groups.map((group, index) => (
+                    editingId === group.id ? (
+                      <EditRow
+                        key={group.id}
+                        index={index}
+                        form={editForm}
+                        onChange={setEditForm}
+                        onSave={saveEdit}
+                        onCancel={cancelEdit}
+                        saving={saving}
+                        colSpan={5}
+                      />
+                    ) : (
+                      <>
+                        <GroupRow
+                          key={group.id}
+                          group={group}
+                          index={index}
+                          total={groups.length}
+                          count={(assignmentsByGroup[group.id] ?? []).length}
+                          expanded={expandedGroupId === group.id}
+                          onToggleExpand={() => setExpandedGroupId(id => id === group.id ? null : group.id)}
+                          onMoveUp={() => swapPositions(index, index - 1)}
+                          onMoveDown={() => swapPositions(index, index + 1)}
+                          onCopy={() => copyGroup(group)}
+                          onMerge={() => openMergeModal(group)}
+                          onEdit={() => startEdit(group)}
+                          onDelete={() => openDeleteModal(group)}
+                          deleteDisabled={groups.length <= 1}
+                          mergeDisabled={groups.length <= 1}
+                        />
+                        {expandedGroupId === group.id && (
+                          <tr key={`${group.id}-expand`}>
+                            <td colSpan={5} className="bg-gray-50 border-b border-gray-100 px-0 py-0">
+                              <AssignmentList
+                                assignments={assignmentsByGroup[group.id] ?? []}
+                                groups={groups}
+                                currentGroupId={group.id}
+                                loading={loadingAssignments}
+                                movingId={movingId}
+                                onMove={moveAssignment}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  ))}
+                  {editingId === 'new' && (
                     <EditRow
-                      key={group.id}
-                      index={index}
+                      key="new"
+                      index={groups.length}
                       form={editForm}
                       onChange={setEditForm}
                       onSave={saveEdit}
                       onCancel={cancelEdit}
                       saving={saving}
+                      isNew
+                      colSpan={5}
                     />
-                  ) : (
-                    <GroupRow
-                      key={group.id}
-                      group={group}
-                      index={index}
-                      total={groups.length}
-                      onMoveUp={() => swapPositions(index, index - 1)}
-                      onMoveDown={() => swapPositions(index, index + 1)}
-                      onEdit={() => startEdit(group)}
-                      onDelete={() => openDeleteModal(group)}
-                      deleteDisabled={groups.length <= 1}
-                    />
-                  )
-                )}
+                  )}
+                </>
+              )
+            }
+          </tbody>
+        </table>
 
-                {editingId === 'new' && (
-                  <EditRow
-                    key="new"
-                    index={groups.length}
-                    form={editForm}
-                    onChange={setEditForm}
-                    onSave={saveEdit}
-                    onCancel={cancelEdit}
-                    saving={saving}
-                    isNew
-                  />
-                )}
-              </tbody>
-            </table>
-
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-              <p className="text-xs text-gray-400">
-                Total weight:{' '}
-                <span className={`font-semibold ${weightOk ? 'text-green-600' : weightNonZero ? 'text-yellow-600' : 'text-gray-400'}`}>
-                  {weightDisplay}%
-                </span>
-                {!weightOk && weightNonZero && (
-                  <span className="ml-1 text-yellow-500">— should total 100% when weighting is enabled</span>
-                )}
-              </p>
-              {editingId === null && (
-                <button className="btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3" onClick={startNew}>
-                  <Plus size={13} /> New Group
-                </button>
+        {!loadingGroups && (
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <p className="text-xs text-gray-400">
+              Total weight:{' '}
+              <span className={`font-semibold ${weightOk ? 'text-green-600' : weightNonZero ? 'text-yellow-600' : 'text-gray-400'}`}>
+                {weightDisplay}%
+              </span>
+              {!weightOk && weightNonZero && (
+                <span className="ml-1 text-yellow-500">— should total 100% when weighting is enabled</span>
               )}
-            </div>
-          </>
+            </p>
+            {editingId === null && (
+              <button className="btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3" onClick={startNew}>
+                <Plus size={13} /> New Group
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -235,6 +393,7 @@ export default function AssignmentGroupManager({ initialCourseId }) {
         Grade weighting is enabled or disabled in Canvas Course Settings. Weights set here only affect grades when weighting is active.
       </p>
 
+      {/* Delete modal */}
       {deleteTarget && (
         <Modal
           title={`Delete "${deleteTarget.name}"?`}
@@ -244,7 +403,7 @@ export default function AssignmentGroupManager({ initialCourseId }) {
             <>
               <button className="btn-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
               <button
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white"
                 style={{ backgroundColor: '#dc2626' }}
                 onClick={confirmDelete}
                 disabled={saving}
@@ -254,8 +413,11 @@ export default function AssignmentGroupManager({ initialCourseId }) {
             </>
           }
         >
+          <p className="text-sm text-gray-600 mb-1">
+            This action is permanent and cannot be undone.
+          </p>
           <p className="text-sm text-gray-600 mb-4">
-            Any assignments in this group will be moved to another group before deletion.
+            The {(assignmentsByGroup[deleteTarget.id] ?? []).length} assignment{(assignmentsByGroup[deleteTarget.id] ?? []).length !== 1 ? 's' : ''} in this group will be moved to another group before deletion.
           </p>
           {groups.filter(g => g.id !== deleteTarget.id).length > 0 && (
             <div>
@@ -265,22 +427,70 @@ export default function AssignmentGroupManager({ initialCourseId }) {
                 onChange={e => setDeleteMoveToId(e.target.value)}
                 className="input"
               >
-                {groups
-                  .filter(g => g.id !== deleteTarget.id)
-                  .map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                {groups.filter(g => g.id !== deleteTarget.id).map(g =>
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                )}
               </select>
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Merge modal */}
+      {mergeSource && (
+        <Modal
+          title={`Merge "${mergeSource.name}" into another group?`}
+          size="sm"
+          onClose={() => setMergeSource(null)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setMergeSource(null)}>Cancel</button>
+              <button
+                className="btn-primary"
+                onClick={confirmMerge}
+                disabled={merging || !mergeTargetId}
+              >
+                {merging ? 'Merging...' : 'Merge Groups'}
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-gray-600 mb-1">
+            This action is permanent and cannot be undone.
+          </p>
+          <p className="text-sm text-gray-600 mb-4">
+            All {(assignmentsByGroup[mergeSource.id] ?? []).length} assignment{(assignmentsByGroup[mergeSource.id] ?? []).length !== 1 ? 's' : ''} from <strong>"{mergeSource.name}"</strong> will be moved to the selected group, then the group will be deleted.
+          </p>
+          <div>
+            <label className="label">Merge into</label>
+            <select
+              value={mergeTargetId ?? ''}
+              onChange={e => setMergeTargetId(e.target.value)}
+              className="input"
+            >
+              {groups.filter(g => g.id !== mergeSource.id).map(g =>
+                <option key={g.id} value={g.id}>{g.name}</option>
+              )}
+            </select>
+          </div>
         </Modal>
       )}
     </div>
   )
 }
 
-function GroupRow({ group, index, total, onMoveUp, onMoveDown, onEdit, onDelete, deleteDisabled }) {
+function GroupRow({ group, index, total, count, expanded, onToggleExpand,
+                    onMoveUp, onMoveDown, onCopy, onMerge, onEdit, onDelete,
+                    deleteDisabled, mergeDisabled }) {
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-3 py-3">
+    <tr className="hover:bg-gray-50 cursor-pointer" onClick={onToggleExpand}>
+      <td className="px-3 py-3 w-8">
+        <ChevronRight
+          size={13}
+          className={`text-gray-300 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
+        />
+      </td>
+      <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-0.5">
           <button
             className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed"
@@ -296,13 +506,35 @@ function GroupRow({ group, index, total, onMoveUp, onMoveDown, onEdit, onDelete,
           </button>
         </div>
       </td>
-      <td className="px-3 py-3 font-medium text-gray-900">{group.name}</td>
+      <td className="px-3 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="font-medium text-gray-900">{group.name}</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full leading-none">
+            {count}
+          </span>
+        </div>
+      </td>
       <td className="px-3 py-3 text-gray-500 text-sm">
         {group.groupWeight > 0 ? `${group.groupWeight}%` : <span className="text-gray-300">—</span>}
       </td>
-      <td className="px-3 py-3">
+      <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-1 justify-end">
-          <button className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={onEdit} title="Edit">
+          <button
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            onClick={onCopy} title="Duplicate group"
+          >
+            <Copy size={13} />
+          </button>
+          <button
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={onMerge} disabled={mergeDisabled} title="Merge into another group"
+          >
+            <GitMerge size={13} />
+          </button>
+          <button
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            onClick={onEdit} title="Edit"
+          >
             <Pencil size={13} />
           </button>
           <button
@@ -317,10 +549,57 @@ function GroupRow({ group, index, total, onMoveUp, onMoveDown, onEdit, onDelete,
   )
 }
 
-function EditRow({ index, form, onChange, onSave, onCancel, saving, isNew }) {
+function AssignmentList({ assignments, groups, currentGroupId, loading, movingId, onMove }) {
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-gray-400 px-6 py-4">
+        <Loader size={12} className="animate-spin" /> Loading assignments...
+      </div>
+    )
+  }
+  if (assignments.length === 0) {
+    return <p className="text-xs text-gray-400 italic px-6 py-4">No assignments in this group.</p>
+  }
+  return (
+    <table className="w-full text-xs">
+      <thead>
+        <tr className="border-b border-gray-200">
+          <th className="pl-6 pr-3 py-2 text-left font-medium text-gray-400 uppercase tracking-wide">Assignment</th>
+          <th className="w-16 px-3 py-2 text-right font-medium text-gray-400 uppercase tracking-wide">Points</th>
+          <th className="w-36 px-3 py-2 text-left font-medium text-gray-400 uppercase tracking-wide">Due</th>
+          <th className="w-44 px-3 py-2 text-right font-medium text-gray-400 uppercase tracking-wide pr-4">Move to group</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100">
+        {assignments.map(a => (
+          <tr key={a.id} className="hover:bg-gray-100/50">
+            <td className="pl-6 pr-3 py-2.5 text-gray-700">{a.name}</td>
+            <td className="px-3 py-2.5 text-right text-gray-500">{a.pointsPossible ?? '—'}</td>
+            <td className="px-3 py-2.5 text-gray-500">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
+            <td className="px-3 py-2.5 text-right pr-4">
+              {movingId === a.id ? (
+                <Loader size={12} className="animate-spin text-gray-400 ml-auto" />
+              ) : (
+                <select
+                  value={currentGroupId}
+                  onChange={e => onMove(a.id, e.target.value)}
+                  className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white text-gray-700"
+                >
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function EditRow({ index, form, onChange, onSave, onCancel, saving, isNew, colSpan }) {
   return (
     <tr className={isNew ? 'bg-gray-50' : ''}>
-      <td className="px-3 py-2.5 text-xs text-gray-300">{index + 1}</td>
+      <td className="px-3 py-2.5 text-xs text-gray-300" colSpan={2}>{isNew ? '' : index + 1}</td>
       <td className="px-3 py-2">
         <input
           type="text"

@@ -80,7 +80,8 @@ export function assignmentToFormFields(assignment) {
 }
 
 // Deploys one template to one course, returns { courseId, courseName, success, warning?, error? }
-export async function deployTemplateToCourse(template, course, dates) {
+// publishOverride: 'auto' (published if due date set) | 'published' | 'unpublished'
+export async function deployTemplateToCourse(template, course, dates, publishOverride = 'unpublished') {
   try {
     const groups = await getAssignmentGroups(course.id)
     const matchedGroup = groups.find(g =>
@@ -91,6 +92,10 @@ export async function deployTemplateToCourse(template, course, dates) {
       ? `Assignment group "${template.fields.assignmentGroup}" not found — created in Ungrouped.`
       : null
 
+    const published = publishOverride === 'published' ? true
+      : publishOverride === 'unpublished' ? false
+      : !!dates.dueAt
+
     const payload = {
       name: template.fields.name,
       description: template.fields.description,
@@ -98,7 +103,7 @@ export async function deployTemplateToCourse(template, course, dates) {
       submissionTypes: buildSubmissionTypes(template.fields),
       gradingType: template.fields.gradingType,
       peerReviews: template.fields.peerReview,
-      published: !!dates.dueAt,
+      published,
     }
 
     if (matchedGroup) payload.assignmentGroupId = matchedGroup.id
