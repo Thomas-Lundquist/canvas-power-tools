@@ -68,7 +68,7 @@ export async function canvasGet(path, params = {}) {
   return response.json()
 }
 
-export async function canvasGetAll(path, params = {}) {
+export async function canvasGetAll(path, params = {}, onProgress) {
   let allResults = []
   let url = await buildUrl(path, params)
 
@@ -77,6 +77,7 @@ export async function canvasGetAll(path, params = {}) {
     const data = await response.json()
     allResults = allResults.concat(Array.isArray(data) ? data : [data])
     url = extractNextPageUrl(response.headers.get('Link'))
+    if (onProgress) onProgress(allResults.length)
   }
 
   return allResults

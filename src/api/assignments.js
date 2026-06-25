@@ -1,10 +1,10 @@
 import { canvasGetAll, canvasGet, canvasPut, canvasPost, canvasDelete } from './request.js'
 
-export async function getAssignments(courseId) {
+export async function getAssignments(courseId, onProgress) {
   const assignments = await canvasGetAll(`/api/v1/courses/${courseId}/assignments`, {
     include: ['assignment_group', 'module_ids'],
     order_by: 'position',
-  })
+  }, onProgress)
   return assignments.map(mapAssignment)
 }
 
