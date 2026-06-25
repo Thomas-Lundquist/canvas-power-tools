@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Settings, AlertCircle } from 'lucide-react'
+import { Settings, AlertCircle, BookOpen } from 'lucide-react'
 import { TOOLS } from '../config/tools.jsx'
 import { isSetupComplete, getAccount } from '../storage/account.js'
 import { getPreferences } from '../storage/preferences.js'
-import { applyTheme } from '../utils/color.js'
+import { applyTheme, applyDarkMode } from '../utils/color.js'
 import '../styles/global.css'
 
 function open(path) {
@@ -20,6 +20,7 @@ function Popup() {
     async function load() {
       const [complete, acc, p] = await Promise.all([isSetupComplete(), getAccount(), getPreferences()])
       applyTheme(p.buttonColor)
+      applyDarkMode(p.themeMode ?? 'system')
       setReady(complete)
       setAccount(acc)
       setPrefs(p)
@@ -69,11 +70,24 @@ function Popup() {
           />
         ))}
       </div>
+      {prefs?.popupCourseShortcuts?.length > 0 && (
+        <div className="border-t border-gray-100 pt-2">
+          <p className="text-xs text-gray-400 px-3 pb-1 font-medium uppercase tracking-wide">Quick Courses</p>
+          {prefs.popupCourseShortcuts.map(course => (
+            <NavItem
+              key={course.id}
+              icon={<BookOpen size={16} />}
+              label={course.name}
+              onClick={() => open(`src/pages/bulk-editor/index.html?courseId=${course.id}`)}
+            />
+          ))}
+        </div>
+      )}
       <div className="border-t border-gray-100 pt-2">
         <NavItem
           icon={<Settings size={16} />}
           label="Settings"
-          onClick={() => open('src/pages/settings/index.html')}
+          onClick={() => open('src/settings/index.html')}
           subtle
         />
       </div>

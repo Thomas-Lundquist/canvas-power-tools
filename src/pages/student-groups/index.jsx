@@ -1,7 +1,7 @@
 ﻿import React from 'react'
 import { createRoot } from 'react-dom/client'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
-import GradingDashboard from '../../modules/grading/GradingDashboard.jsx'
+import GroupManager from '../../modules/people/GroupManager.jsx'
 import { getPreferences } from '../../storage/preferences.js'
 import { applyTheme, applyDarkMode } from '../../utils/color.js'
 import '../../styles/global.css'
@@ -15,13 +15,13 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <BrandLogo />
           <div className="flex items-center gap-1">
-            <AppNav current="grading" />
+            <AppNav current="student-groups" />
             <SettingsButton />
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <GradingDashboard initialCourseId={initialCourseId} />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <GroupManager initialCourseId={initialCourseId} />
       </div>
     </div>
   )
@@ -29,4 +29,6 @@ function App() {
 
 getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system') })
 createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)
+
+
 

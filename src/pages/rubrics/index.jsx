@@ -1,27 +1,26 @@
 ﻿import React from 'react'
 import { createRoot } from 'react-dom/client'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
-import GradingDashboard from '../../modules/grading/GradingDashboard.jsx'
+import RubricManager from '../../modules/assignments/RubricManager.jsx'
 import { getPreferences } from '../../storage/preferences.js'
 import { applyTheme, applyDarkMode } from '../../utils/color.js'
 import '../../styles/global.css'
 import { ToastProvider } from '../../components/Toast.jsx'
 
 function App() {
-  const initialCourseId = new URLSearchParams(window.location.search).get('courseId') ?? null
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <BrandLogo />
           <div className="flex items-center gap-1">
-            <AppNav current="grading" />
+            <AppNav current="rubrics" />
             <SettingsButton />
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <GradingDashboard initialCourseId={initialCourseId} />
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <RubricManager />
       </div>
     </div>
   )
@@ -29,4 +28,6 @@ function App() {
 
 getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system') })
 createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)
+
+
 

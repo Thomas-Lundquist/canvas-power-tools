@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import AppNav, { SettingsButton } from '../../components/AppNav.jsx'
-import TemplateLibrary from '../../features/templates/TemplateLibrary.jsx'
-import TemplateEditor from '../../features/templates/TemplateEditor.jsx'
-import DeployTemplate from '../../features/templates/DeployTemplate.jsx'
+import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
+import TemplateLibrary from '../../modules/assignments/TemplateLibrary.jsx'
+import TemplateEditor from '../../modules/assignments/TemplateEditor.jsx'
+import DeployTemplate from '../../modules/assignments/DeployTemplate.jsx'
 import { getTemplates } from '../../storage/templates.js'
 import { getPreferences } from '../../storage/preferences.js'
-import { applyTheme } from '../../utils/color.js'
+import { applyTheme, applyDarkMode } from '../../utils/color.js'
 import { getAssignment } from '../../api/assignments.js'
-import { assignmentToFormFields } from '../../features/templates/templateHelpers.js'
+import { assignmentToFormFields } from '../../modules/assignments/templateHelpers.js'
 import '../../styles/global.css'
+import { ToastProvider, useToast } from '../../components/Toast.jsx'
 
-// ?saveFrom=courseId/assignmentId  →  pre-fill editor from a Canvas assignment
+// ?saveFrom=courseId/assignmentId  â†’  pre-fill editor from a Canvas assignment
 function parseSaveFrom() {
   const params = new URLSearchParams(window.location.search)
   const val = params.get('saveFrom')
@@ -30,6 +31,7 @@ function parseUrlContext() {
 
 // view: 'library' | 'editor' | 'deploy'
 function App() {
+  const toast = useToast()
   const [view, setView] = useState('library')
   const [templates, setTemplates] = useState([])
   const [folders, setFolders] = useState([])
@@ -44,7 +46,7 @@ function App() {
   useEffect(() => {
     loadData()
     handleSaveFromParam()
-    getPreferences().then(p => { setPrefs(p); applyTheme(p.buttonColor) })
+    getPreferences().then(p => { setPrefs(p); applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system') })
   }, [])
 
   async function loadData() {
@@ -94,6 +96,7 @@ function App() {
     setView('library')
     setEditingTemplate(null)
     setPrefillForm(null)
+    toast('Template saved', 'success')
   }
 
   function handleEditorCancel() {
@@ -117,13 +120,8 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* Top bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: prefs.buttonColor ?? '#4f46e5' }}>
-              <span className="text-white text-xs font-black">C</span>
-            </div>
-            <span className="text-sm font-bold text-gray-900 hidden sm:block">Canvas Power Tools</span>
-          </div>
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+          <BrandLogo />
           <div className="flex items-center gap-1">
             <AppNav current="templates" />
             <SettingsButton />
@@ -174,4 +172,7 @@ function App() {
   )
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)
+
+
+

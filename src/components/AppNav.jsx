@@ -27,11 +27,7 @@ export default function AppNav({ current }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-        style={{
-          backgroundColor: 'rgba(var(--cpt-color-rgb), 0.1)',
-          color: 'var(--cpt-color)',
-        }}
+        className="cpt-nav-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
       >
         <TriggerIcon size={14} />
         {currentTool?.shortLabel ?? 'Tools'}
@@ -39,7 +35,7 @@ export default function AppNav({ current }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50">
+        <div className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50">
           {TOOLS.map(tool => {
             const active = tool.id === current
             return (
@@ -72,11 +68,26 @@ export default function AppNav({ current }) {
 export function SettingsButton() {
   return (
     <button
-      onClick={() => navigate('src/pages/settings/index.html')}
+      onClick={() => navigate('src/settings/index.html')}
       className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
       title="Settings"
     >
       <Settings size={16} />
+    </button>
+  )
+}
+
+export function BrandLogo() {
+  return (
+    <button
+      onClick={() => navigate('src/shell/index.html')}
+      className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
+    >
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+           style={{ backgroundColor: 'var(--cpt-color)' }}>
+        <span className="text-white text-xs font-black">C</span>
+      </div>
+      <span className="text-sm font-semibold text-gray-900 hidden sm:block">Canvas Power Tools</span>
     </button>
   )
 }

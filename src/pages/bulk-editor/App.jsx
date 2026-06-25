@@ -1,19 +1,19 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { History, Search, X, AlertCircle, Loader, CheckCircle } from 'lucide-react'
-import AppNav, { SettingsButton } from '../../components/AppNav.jsx'
+import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import Modal from '../../components/Modal.jsx'
 import PreviewDiff from '../../components/PreviewDiff.jsx'
-import AssignmentTable from '../../features/assignments/AssignmentTable.jsx'
-import BulkActionBar from '../../features/assignments/BulkActionBar.jsx'
-import ChangeLog from '../../features/assignments/ChangeLog.jsx'
-import { buildChanges, applyFilters, sortAssignments } from '../../features/assignments/bulkEditorHelpers.js'
+import AssignmentTable from '../../modules/assignments/AssignmentTable.jsx'
+import BulkActionBar from '../../modules/assignments/BulkActionBar.jsx'
+import ChangeLog from '../../modules/assignments/ChangeLog.jsx'
+import { buildChanges, applyFilters, sortAssignments } from '../../modules/assignments/bulkEditorHelpers.js'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments, updateAssignment } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getModules } from '../../api/modules.js'
 import { getPreferences, setLastUsedCourse } from '../../storage/preferences.js'
-import { applyTheme } from '../../utils/color.js'
+import { applyTheme, applyDarkMode } from '../../utils/color.js'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
 
@@ -35,11 +35,15 @@ export default function App() {
   const [buttonColor, setButtonColor] = useState('#4f46e5')
   const [bulkSpec, setBulkSpec] = useState(EMPTY_SPEC)
   const [shiftAllTogether, setShiftAllTogether] = useState(true)
+  const [defaultDateShiftDays, setDefaultDateShiftDays] = useState(7)
+  const [showChangeLogAfterSave, setShowChangeLogAfterSave] = useState(false)
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [loadingAssignments, setLoadingAssignments] = useState(false)
+  const [loadingCount, setLoadingCount] = useState(0)
   const [error, setError] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
   const [applying, setApplying] = useState(false)
+  const [applyProgress, setApplyProgress] = useState({ done: 0, total: 0 })
   const [applyResult, setApplyResult] = useState(null)
   const [showChangeLog, setShowChangeLog] = useState(false)
 
@@ -52,13 +56,16 @@ export default function App() {
         setShiftAllTogether(prefs.shiftAllDatesTogether)
         setSortKey(prefs.bulkEditorDefaultSort ?? 'position')
         setSortDir(prefs.bulkEditorDefaultSortDir ?? 'asc')
+        setDefaultDateShiftDays(prefs.bulkEditorDefaultDateShiftDays ?? 7)
+        setShowChangeLogAfterSave(prefs.bulkEditorShowChangeLogAfterSave ?? false)
         const color = prefs.buttonColor ?? '#4f46e5'
         setButtonColor(color)
         applyTheme(color)
+        applyDarkMode(prefs.themeMode ?? 'system')
 
         // ?courseId=X from the content script takes priority over saved preferences
         const params = new URLSearchParams(window.location.search)
-        // getCourses() returns String IDs — keep the param as a string for comparison
+        // getCourses() returns String IDs â€" keep the param as a string for comparison
         const urlCourseId = params.get('courseId') ?? null
 
         const initialId = urlCourseId && fetchedCourses.find(c => c.id === urlCourseId)
@@ -86,10 +93,11 @@ export default function App() {
     setFilterGroups([])
     setFilterStatus([])
     setLoadingAssignments(true)
+    setLoadingCount(0)
     setError(null)
     try {
       const [fetched, grps, mods] = await Promise.all([
-        getAssignments(courseId),
+        getAssignments(courseId, setLoadingCount),
         getAssignmentGroups(courseId),
         getModules(courseId),
       ])
@@ -149,13 +157,17 @@ export default function App() {
       byAssignment[change.assignmentId][change.field] = change.newValue
     }
 
-    for (const [assignmentId, fields] of Object.entries(byAssignment)) {
+    const entries = Object.entries(byAssignment)
+    setApplyProgress({ done: 0, total: entries.length })
+
+    for (const [assignmentId, fields] of entries) {
       try {
         await updateAssignment(selectedCourseId, assignmentId, fields)
         succeeded.push(assignmentId)
       } catch (err) {
         failed.push({ id: assignmentId, error: err.message })
       }
+      setApplyProgress(prev => ({ ...prev, done: prev.done + 1 }))
     }
 
     // Update local assignment state with new values
@@ -179,6 +191,7 @@ export default function App() {
     setBulkSpec(EMPTY_SPEC)
     setSelectedIds(new Set())
     setApplyResult({ succeeded, failed, changes: pendingChanges })
+    if (showChangeLogAfterSave && succeeded.length > 0) setShowChangeLog(true)
   }
 
   const activeFilterCount = [
@@ -193,10 +206,7 @@ export default function App() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: buttonColor }}>
-              <span className="text-white text-xs font-black">C</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block shrink-0">Canvas Power Tools</span>
+            <BrandLogo />
             <span className="text-gray-300 hidden sm:block">|</span>
             <CourseSelector
               courses={courses}
@@ -266,36 +276,36 @@ export default function App() {
           </div>
         </div>
 
-        {/* Count bar */}
-        {!loadingAssignments && selectedCourseId && (
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-500">
-              Showing {filtered.length} of {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
-              {selectedIds.size > 0 && <span className="ml-2 font-medium" style={{ color: 'var(--cpt-color)' }}>{selectedIds.size} selected</span>}
-            </span>
-            {filtered.length > 0 && (
-              <button
-                className="text-xs font-medium"
-                style={{ color: 'var(--cpt-color)' }}
-                onClick={() => toggleAll(selectedIds.size < filtered.length)}
-              >
-                {selectedIds.size === filtered.length && filtered.length > 0 ? 'Deselect all' : 'Select all'}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Loading state */}
-        {(loadingCourses || loadingAssignments) && (
+        {/* Loading courses spinner */}
+        {loadingCourses && (
           <div className="card p-16 flex flex-col items-center gap-3 text-gray-400">
-            <Loader size={32} className="animate-spin text-indigo-400" />
-            <span className="text-sm">{loadingCourses ? 'Loading courses...' : 'Loading assignments...'}</span>
+            <Loader size={32} className="animate-spin" style={{ color: 'var(--cpt-color)' }} />
+            <span className="text-sm">Loading courses...</span>
           </div>
         )}
 
         {/* Assignment table */}
-        {!loadingCourses && !loadingAssignments && selectedCourseId && (
+        {!loadingCourses && selectedCourseId && (
           <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+              {!loadingAssignments && filtered.length > 0 ? (
+                <button
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--cpt-color)' }}
+                  onClick={() => toggleAll(selectedIds.size < filtered.length)}
+                >
+                  {selectedIds.size === filtered.length && filtered.length > 0 ? 'Deselect all' : 'Select all'}
+                </button>
+              ) : <span />}
+              {loadingAssignments ? (
+                <span className="text-xs text-gray-400">Loading assignments...</span>
+              ) : (
+                <span className="text-xs text-gray-500">
+                  Showing {filtered.length} of {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
+                  {selectedIds.size > 0 && <span className="ml-2 font-medium" style={{ color: 'var(--cpt-color)' }}>{selectedIds.size} selected</span>}
+                </span>
+              )}
+            </div>
             <AssignmentTable
               assignments={filtered}
               selectedIds={selectedIds}
@@ -304,6 +314,7 @@ export default function App() {
               sortKey={sortKey}
               sortDir={sortDir}
               onSort={handleSort}
+              loading={loadingAssignments}
             />
           </div>
         )}
@@ -316,8 +327,33 @@ export default function App() {
         )}
       </div>
 
+      {/* Apply progress bar — replaces action bar while saving */}
+      {applying && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">
+                Saving changes — {applyProgress.done} of {applyProgress.total} assignments
+              </span>
+              <span className="text-sm text-gray-400">
+                {applyProgress.total > 0 ? Math.round((applyProgress.done / applyProgress.total) * 100) : 0}%
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-200"
+                style={{
+                  width: `${applyProgress.total > 0 ? (applyProgress.done / applyProgress.total) * 100 : 0}%`,
+                  backgroundColor: 'var(--cpt-color)',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bulk action bar */}
-      {selectedIds.size > 0 && (
+      {!applying && selectedIds.size > 0 && (
         <BulkActionBar
           selectedCount={selectedIds.size}
           bulkSpec={bulkSpec}
@@ -325,6 +361,7 @@ export default function App() {
           onPreview={() => setShowPreview(true)}
           shiftAllTogether={shiftAllTogether}
           onShiftAllToggle={setShiftAllTogether}
+          defaultShiftDays={defaultDateShiftDays}
         />
       )}
 
@@ -473,3 +510,5 @@ function StatusFilter({ selected, onChange }) {
     </div>
   )
 }
+
+
