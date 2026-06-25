@@ -18,14 +18,14 @@ function ModePill({ label, active, onClick }) {
   )
 }
 
-function DateControlRow({ label, spec, onChange, mirrorActive }) {
+function DateControlRow({ label, spec, onChange, mirrorActive, defaultShiftDays = 7 }) {
   const mode = spec?.mode ?? null
 
   function setMode(m) {
     if (mode === m) {
       onChange(null)
     } else {
-      onChange({ mode: m, value: null, days: null, sign: '+' })
+      onChange({ mode: m, value: null, days: m === 'shift' ? defaultShiftDays : null, sign: '+' })
     }
   }
 
@@ -80,7 +80,7 @@ function DateControlRow({ label, spec, onChange, mirrorActive }) {
   )
 }
 
-export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPreview, shiftAllTogether, onShiftAllToggle }) {
+export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPreview, shiftAllTogether, onShiftAllToggle, defaultShiftDays = 7 }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const changeCount = [bulkSpec.dueAt, bulkSpec.unlockAt, bulkSpec.lockAt]
@@ -157,18 +157,21 @@ export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPre
                 spec={bulkSpec.dueAt}
                 onChange={s => setDateSpec('dueAt', s)}
                 mirrorActive={mirrorActive && bulkSpec.dueAt !== null}
+                defaultShiftDays={defaultShiftDays}
               />
               <DateControlRow
                 label="Avail. From"
                 spec={bulkSpec.unlockAt}
                 onChange={s => setDateSpec('unlockAt', s)}
                 mirrorActive={mirrorActive}
+                defaultShiftDays={defaultShiftDays}
               />
               <DateControlRow
                 label="Avail. Until"
                 spec={bulkSpec.lockAt}
                 onChange={s => setDateSpec('lockAt', s)}
                 mirrorActive={mirrorActive}
+                defaultShiftDays={defaultShiftDays}
               />
             </div>
 

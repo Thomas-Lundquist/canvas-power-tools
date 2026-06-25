@@ -12,7 +12,19 @@ const COLUMNS = [
   { key: 'published', label: 'Status', width: 'w-24' },
 ]
 
-export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort }) {
+// Widths vary per skeleton row so placeholders look like real content
+const SKELETON_WIDTHS = [
+  ['w-48', 'w-20', 'w-24', 'w-24', 'w-24', 'w-8',  'w-16'],
+  ['w-32', 'w-24', 'w-24', 'w-28', 'w-20', 'w-8',  'w-20'],
+  ['w-56', 'w-20', 'w-20', 'w-24', 'w-24', 'w-10', 'w-16'],
+  ['w-40', 'w-28', 'w-24', 'w-24', 'w-28', 'w-8',  'w-20'],
+  ['w-52', 'w-20', 'w-24', 'w-20', 'w-24', 'w-8',  'w-16'],
+  ['w-36', 'w-24', 'w-28', 'w-24', 'w-24', 'w-10', 'w-20'],
+  ['w-44', 'w-20', 'w-24', 'w-28', 'w-20', 'w-8',  'w-16'],
+  ['w-60', 'w-24', 'w-24', 'w-24', 'w-24', 'w-8',  'w-20'],
+]
+
+export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading }) {
   const allSelected = assignments.length > 0 && assignments.every(a => selectedIds.has(a.id))
   const someSelected = assignments.some(a => selectedIds.has(a.id))
 
@@ -22,45 +34,66 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
             <th className="w-10 px-3 py-3">
-              <Checkbox
-                checked={allSelected}
-                indeterminate={!allSelected && someSelected}
-                onChange={() => onToggleAll(!allSelected)}
-              />
+              {!loading && (
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={!allSelected && someSelected}
+                  onChange={() => onToggleAll(!allSelected)}
+                />
+              )}
             </th>
             {COLUMNS.map(col => (
               <th
                 key={col.key}
-                className={`${col.width} px-3 py-3 text-left font-medium text-xs uppercase tracking-wide text-gray-500 cursor-pointer select-none hover:text-gray-700`}
-                onClick={() => onSort(col.key)}
+                className={`${col.width} px-3 py-3 text-left font-medium text-xs uppercase tracking-wide text-gray-500 select-none ${loading ? '' : 'cursor-pointer hover:text-gray-700'}`}
+                onClick={() => !loading && onSort(col.key)}
               >
                 <span className="flex items-center gap-1">
                   {col.label}
-                  <SortIcon columnKey={col.key} sortKey={sortKey} sortDir={sortDir} />
+                  {!loading && <SortIcon columnKey={col.key} sortKey={sortKey} sortDir={sortDir} />}
                 </span>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {assignments.length === 0 && (
-            <tr>
-              <td colSpan={COLUMNS.length + 1} className="py-12 text-center text-gray-400 text-sm">
-                No assignments match the current filters.
-              </td>
-            </tr>
-          )}
-          {assignments.map(a => (
-            <AssignmentRow
-              key={a.id}
-              assignment={a}
-              selected={selectedIds.has(a.id)}
-              onToggle={() => onToggle(a.id)}
-            />
-          ))}
+          {loading
+            ? SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
+            : assignments.length === 0
+              ? (
+                <tr>
+                  <td colSpan={COLUMNS.length + 1} className="py-12 text-center text-gray-400 text-sm">
+                    No assignments match the current filters.
+                  </td>
+                </tr>
+              )
+              : assignments.map(a => (
+                <AssignmentRow
+                  key={a.id}
+                  assignment={a}
+                  selected={selectedIds.has(a.id)}
+                  onToggle={() => onToggle(a.id)}
+                />
+              ))
+          }
         </tbody>
       </table>
     </div>
+  )
+}
+
+function SkeletonRow({ widths }) {
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="px-3 py-3.5">
+        <div className="h-4 w-4 rounded bg-gray-200 animate-pulse" />
+      </td>
+      {widths.map((w, i) => (
+        <td key={i} className="px-3 py-3.5">
+          <div className={`h-3.5 ${w} rounded bg-gray-200 animate-pulse`} />
+        </td>
+      ))}
+    </tr>
   )
 }
 
