@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, X, Loader, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import ProgressBar from '../../components/ProgressBar.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
@@ -22,6 +22,27 @@ const COLUMNS = [
   { key: '_missing',           label: 'Missing',      sortable: false, width: 'w-20' },
   { key: '_progress',          label: 'Progress',     sortable: false, width: 'w-44' },
 ]
+
+const SKELETON_WIDTHS = [
+  ['w-40', 'w-16', 'w-20', 'w-8',  'w-8',  'w-8',  'w-36'],
+  ['w-32', 'w-20', 'w-20', 'w-6',  'w-6',  'w-6',  'w-28'],
+  ['w-52', 'w-16', 'w-20', 'w-8',  'w-6',  'w-8',  'w-40'],
+  ['w-36', 'w-20', 'w-20', 'w-8',  'w-8',  'w-6',  'w-32'],
+  ['w-48', 'w-16', 'w-20', 'w-6',  'w-8',  'w-8',  'w-36'],
+  ['w-44', 'w-20', 'w-20', 'w-8',  'w-6',  'w-6',  'w-44'],
+]
+
+function SkeletonRow({ widths }) {
+  return (
+    <tr className="border-b border-gray-100">
+      {widths.map((w, i) => (
+        <td key={i} className="px-3 py-3.5">
+          <div className={`h-3.5 ${w} rounded bg-gray-200 animate-pulse`} />
+        </td>
+      ))}
+    </tr>
+  )
+}
 
 function sortRows(rows, key, dir) {
   const m = dir === 'asc' ? 1 : -1
@@ -170,81 +191,82 @@ export default function GradingDashboard({ initialCourseId }) {
 
       {/* Table */}
       <div className="card overflow-hidden mb-4">
-        {loading ? (
-          <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
-            <Loader size={14} className="animate-spin" /> Loading grading data...
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-sm text-gray-400 p-6">
-            {assignments.length === 0
-              ? 'No assignments found in this course.'
-              : 'No assignments match the current filter.'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  {COLUMNS.map(col => (
-                    <th
-                      key={col.key}
-                      className={`${col.width} px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 ${
-                        col.sortable ? 'cursor-pointer select-none hover:text-gray-700' : ''
-                      }`}
-                      onClick={col.sortable ? () => handleSort(col.key) : undefined}
-                    >
-                      <span className="flex items-center gap-1">
-                        {col.label}
-                        {col.sortable && (
-                          sortKey === col.key
-                            ? sortDir === 'asc' ? <ChevronUp size={12} style={{ color: 'var(--cpt-color)' }} /> : <ChevronDown size={12} style={{ color: 'var(--cpt-color)' }} />
-                            : <ChevronsUpDown size={11} className="text-gray-300" />
-                        )}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map(a => {
-                  const s = a.submissionSummary
-                  const total = s ? s.graded + s.ungraded + s.notSubmitted : 0
-                  return (
-                    <tr key={a.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-3 font-medium text-gray-900 truncate max-w-[14rem]" title={a.name}>
-                        {a.name}
-                      </td>
-                      <td className="px-3 py-3 text-xs text-gray-500">{a.assignmentGroupName ?? '—'}</td>
-                      <td className="px-3 py-3 text-xs text-gray-500">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
-                      <td className="px-3 py-3 text-sm">
-                        {s ? <span className="font-medium text-green-700">{s.graded}{total > 0 && <span className="font-normal text-gray-400">/{total}</span>}</span> : '—'}
-                      </td>
-                      <td className="px-3 py-3 text-sm">
-                        {s ? (
-                          s.ungraded > 0
-                            ? <span className="font-medium text-yellow-600">{s.ungraded}</span>
-                            : <span className="text-gray-300">0</span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-3 py-3 text-sm">
-                        {s ? (
-                          s.notSubmitted > 0
-                            ? <span className="font-medium text-red-500">{s.notSubmitted}</span>
-                            : <span className="text-gray-300">0</span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-3 py-3">
-                        {s && total > 0
-                          ? <ProgressBar graded={s.graded} ungraded={s.ungraded} notSubmitted={s.notSubmitted} />
-                          : <span className="text-xs text-gray-300">No data</span>}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {COLUMNS.map(col => (
+                  <th
+                    key={col.key}
+                    className={`${col.width} px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 ${
+                      col.sortable && !loading ? 'cursor-pointer select-none hover:text-gray-700' : 'select-none'
+                    }`}
+                    onClick={col.sortable && !loading ? () => handleSort(col.key) : undefined}
+                  >
+                    <span className="flex items-center gap-1">
+                      {col.label}
+                      {col.sortable && !loading && (
+                        sortKey === col.key
+                          ? sortDir === 'asc' ? <ChevronUp size={12} style={{ color: 'var(--cpt-color)' }} /> : <ChevronDown size={12} style={{ color: 'var(--cpt-color)' }} />
+                          : <ChevronsUpDown size={11} className="text-gray-300" />
+                      )}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading
+                ? SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
+                : filtered.length === 0
+                  ? (
+                    <tr>
+                      <td colSpan={COLUMNS.length} className="py-12 text-center text-gray-400 text-sm">
+                        {assignments.length === 0
+                          ? 'No assignments found in this course.'
+                          : 'No assignments match the current filter.'}
                       </td>
                     </tr>
                   )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  : filtered.map(a => {
+                    const s = a.submissionSummary
+                    const total = s ? s.graded + s.ungraded + s.notSubmitted : 0
+                    return (
+                      <tr key={a.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-3 font-medium text-gray-900 truncate max-w-[14rem]" title={a.name}>
+                          {a.name}
+                        </td>
+                        <td className="px-3 py-3 text-xs text-gray-500">{a.assignmentGroupName ?? '—'}</td>
+                        <td className="px-3 py-3 text-xs text-gray-500">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
+                        <td className="px-3 py-3 text-sm">
+                          {s ? <span className="font-medium text-green-700">{s.graded}{total > 0 && <span className="font-normal text-gray-400">/{total}</span>}</span> : '—'}
+                        </td>
+                        <td className="px-3 py-3 text-sm">
+                          {s ? (
+                            s.ungraded > 0
+                              ? <span className="font-medium text-yellow-600">{s.ungraded}</span>
+                              : <span className="text-gray-300">0</span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-3 py-3 text-sm">
+                          {s ? (
+                            s.notSubmitted > 0
+                              ? <span className="font-medium text-red-500">{s.notSubmitted}</span>
+                              : <span className="text-gray-300">0</span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-3 py-3">
+                          {s && total > 0
+                            ? <ProgressBar graded={s.graded} ungraded={s.ungraded} notSubmitted={s.notSubmitted} />
+                            : <span className="text-xs text-gray-300">No data</span>}
+                        </td>
+                      </tr>
+                    )
+                  })
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {!loading && filtered.length > 0 && (
