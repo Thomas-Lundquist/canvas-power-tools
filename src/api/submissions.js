@@ -1,4 +1,4 @@
-import { canvasGetAll } from './request.js'
+import { canvasGetAll, canvasPut } from './request.js'
 
 // Returns all assignments for a course enriched with submission_summary counts.
 // Used by Grading Dashboard. Future: At-Risk Dashboard, Grade Trend features.
@@ -28,6 +28,15 @@ export async function getCourseSubmissions(courseId) {
     { student_ids: ['all'], include: ['assignment'] },
   )
   return subs.map(mapSubmission)
+}
+
+// Update one student's grade on an assignment.
+// fields: { posted_grade: '85' } to set a score, or { excuse: true } to excuse.
+export async function updateSubmissionGrade(courseId, assignmentId, userId, fields) {
+  return canvasPut(
+    `/api/v1/courses/${courseId}/assignments/${assignmentId}/submissions/${userId}`,
+    { submission: fields },
+  )
 }
 
 function mapAssignmentWithGrading(raw) {
