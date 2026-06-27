@@ -1,4 +1,4 @@
-import { LayoutList, BarChart2, Layers, BookTemplate, Copy, ClipboardList, Users, MessageSquare } from 'lucide-react'
+import { LayoutList, BarChart2, Layers, BookTemplate, Copy, ClipboardList, Users, MessageSquare, SplitSquareVertical, Clock } from 'lucide-react'
 
 // Single source of truth for all tool pages.
 // AppNav, popup, settings, and the home page all read from here.
@@ -67,5 +67,21 @@ export const TOOLS = [
     description: 'Nudge students who have not submitted, message by grade threshold, and send announcements to multiple courses.',
     Icon:        MessageSquare,
     path:        'src/pages/communication/index.html',
+  },
+  {
+    id:          'sections',
+    label:       'Section Management',
+    shortLabel:  'Sections',
+    description: 'Set per-section due dates across assignments and compare grade distributions across sections.',
+    Icon:        SplitSquareVertical,
+    path:        'src/pages/sections/index.html',
+  },
+  {
+    id:          'accommodations',
+    label:       'Accommodations',
+    shortLabel:  'Accommodations',
+    description: 'Apply per-student due date overrides across multiple assignments in one flow.',
+    Icon:        Clock,
+    path:        'src/pages/accommodations/index.html',
   },
 ]
