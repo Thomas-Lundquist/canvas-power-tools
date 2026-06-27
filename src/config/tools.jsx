@@ -1,4 +1,4 @@
-import { LayoutList, BarChart2, Layers, BookTemplate, Copy, ClipboardList, Users } from 'lucide-react'
+import { LayoutList, BarChart2, Layers, BookTemplate, Copy, ClipboardList, Users, MessageSquare } from 'lucide-react'
 
 // Single source of truth for all tool pages.
 // AppNav, popup, settings, and the home page all read from here.
@@ -59,5 +59,13 @@ export const TOOLS = [
     description: 'Manage group sets, create groups, and auto-assign students by name, randomly, or by size.',
     Icon:        Users,
     path:        'src/pages/student-groups/index.html',
+  },
+  {
+    id:          'communication',
+    label:       'Communication',
+    shortLabel:  'Messages',
+    description: 'Nudge students who have not submitted, message by grade threshold, and send announcements to multiple courses.',
+    Icon:        MessageSquare,
+    path:        'src/pages/communication/index.html',
   },
 ]
