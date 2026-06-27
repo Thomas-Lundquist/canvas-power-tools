@@ -11,11 +11,13 @@ import {
 } from '../../api/groups.js'
 import { getEnrollments } from '../../api/enrollments.js'
 import { getCourses } from '../../api/courses.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 
 const DRAG_TYPE = 'text/plain'
 
 export default function GroupManager({ initialCourseId }) {
   const toast = useToast()
+  const { requirePin } = usePinGate()
 
   const [courses, setCourseList]            = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
@@ -88,54 +90,75 @@ export default function GroupManager({ initialCourseId }) {
     setLoadingMembers(false)
   }
 
+  function pinGuard(summary, action) {
+    const courseName = courses.find(c => c.id === courseId)?.name ?? courseId
+    return requirePin({ action: 'group_change', summary, courseId, courseName }, action)
+  }
+
   // ── Category CRUD ──────────────────────────────────────────────────────────
 
   async function handleCreateCat() {
     if (!newCatName.trim()) return
-    const cat = await createGroupCategory(courseId, newCatName.trim())
-    setCategories(prev => [...prev, cat])
-    setNewCatName('')
-    setCreatingCat(false)
+    await pinGuard(`Created group set "${newCatName.trim()}"`, async () => {
+      const cat = await createGroupCategory(courseId, newCatName.trim())
+      setCategories(prev => [...prev, cat])
+      setNewCatName('')
+      setCreatingCat(false)
+    })
   }
 
   async function handleRenameCat(id, name) {
     if (!name) return setEditingCatId(null)
-    const updated = await updateGroupCategory(id, name)
-    setCategories(prev => prev.map(c => c.id === id ? updated : c))
-    if (activeCat?.id === id) setActiveCat(updated)
-    setEditingCatId(null)
+    const oldName = categories.find(c => c.id === id)?.name ?? id
+    await pinGuard(`Renamed group set "${oldName}" to "${name}"`, async () => {
+      const updated = await updateGroupCategory(id, name)
+      setCategories(prev => prev.map(c => c.id === id ? updated : c))
+      if (activeCat?.id === id) setActiveCat(updated)
+      setEditingCatId(null)
+    })
   }
 
   async function handleDeleteCat(id) {
-    await deleteGroupCategory(id)
-    setCategories(prev => prev.filter(c => c.id !== id))
-    if (activeCat?.id === id) setActiveCat(null)
-    setConfirmDeleteCat(null)
+    const name = categories.find(c => c.id === id)?.name ?? id
+    await pinGuard(`Deleted group set "${name}"`, async () => {
+      await deleteGroupCategory(id)
+      setCategories(prev => prev.filter(c => c.id !== id))
+      if (activeCat?.id === id) setActiveCat(null)
+      setConfirmDeleteCat(null)
+    })
   }
 
   // ── Group CRUD ─────────────────────────────────────────────────────────────
 
   async function handleCreateGroup() {
     if (!newGroupName.trim() || !activeCat) return
-    const g = await createGroup(activeCat.id, newGroupName.trim())
-    setGroups(prev => [...prev, g])
-    setMemberships(prev => ({ ...prev, [g.id]: [] }))
-    setNewGroupName('')
-    setCreatingGroup(false)
+    await pinGuard(`Created group "${newGroupName.trim()}" in "${activeCat.name}"`, async () => {
+      const g = await createGroup(activeCat.id, newGroupName.trim())
+      setGroups(prev => [...prev, g])
+      setMemberships(prev => ({ ...prev, [g.id]: [] }))
+      setNewGroupName('')
+      setCreatingGroup(false)
+    })
   }
 
   async function handleRenameGroup(id, name) {
     if (!name) return setEditingGroupId(null)
-    const updated = await updateGroup(id, name)
-    setGroups(prev => prev.map(g => g.id === id ? updated : g))
-    setEditingGroupId(null)
+    const oldName = groups.find(g => g.id === id)?.name ?? id
+    await pinGuard(`Renamed group "${oldName}" to "${name}"`, async () => {
+      const updated = await updateGroup(id, name)
+      setGroups(prev => prev.map(g => g.id === id ? updated : g))
+      setEditingGroupId(null)
+    })
   }
 
   async function handleDeleteGroup(id) {
-    await deleteGroup(id)
-    setGroups(prev => prev.filter(g => g.id !== id))
-    setMemberships(prev => { const next = { ...prev }; delete next[id]; return next })
-    setConfirmDeleteGroup(null)
+    const name = groups.find(g => g.id === id)?.name ?? id
+    await pinGuard(`Deleted group "${name}"`, async () => {
+      await deleteGroup(id)
+      setGroups(prev => prev.filter(g => g.id !== id))
+      setMemberships(prev => { const next = { ...prev }; delete next[id]; return next })
+      setConfirmDeleteGroup(null)
+    })
   }
 
   // ── Membership ─────────────────────────────────────────────────────────────
@@ -143,58 +166,76 @@ export default function GroupManager({ initialCourseId }) {
   async function handleRemoveMember(groupId, userId) {
     const mem = (memberships[groupId] ?? []).find(m => m.userId === userId)
     if (!mem) return
-    await removeGroupMember(groupId, mem.id)
-    setMemberships(prev => ({
-      ...prev,
-      [groupId]: prev[groupId].filter(m => m.id !== mem.id),
-    }))
+    const groupName = groups.find(g => g.id === groupId)?.name ?? groupId
+    const student = students.find(s => s.userId === userId)
+    const studentName = student?.name ?? userId
+    await pinGuard(`Removed "${studentName}" from group "${groupName}"`, async () => {
+      await removeGroupMember(groupId, mem.id)
+      setMemberships(prev => ({
+        ...prev,
+        [groupId]: prev[groupId].filter(m => m.id !== mem.id),
+      }))
+    })
   }
 
   async function handleAddMember(groupId, userId) {
-    try {
-      const m = await addGroupMember(groupId, userId)
-      setMemberships(prev => ({
-        ...prev,
-        [groupId]: [...(prev[groupId] ?? []), m],
-      }))
-    } catch (err) {
-      toast('Failed to add student', 'error')
-    }
+    const groupName = groups.find(g => g.id === groupId)?.name ?? groupId
+    const student = students.find(s => s.userId === userId)
+    const studentName = student?.name ?? userId
+    await pinGuard(`Added "${studentName}" to group "${groupName}"`, async () => {
+      try {
+        const m = await addGroupMember(groupId, userId)
+        setMemberships(prev => ({
+          ...prev,
+          [groupId]: [...(prev[groupId] ?? []), m],
+        }))
+      } catch (err) {
+        toast('Failed to add student', 'error')
+      }
+    })
   }
 
   async function handleMoveMember(fromGroupId, toGroupId, userId) {
     const mem = (memberships[fromGroupId] ?? []).find(m => m.userId === userId)
     if (!mem) return
-    try {
-      await removeGroupMember(fromGroupId, mem.id)
-      const newMem = await addGroupMember(toGroupId, userId)
-      setMemberships(prev => ({
-        ...prev,
-        [fromGroupId]: prev[fromGroupId].filter(m => m.id !== mem.id),
-        [toGroupId]:   [...(prev[toGroupId] ?? []), newMem],
-      }))
-    } catch (err) {
-      toast('Failed to move student', 'error')
-    }
+    const fromName = groups.find(g => g.id === fromGroupId)?.name ?? fromGroupId
+    const toName = groups.find(g => g.id === toGroupId)?.name ?? toGroupId
+    const student = students.find(s => s.userId === userId)
+    const studentName = student?.name ?? userId
+    await pinGuard(`Moved "${studentName}" from "${fromName}" to "${toName}"`, async () => {
+      try {
+        await removeGroupMember(fromGroupId, mem.id)
+        const newMem = await addGroupMember(toGroupId, userId)
+        setMemberships(prev => ({
+          ...prev,
+          [fromGroupId]: prev[fromGroupId].filter(m => m.id !== mem.id),
+          [toGroupId]:   [...(prev[toGroupId] ?? []), newMem],
+        }))
+      } catch (err) {
+        toast('Failed to move student', 'error')
+      }
+    })
   }
 
   // ── Auto-assign ────────────────────────────────────────────────────────────
 
   async function handleAutoAssign(groupPlan) {
-    setApplying(true)
-    try {
-      for (const planned of groupPlan) {
-        const created = await createGroup(activeCat.id, planned.name)
-        await Promise.all(planned.students.map(s => addGroupMember(created.id, s.userId)))
+    await pinGuard(`Auto-assigned ${students.length} students into ${groupPlan.length} groups in "${activeCat?.name}"`, async () => {
+      setApplying(true)
+      try {
+        for (const planned of groupPlan) {
+          const created = await createGroup(activeCat.id, planned.name)
+          await Promise.all(planned.students.map(s => addGroupMember(created.id, s.userId)))
+        }
+        await refreshCategory(activeCat)
+        setShowAutoAssign(false)
+        setApplyResult({ count: groupPlan.length })
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setApplying(false)
       }
-      await refreshCategory(activeCat)
-      setShowAutoAssign(false)
-      setApplyResult({ count: groupPlan.length })
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setApplying(false)
-    }
+    })
   }
 
   // ── Computed ────────────────────────────────────────────────────────────────

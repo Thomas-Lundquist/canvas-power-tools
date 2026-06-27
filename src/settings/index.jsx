@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import {
   RefreshCw, Eye, EyeOff, CheckCircle, AlertCircle, Loader,
   Search, ExternalLink, ChevronRight, RotateCcw, X, Settings, Sun, Moon,
+  Download, Lock, ShieldOff,
 } from 'lucide-react'
 import AppNav, { BrandLogo } from '../components/AppNav.jsx'
 import { ToastProvider, useToast } from '../components/Toast.jsx'
@@ -15,7 +16,10 @@ import { getTemplates, saveTemplate, saveFolder } from '../storage/templates.js'
 import { verifyToken } from '../api/auth.js'
 import { getDecryptedToken } from '../storage/encryption.js'
 import { getCourses } from '../api/courses.js'
+import { getSecuritySettings, setupPin, clearPin, verifyPin, saveSecuritySettings } from '../security/pin.js'
+import { getAuditLog, clearAuditLog, exportAuditLogCsv } from '../security/audit-log.js'
 import '../styles/global.css'
+import { PinGateProvider } from '../security/usePinGate.jsx'
 
 // ─── Brand colors ─────────────────────────────────────────────────────────────
 
@@ -638,16 +642,28 @@ function App() {
   const [resetConfirm, setResetConfirm] = useState(null)
   const [devClickCount, setDevClickCount] = useState(0)
   const [devUnlocked, setDevUnlocked]   = useState(false)
+  const [secSettings, setSecSettings]   = useState(null)
+  const [auditEntries, setAuditEntries] = useState([])
+  const [changePinOpen, setChangePinOpen] = useState(false)
+  const [changePinCurrent, setChangePinCurrent] = useState('')
+  const [changePinNew, setChangePinNew] = useState('')
+  const [changePinConfirm, setChangePinConfirm] = useState('')
+  const [changePinError, setChangePinError] = useState(null)
+  const [changePinSaving, setChangePinSaving] = useState(false)
+  const [confirmDisablePin, setConfirmDisablePin] = useState(false)
+  const [confirmClearAudit, setConfirmClearAudit] = useState(false)
   const toast = useToast()
 
   useEffect(() => {
-    Promise.all([getAccount(), getPreferences(), getCourses()]).then(([acc, p, courseList]) => {
+    Promise.all([getAccount(), getPreferences()]).then(([acc, p]) => {
       setAccount(acc)
       setPrefs(p)
       applyTheme(p.buttonColor)
       applyDarkMode(p.themeMode ?? 'system')
-      setCourses(courseList)
     })
+    getCourses().then(setCourses).catch(() => {})
+    getSecuritySettings().then(setSecSettings)
+    getAuditLog().then(entries => setAuditEntries(entries.slice(0, 10)))
     Promise.all([
       new Promise(r => chrome.storage.local.getBytesInUse(null, r)),
       new Promise(r => chrome.storage.sync.getBytesInUse(null, r)),
@@ -716,6 +732,55 @@ function App() {
       setDevUnlocked(true)
       toast('Developer mode unlocked', 'success')
     }
+  }
+
+  async function handleDisablePin() {
+    await clearPin()
+    setSecSettings(await getSecuritySettings())
+    setConfirmDisablePin(false)
+    toast('PIN disabled', 'success')
+  }
+
+  async function handleSaveNewPin() {
+    if (changePinNew.length < 4) { setChangePinError('PIN must be at least 4 digits.'); return }
+    if (changePinNew !== changePinConfirm) { setChangePinError('PINs do not match.'); return }
+    if (secSettings?.pinEnabled && secSettings?.pinHash) {
+      const correct = await verifyPin(changePinCurrent)
+      if (!correct) { setChangePinError('Current PIN is incorrect.'); return }
+    }
+    setChangePinSaving(true)
+    await setupPin(changePinNew)
+    setSecSettings(await getSecuritySettings())
+    setChangePinOpen(false)
+    setChangePinCurrent('')
+    setChangePinNew('')
+    setChangePinConfirm('')
+    setChangePinError(null)
+    setChangePinSaving(false)
+    toast('PIN updated', 'success')
+  }
+
+  async function handleSaveTimeout(minutes) {
+    await saveSecuritySettings({ inactivityTimeoutMinutes: minutes })
+    setSecSettings(await getSecuritySettings())
+  }
+
+  async function handleExportAuditLog() {
+    const csv = await exportAuditLogCsv()
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cpt-audit-log-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function handleClearAuditLog() {
+    await clearAuditLog()
+    setAuditEntries([])
+    setConfirmClearAudit(false)
+    toast('Audit log cleared', 'success')
   }
 
   function sectionProps(id) {
@@ -874,6 +939,191 @@ function App() {
           <>{/* advanced */}</>
           {advancedOpen.account && renderIndexItems('account', 'advanced')}
         </SectionCard>
+
+        {/* ── Security ── */}
+        {secSettings && (
+          <section className="card p-6">
+            <h2 className="section-title mb-4">Security</h2>
+            <div className="space-y-0 divide-y divide-gray-100">
+
+              {/* PIN enable/disable */}
+              <PrefRow
+                title="PIN Protection"
+                description="Require a PIN before any change is made to Canvas."
+              >
+                <Toggle
+                  checked={secSettings.pinEnabled}
+                  onChange={checked => {
+                    if (!checked) {
+                      setConfirmDisablePin(true)
+                    } else {
+                      setChangePinOpen(true)
+                    }
+                  }}
+                />
+              </PrefRow>
+
+              {/* Disable confirmation */}
+              {confirmDisablePin && (
+                <div className="py-3">
+                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <ShieldOff size={15} className="text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm text-amber-800 font-medium">Disable PIN protection?</p>
+                      <p className="text-xs text-amber-700 mt-0.5">Anyone who opens this extension will be able to make changes to your Canvas courses.</p>
+                      <div className="flex gap-2 mt-2">
+                        <button className="btn-danger text-xs px-2 py-1 flex items-center gap-1" onClick={handleDisablePin}>
+                          <ShieldOff size={11} /> Disable PIN
+                        </button>
+                        <button className="btn-ghost text-xs px-2 py-1" onClick={() => setConfirmDisablePin(false)}>Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Inactivity timeout */}
+              {secSettings.pinEnabled && (
+                <PrefRow
+                  title="Auto-lock after"
+                  description="How long the extension stays unlocked when idle."
+                >
+                  <select
+                    value={secSettings.inactivityTimeoutMinutes}
+                    onChange={e => handleSaveTimeout(Number(e.target.value))}
+                    className="input w-36 text-sm"
+                  >
+                    <option value={5}>5 minutes</option>
+                    <option value={10}>10 minutes</option>
+                    <option value={15}>15 minutes</option>
+                    <option value={30}>30 minutes</option>
+                    <option value={60}>1 hour</option>
+                    <option value={240}>4 hours</option>
+                  </select>
+                </PrefRow>
+              )}
+
+              {/* Change PIN */}
+              {secSettings.pinEnabled && !changePinOpen && (
+                <div className="py-3">
+                  <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={() => setChangePinOpen(true)}>
+                    <Lock size={12} /> Change PIN
+                  </button>
+                </div>
+              )}
+
+              {/* Change PIN inline form */}
+              {changePinOpen && (
+                <div className="py-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-900">{secSettings.pinEnabled && secSettings.pinHash ? 'Change PIN' : 'Set PIN'}</p>
+                  {secSettings.pinEnabled && secSettings.pinHash && (
+                    <div>
+                      <label className="label">Current PIN</label>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        value={changePinCurrent}
+                        onChange={e => { setChangePinCurrent(e.target.value.replace(/\D/g, '').slice(0, 6)); setChangePinError(null) }}
+                        placeholder="••••"
+                        className="input w-32 text-center text-lg tracking-[0.4em] font-mono"
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="label">New PIN (4–6 digits)</label>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={changePinNew}
+                      onChange={e => { setChangePinNew(e.target.value.replace(/\D/g, '').slice(0, 6)); setChangePinError(null) }}
+                      placeholder="••••"
+                      className="input w-32 text-center text-lg tracking-[0.4em] font-mono"
+                      autoFocus={!secSettings.pinHash}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Confirm new PIN</label>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={changePinConfirm}
+                      onChange={e => { setChangePinConfirm(e.target.value.replace(/\D/g, '').slice(0, 6)); setChangePinError(null) }}
+                      placeholder="••••"
+                      className="input w-32 text-center text-lg tracking-[0.4em] font-mono"
+                      onKeyDown={e => { if (e.key === 'Enter') handleSaveNewPin() }}
+                    />
+                  </div>
+                  {changePinError && (
+                    <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} />{changePinError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      className="btn-primary text-sm"
+                      disabled={changePinNew.length < 4 || changePinConfirm.length < 4 || changePinSaving}
+                      onClick={handleSaveNewPin}
+                    >
+                      {changePinSaving ? <Loader size={13} className="animate-spin" /> : null}
+                      Save PIN
+                    </button>
+                    <button className="btn-ghost text-sm" onClick={() => { setChangePinOpen(false); setChangePinCurrent(''); setChangePinNew(''); setChangePinConfirm(''); setChangePinError(null) }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Audit Log */}
+              <div className="pt-4 pb-2">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-900">Audit Log</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="btn-secondary text-xs flex items-center gap-1"
+                      onClick={handleExportAuditLog}
+                      disabled={auditEntries.length === 0}
+                    >
+                      <Download size={11} /> Export CSV
+                    </button>
+                    {confirmClearAudit ? (
+                      <>
+                        <span className="text-xs text-gray-600">Clear all entries?</span>
+                        <button className="btn-danger text-xs px-2 py-1" onClick={handleClearAuditLog}>Clear</button>
+                        <button className="btn-ghost text-xs px-2 py-1" onClick={() => setConfirmClearAudit(false)}>Cancel</button>
+                      </>
+                    ) : (
+                      <button
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                        onClick={() => setConfirmClearAudit(true)}
+                        disabled={auditEntries.length === 0}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {auditEntries.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-2">No activity logged yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {auditEntries.map(entry => (
+                      <div key={entry.id} className="flex items-start gap-3 text-xs py-1.5 border-b border-gray-50 last:border-0">
+                        <span className="text-gray-400 shrink-0 w-32">
+                          {new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                        <span className="text-gray-700 flex-1">{entry.summary}</span>
+                        <span className={`shrink-0 ${entry.pinVerified === true ? 'text-green-600' : 'text-gray-400'}`}>
+                          {entry.pinVerified === true ? 'PIN ✓' : 'No PIN'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </section>
+        )}
 
         {/* ── General ── */}
         <SectionCard {...sectionProps('general')} title="General" hasAdvanced>
@@ -1240,6 +1490,6 @@ function StorageBar({ label, used, max }) {
   )
 }
 
-createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)
+createRoot(document.getElementById('root')).render(<ToastProvider><PinGateProvider><App /></PinGateProvider></ToastProvider>)
 
 

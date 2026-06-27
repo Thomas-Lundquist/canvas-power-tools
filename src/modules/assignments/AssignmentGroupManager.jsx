@@ -13,6 +13,7 @@ import {
   updateAssignmentGroup,
   deleteAssignmentGroup,
 } from '../../api/assignmentGroups.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 
 const GROUP_SKELETON_WIDTHS = [
   ['w-8', 'w-32', 'w-12', 'w-24', 'w-20'],
@@ -36,6 +37,7 @@ function SkeletonRow({ widths }) {
 
 export default function AssignmentGroupManager({ initialCourseId }) {
   const toast = useToast()
+  const { requirePin } = usePinGate()
 
   const [courses, setCourses]             = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
@@ -109,6 +111,11 @@ export default function AssignmentGroupManager({ initialCourseId }) {
     return map
   }, [assignments])
 
+  function pinGuard(summary, action) {
+    const courseName = courses.find(c => c.id === courseId)?.name ?? courseId
+    return requirePin({ action: 'assignment_group_change', summary, courseId, courseName }, action)
+  }
+
   // ── Edit ────────────────────────────────────────────────────────────────────
 
   function startEdit(group) {
@@ -125,28 +132,31 @@ export default function AssignmentGroupManager({ initialCourseId }) {
 
   async function saveEdit() {
     if (!editForm.name.trim()) return
-    setSaving(true)
-    setError(null)
-    try {
-      const fields = {
-        name:        editForm.name.trim(),
-        groupWeight: editForm.groupWeight !== '' ? parseFloat(editForm.groupWeight) : 0,
+    const verb = editingId === 'new' ? 'Created' : 'Updated'
+    await pinGuard(`${verb} assignment group "${editForm.name.trim()}"`, async () => {
+      setSaving(true)
+      setError(null)
+      try {
+        const fields = {
+          name:        editForm.name.trim(),
+          groupWeight: editForm.groupWeight !== '' ? parseFloat(editForm.groupWeight) : 0,
+        }
+        if (editingId === 'new') {
+          const created = await createAssignmentGroup(courseId, { ...fields, position: groups.length + 1 })
+          setGroups(prev => [...prev, created])
+          toast('Group created', 'success')
+        } else {
+          const updated = await updateAssignmentGroup(courseId, editingId, fields)
+          setGroups(prev => prev.map(g => g.id === editingId ? updated : g))
+          toast('Group updated', 'success')
+        }
+        setEditingId(null)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setSaving(false)
       }
-      if (editingId === 'new') {
-        const created = await createAssignmentGroup(courseId, { ...fields, position: groups.length + 1 })
-        setGroups(prev => [...prev, created])
-        toast('Group created', 'success')
-      } else {
-        const updated = await updateAssignmentGroup(courseId, editingId, fields)
-        setGroups(prev => prev.map(g => g.id === editingId ? updated : g))
-        toast('Group updated', 'success')
-      }
-      setEditingId(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
-    }
+    })
   }
 
   // ── Reorder ──────────────────────────────────────────────────────────────────
@@ -154,38 +164,42 @@ export default function AssignmentGroupManager({ initialCourseId }) {
   async function swapPositions(indexA, indexB) {
     const a = groups[indexA]
     const b = groups[indexB]
-    setError(null)
-    try {
-      await Promise.all([
-        updateAssignmentGroup(courseId, a.id, { position: b.position }),
-        updateAssignmentGroup(courseId, b.id, { position: a.position }),
-      ])
-      setGroups(prev => {
-        const next = [...prev]
-        next[indexA] = { ...a, position: b.position }
-        next[indexB] = { ...b, position: a.position }
-        return next.sort((x, y) => x.position - y.position)
-      })
-    } catch (err) {
-      setError(err.message)
-    }
+    await pinGuard(`Reordered assignment groups "${a.name}" and "${b.name}"`, async () => {
+      setError(null)
+      try {
+        await Promise.all([
+          updateAssignmentGroup(courseId, a.id, { position: b.position }),
+          updateAssignmentGroup(courseId, b.id, { position: a.position }),
+        ])
+        setGroups(prev => {
+          const next = [...prev]
+          next[indexA] = { ...a, position: b.position }
+          next[indexB] = { ...b, position: a.position }
+          return next.sort((x, y) => x.position - y.position)
+        })
+      } catch (err) {
+        setError(err.message)
+      }
+    })
   }
 
   // ── Copy ─────────────────────────────────────────────────────────────────────
 
   async function copyGroup(group) {
-    setError(null)
-    try {
-      const created = await createAssignmentGroup(courseId, {
-        name:        `${group.name} (copy)`,
-        groupWeight: group.groupWeight,
-        position:    groups.length + 1,
-      })
-      setGroups(prev => [...prev, created])
-      toast(`"${group.name}" duplicated`, 'success')
-    } catch (err) {
-      setError(err.message)
-    }
+    await pinGuard(`Duplicated assignment group "${group.name}"`, async () => {
+      setError(null)
+      try {
+        const created = await createAssignmentGroup(courseId, {
+          name:        `${group.name} (copy)`,
+          groupWeight: group.groupWeight,
+          position:    groups.length + 1,
+        })
+        setGroups(prev => [...prev, created])
+        toast(`"${group.name}" duplicated`, 'success')
+      } catch (err) {
+        setError(err.message)
+      }
+    })
   }
 
   // ── Merge ─────────────────────────────────────────────────────────────────────
@@ -197,22 +211,25 @@ export default function AssignmentGroupManager({ initialCourseId }) {
   }
 
   async function confirmMerge() {
-    setMerging(true)
-    setError(null)
-    try {
-      await deleteAssignmentGroup(courseId, mergeSource.id, mergeTargetId)
-      setAssignments(prev => prev.map(a =>
-        a.assignmentGroupId === mergeSource.id ? { ...a, assignmentGroupId: mergeTargetId } : a
-      ))
-      setGroups(prev => prev.filter(g => g.id !== mergeSource.id))
-      if (expandedGroupId === mergeSource.id) setExpandedGroupId(null)
-      setMergeSource(null)
-      toast('Groups merged', 'success')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setMerging(false)
-    }
+    const target = groups.find(g => g.id === mergeTargetId)
+    await pinGuard(`Merged assignment group "${mergeSource.name}" into "${target?.name}"`, async () => {
+      setMerging(true)
+      setError(null)
+      try {
+        await deleteAssignmentGroup(courseId, mergeSource.id, mergeTargetId)
+        setAssignments(prev => prev.map(a =>
+          a.assignmentGroupId === mergeSource.id ? { ...a, assignmentGroupId: mergeTargetId } : a
+        ))
+        setGroups(prev => prev.filter(g => g.id !== mergeSource.id))
+        if (expandedGroupId === mergeSource.id) setExpandedGroupId(null)
+        setMergeSource(null)
+        toast('Groups merged', 'success')
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setMerging(false)
+      }
+    })
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────────
@@ -224,36 +241,42 @@ export default function AssignmentGroupManager({ initialCourseId }) {
   }
 
   async function confirmDelete() {
-    setSaving(true)
-    setError(null)
-    try {
-      await deleteAssignmentGroup(courseId, deleteTarget.id, deleteMoveToId)
-      setGroups(prev => prev.filter(g => g.id !== deleteTarget.id))
-      if (expandedGroupId === deleteTarget.id) setExpandedGroupId(null)
-      setDeleteTarget(null)
-      toast('Group deleted', 'success')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
-    }
+    await pinGuard(`Deleted assignment group "${deleteTarget.name}"`, async () => {
+      setSaving(true)
+      setError(null)
+      try {
+        await deleteAssignmentGroup(courseId, deleteTarget.id, deleteMoveToId)
+        setGroups(prev => prev.filter(g => g.id !== deleteTarget.id))
+        if (expandedGroupId === deleteTarget.id) setExpandedGroupId(null)
+        setDeleteTarget(null)
+        toast('Group deleted', 'success')
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setSaving(false)
+      }
+    })
   }
 
   // ── Move assignment ────────────────────────────────────────────────────────────
 
   async function moveAssignment(assignmentId, newGroupId) {
-    setMovingId(assignmentId)
-    setError(null)
-    try {
-      await updateAssignment(courseId, assignmentId, { assignmentGroupId: newGroupId })
-      setAssignments(prev => prev.map(a =>
-        a.id === assignmentId ? { ...a, assignmentGroupId: newGroupId } : a
-      ))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setMovingId(null)
-    }
+    const aName = assignments.find(a => a.id === assignmentId)?.name ?? assignmentId
+    const gName = groups.find(g => g.id === newGroupId)?.name ?? newGroupId
+    await pinGuard(`Moved assignment "${aName}" to group "${gName}"`, async () => {
+      setMovingId(assignmentId)
+      setError(null)
+      try {
+        await updateAssignment(courseId, assignmentId, { assignmentGroupId: newGroupId })
+        setAssignments(prev => prev.map(a =>
+          a.id === assignmentId ? { ...a, assignmentGroupId: newGroupId } : a
+        ))
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setMovingId(null)
+      }
+    })
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────────

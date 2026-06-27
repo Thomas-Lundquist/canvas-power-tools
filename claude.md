@@ -1,3 +1,69 @@
+# CLAUDE.md
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
 # Canvas Power Tools — Claude Instructions
 
 This file gives Claude context about the Canvas Power Tools project.
@@ -10,9 +76,11 @@ flagging the conflict explicitly.
 ## What This Project Is
 
 Canvas Power Tools is a Chrome browser extension (Manifest V3) that gives
-teachers a faster, smarter interface for Canvas LMS. It is a single-page
-application (SPA) that opens in one browser tab. Teachers navigate between
-Modules using a persistent collapsible sidebar.
+teachers a faster, smarter interface for Canvas LMS. It is a multi-page
+extension where each Tool opens as its own extension page. A homepage acts
+as the tool picker. Navigation between Tools is a full page transition via
+chrome.runtime.getURL(). A shared AppNav component provides consistent
+header navigation across all pages.
 
 This is not a toy project or a learning exercise. It is a real product
 intended for public release on the Chrome Web Store. Code quality,
@@ -42,6 +110,7 @@ decision that might be documented.
 | 13-accommodation-override-manager.md | People → Accommodations Tool design |
 | 14-communication-tools.md | Communication Module design |
 | 15-v2-feature-designs.md | V2 feature sketches for remaining Tools |
+| 16-popup-window-delivery.md | Deferred: popup window delivery for Templates and Copy Assignments |
 
 ---
 
@@ -50,17 +119,24 @@ decision that might be documented.
 ```
 Canvas Power Tools (Chrome MV3 Extension)
 │
-├── Single-page application shell
-│   ├── React + React Router
-│   ├── Persistent collapsible sidebar (Module navigation)
-│   ├── Persistent header (logo, course selector, settings, help)
-│   └── Main content area (active Tool renders here)
+├── Homepage (src/shell/)
+│   └── Tool picker grid — navigates to individual Tool pages
+│
+├── Tool pages (src/pages/<tool>/)
+│   └── Each Tool is a separate extension page with its own React root
+│       Navigation: window.location.href = chrome.runtime.getURL(path)
+│
+├── Tool components (src/modules/<module>/)
+│   └── The actual React components for each Tool, imported by pages/
+│
+├── Shared components (src/components/)
+│   └── AppNav, CourseSelector, Toast, Modal, PreviewDiff, etc.
 │
 ├── Content scripts (injected into Canvas pages)
 │   └── Inject trigger buttons only — no API calls, no feature logic
 │
-├── SpeedGrader components
-│   └── Injected into Canvas's SpeedGrader page — not part of the SPA
+├── SpeedGrader components (src/speedgrader/)
+│   └── Injected into Canvas's SpeedGrader page — not part of the extension pages
 │
 └── Chrome storage
     ├── chrome.storage.local — primary data store (5MB limit)
@@ -91,7 +167,6 @@ Examples: PreviewDiff, Toast, MultiSelect, PinPrompt, SkeletonRow
 |---|---|---|
 | JavaScript | ES6+ | Primary language. TypeScript migration is a future consideration — do not introduce it without discussion. |
 | React | Current stable | UI framework |
-| React Router | v6+ | SPA navigation between Modules and Tools |
 | Tailwind CSS | Current stable | Styling. Use utility classes only — no custom CSS except for CSS custom properties (design tokens). |
 | Vite | Current stable | Build tool |
 | CRXJS | Current stable | Chrome extension Vite plugin |
@@ -108,22 +183,35 @@ maintenance burden and potential security exposure.
 
 ```
 src/
-├── shell/          Application shell components (App, Sidebar, Header, routes)
-├── content_scripts/ Canvas page injection scripts
-├── api/            Canvas API modules (one file per resource)
-├── storage/        Storage management (encryption, migrations, defaults)
-├── security/       PIN system and audit log
-├── dom/            DOM resilience (selectors, engine, health check)
-├── components/     Shared reusable Components
-├── modules/        One subfolder per Module
-│   ├── assignments/ One file per Tool (BulkEdit.jsx, Templates.jsx, etc.)
+├── shell/           Homepage — tool picker grid (index.html + index.jsx)
+├── pages/           One subfolder per Tool — each is a standalone extension page
+│   ├── bulk-editor/   index.html + index.jsx (mounts the React root)
+│   ├── grading/
+│   ├── groups/
+│   ├── templates/
+│   ├── duplicate/
+│   ├── rubrics/
+│   └── student-groups/
+├── modules/         Tool components — one subfolder per Module
+│   ├── assignments/ All components for Assignment Module Tools
 │   ├── grading/
 │   ├── communication/
 │   ├── people/
 │   ├── content/
 │   └── setup/
-├── speedgrader/    SpeedGrader injection components
-└── settings/       Settings Tool
+├── components/      Shared reusable Components
+├── api/             Canvas API modules (one file per resource)
+├── storage/         Storage management (encryption, preferences, change logs)
+├── security/        PIN system and audit log
+├── dom/             DOM resilience (selectors, engine, health check)
+├── config/          Shared configuration (tools.jsx — single source of truth for Tool registry)
+├── styles/          Global CSS and design tokens
+├── utils/           Shared utility functions
+├── background/      MV3 service worker
+├── content_scripts/ Canvas page injection scripts
+├── speedgrader/     SpeedGrader injection components
+├── settings/        Settings page (index.html + index.jsx)
+└── popup/           Extension popup (popup.html + popup.jsx)
 ```
 
 **Naming conventions:**

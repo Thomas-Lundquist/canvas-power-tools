@@ -16,6 +16,7 @@ import { getPreferences, setLastUsedCourse } from '../../storage/preferences.js'
 import { applyTheme, applyDarkMode } from '../../utils/color.js'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 
 const EMPTY_SPEC = { dueAt: null, unlockAt: null, lockAt: null, points: null, published: null }
 
@@ -46,6 +47,7 @@ export default function App() {
   const [applyProgress, setApplyProgress] = useState({ done: 0, total: 0 })
   const [applyResult, setApplyResult] = useState(null)
   const [showChangeLog, setShowChangeLog] = useState(false)
+  const { requirePin } = usePinGate()
 
   // Load courses and preferences on mount
   useEffect(() => {
@@ -145,6 +147,20 @@ export default function App() {
   }
 
   async function applyChanges() {
+    const count = pendingChanges.length
+    const aCount = selectedIds.size
+    await requirePin(
+      {
+        action: 'bulk_edit',
+        summary: `Changed ${count} field${count !== 1 ? 's' : ''} across ${aCount} assignment${aCount !== 1 ? 's' : ''} in ${selectedCourseName}`,
+        courseId: selectedCourseId,
+        courseName: selectedCourseName,
+      },
+      runApplyChanges,
+    )
+  }
+
+  async function runApplyChanges() {
     setApplying(true)
     setShowPreview(false)
     const succeeded = []

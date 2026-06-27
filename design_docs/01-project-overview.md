@@ -8,10 +8,10 @@ Canvas Power Tools is a Chrome browser extension that gives teachers a faster,
 smarter interface for common Canvas LMS workflows. Rather than replacing Canvas,
 it augments it — adding functionality that Instructure has been slow to ship.
 
-The product is organized as a single-page application that opens in a new
-browser tab. Teachers navigate between modules using a persistent collapsible
-sidebar. Every feature lives within this unified shell rather than opening as
-isolated tabs.
+The product is organized as a multi-page Chrome extension. Each Tool opens as
+its own extension page. A homepage acts as the tool picker. Navigation between
+Tools is a full page transition via chrome.runtime.getURL(). A shared AppNav
+component provides consistent header navigation across all pages.
 
 ---
 
@@ -137,46 +137,48 @@ Library  (Module)  ← Future
 
 ## Navigation Shell
 
-The extension opens as a single-page application in one browser tab. A
-persistent sidebar provides navigation. The header provides global controls.
+The extension uses a multi-page architecture. Each Tool is a separate
+extension page. Navigation between Tools is a full page transition.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ [Icon] Canvas Power Tools     [Course: Biology 101 ▼]    [⚙]   [?]  │
-├──────────────┬───────────────────────────────────────────────────────┤
-│ [← Hide]     │                                                       │
-│              │                                                       │
-│ Assignments  │                                                       │
-│  Bulk Edit   │   Active Tool renders here                            │
-│  Templates   │                                                       │
-│  Rubrics     │                                                       │
-│  ...         │                                                       │
-│              │                                                       │
-│ Grading      │                                                       │
-│ Communication│                                                       │
-│ People       │                                                       │
-│ Content  V3  │                                                       │
-│ Setup    V3  │                                                       │
-│              │                                                       │
-│ SpeedGrader  │                                                       │
-│ Settings     │                                                       │
-└──────────────┴───────────────────────────────────────────────────────┘
+│ Homepage (shell/index.html)                                          │
+│                                                                      │
+│ [Icon] Canvas Power Tools                              [⚙ Settings] │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
+│  │ Bulk Editor     │  │ Grading         │  │ Templates       │     │
+│  │                 │  │ Dashboard       │  │                 │     │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘     │
+│                                                                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
+│  │ Copy            │  │ Rubrics         │  │ Student Groups  │     │
+│  │ Assignments     │  │                 │  │                 │     │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘     │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ Individual Tool page (pages/<tool>/index.html)                       │
+│                                                                      │
+│ [← Back]  Canvas Power Tools  [Course: Biology 101 ▼]  [⚙ Settings]│
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Tool content renders here                                          │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Header** — persistent across all Tools. Contains the app logo and name,
-the active course selector, a settings icon, and a help icon. The course
-selector applies globally to whichever Tool is active.
+**Homepage** — a tile or list grid of all available Tools. Tile/list toggle
+is persisted in settings. Clicking a tile navigates to that Tool's page.
 
-**Sidebar** — collapsible. Modules expand and collapse to show their Tools.
-The hide button collapses the sidebar to a thin strip, giving the active
-Tool full screen width. Sidebar state is remembered across sessions.
+**AppNav** — a shared header component rendered on every page. Contains the
+back/home navigation, app logo, course selector (where relevant), and a
+settings icon. Imported by each Tool page's entry point.
 
-**Main content area** — the active Tool renders here. Navigation between
-Tools is instant since the application shell is already loaded.
-
-**V3 modules** — visible in the sidebar but visually distinguished (grayed
-or labeled) until their release. This familiarizes teachers with the roadmap
-without implying current availability.
+**Tool pages** — each Tool is a self-contained extension page. The course
+selector state is passed via URL parameters or read from storage on load.
 
 ---
 
@@ -188,9 +190,8 @@ without implying current availability.
 responsibility is injecting trigger buttons into the Canvas UI. They make
 no API calls and contain no feature logic.
 
-**The extension shell** (the single-page application) does all real work —
-rendering Tools, calling the Canvas API, managing storage, and handling
-user interactions.
+**Individual Tool pages** do all real work — rendering the Tool UI, calling
+the Canvas API, managing storage, and handling user interactions.
 
 **SpeedGrader Tools** are an exception. They inject panels and controls
 directly into Canvas's SpeedGrader page because SpeedGrader's workflow
@@ -210,8 +211,7 @@ telemetry.
 |---|---|---|
 | Extension standard | Chrome Manifest V3 | Required for Chrome Web Store |
 | Language | JavaScript ES6+ | Accessible for a beginner; migrate to TypeScript later |
-| UI framework | React | Necessary for the complexity of a single-page app with module navigation |
-| Routing | React Router | Handles module and tool navigation within the single-page shell |
+| UI framework | React | Component-based UI; each Tool page has its own React root |
 | Styling | Tailwind CSS | Utility-first; no conflicts with Canvas styles since the extension runs in its own tab |
 | Build tool | Vite + CRXJS | Fast builds; native MV3 support; hot reload during development |
 | Package manager | npm | Standard; widely documented |
@@ -221,11 +221,6 @@ telemetry.
 | HTTP client | Fetch API | Browser-native; MV3 compatible; no dependencies |
 | Icons | Lucide or Heroicons | Consistent; accessible; tree-shakeable |
 | Version control | Git + GitHub | Public repository |
-
-**Note on React Router:** Adding React Router is the primary architectural
-change introduced by the single-page app navigation model. It handles
-routing between modules and tools (e.g. /assignments/bulk-edit,
-/grading/overview) within the extension shell without requiring page reloads.
 
 ---
 
@@ -362,110 +357,106 @@ canvas-power-tools/
 ├── manifest.json
 │
 ├── src/
-│   ├── shell/                     Application shell
-│   │   ├── App.jsx                Root component with React Router
-│   │   ├── Sidebar.jsx            Module and tool navigation
-│   │   ├── Header.jsx             Logo, course selector, icons
-│   │   └── routes.js              All route definitions
+│   ├── shell/                     Homepage — tool picker grid
+│   │   ├── index.html
+│   │   └── index.jsx
 │   │
-│   ├── content_scripts/           Injected into Canvas pages
-│   │   ├── main.js                Page detection and router
-│   │   └── ui-injector.js         Trigger button injection
+│   ├── pages/                     One subfolder per Tool
+│   │   ├── bulk-editor/           Each Tool is a standalone extension page
+│   │   │   ├── index.html
+│   │   │   └── index.jsx          Mounts the React root; imports from modules/
+│   │   ├── grading/
+│   │   ├── groups/
+│   │   ├── templates/
+│   │   ├── duplicate/
+│   │   ├── rubrics/
+│   │   └── student-groups/
 │   │
-│   ├── api/                       Canvas API layer
+│   ├── modules/                   Tool components — one subfolder per Module
+│   │   ├── assignments/           All components for Assignment Module Tools
+│   │   ├── grading/
+│   │   ├── communication/
+│   │   ├── people/
+│   │   ├── content/               (V3)
+│   │   └── setup/                 (V3)
+│   │
+│   ├── components/                Shared reusable Components
+│   │   ├── AppNav.jsx             Shared header (back button, logo, course selector, settings)
+│   │   ├── CourseSelector.jsx
+│   │   ├── Modal.jsx
+│   │   ├── Toast.jsx
+│   │   ├── PreviewDiff.jsx
+│   │   ├── DateInput.jsx
+│   │   ├── FormControls.jsx
+│   │   └── ProgressBar.jsx
+│   │
+│   ├── api/                       Canvas API layer (one file per resource)
+│   │   ├── request.js             Base fetch wrapper; handles auth, pagination, rate limits
 │   │   ├── auth.js
-│   │   ├── assignments.js
 │   │   ├── courses.js
-│   │   ├── grading.js
-│   │   ├── people.js
-│   │   ├── communication.js
-│   │   └── request.js             Base fetch wrapper
+│   │   ├── assignments.js
+│   │   ├── assignmentGroups.js
+│   │   ├── submissions.js
+│   │   ├── rubrics.js
+│   │   ├── groups.js
+│   │   ├── enrollments.js
+│   │   ├── modules.js
+│   │   ├── moduleItems.js
+│   │   └── errors.js
 │   │
-│   ├── storage/                   Storage management
-│   │   ├── encryption.js
-│   │   ├── migrations.js
-│   │   └── defaults.js
+│   ├── storage/                   Chrome storage management
+│   │   ├── encryption.js          API token encryption via crypto.subtle
+│   │   ├── account.js
+│   │   ├── preferences.js
+│   │   ├── changeLogs.js
+│   │   ├── templates.js
+│   │   └── rubrics.js
 │   │
-│   ├── security/                  PIN and audit system
+│   ├── security/                  PIN system and audit log (planned)
 │   │   ├── pin.js
 │   │   ├── audit-log.js
 │   │   └── usePinGate.js
 │   │
-│   ├── dom/                       DOM resilience (see Doc 06)
+│   ├── dom/                       DOM resilience for content script injection
 │   │   ├── selectors.js
 │   │   ├── selector-engine.js
 │   │   ├── health-check.js
 │   │   └── recovery-log.js
 │   │
-│   ├── components/                Reusable UI Components
-│   │   ├── Modal.jsx
-│   │   ├── Toast.jsx
-│   │   ├── PreviewDiff.jsx
-│   │   ├── FilterBar.jsx
-│   │   ├── MultiSelect.jsx
-│   │   ├── DatePicker.jsx
-│   │   ├── SkeletonRow.jsx
-│   │   ├── EmptyState.jsx
-│   │   └── PinPrompt.jsx
+│   ├── config/                    Shared configuration
+│   │   └── tools.jsx              Single source of truth for the Tool registry
 │   │
-│   ├── modules/                   One folder per Module
-│   │   ├── assignments/
-│   │   │   ├── BulkEdit.jsx
-│   │   │   ├── Templates.jsx
-│   │   │   ├── Rubrics.jsx
-│   │   │   ├── AssignmentGroups.jsx
-│   │   │   ├── Duplicate.jsx
-│   │   │   ├── QTIImport.jsx      (V3)
-│   │   │   └── PeerReview.jsx     (V3)
-│   │   ├── grading/
-│   │   │   ├── Overview.jsx
-│   │   │   ├── MissingWork.jsx
-│   │   │   ├── Adjustments.jsx
-│   │   │   ├── LatePolicy.jsx
-│   │   │   └── AtRisk.jsx         (V3)
-│   │   ├── communication/
-│   │   │   ├── Nudges.jsx
-│   │   │   ├── Threshold.jsx
-│   │   │   └── Announcements.jsx
-│   │   ├── people/
-│   │   │   ├── Groups.jsx
-│   │   │   ├── Sections.jsx
-│   │   │   ├── Accommodations.jsx
-│   │   │   └── Roster.jsx         (V3)
-│   │   ├── content/               (V3)
-│   │   │   ├── Modules.jsx
-│   │   │   ├── Pages.jsx
-│   │   │   └── Discussions.jsx
-│   │   └── setup/                 (V3)
-│   │       ├── Rollover.jsx
-│   │       ├── CourseSettings.jsx
-│   │       ├── Blueprints.jsx
-│   │       └── Standards.jsx
+│   ├── styles/
+│   │   └── global.css             Global CSS and design tokens
 │   │
-│   ├── speedgrader/               SpeedGrader injection Tools
-│   │   ├── injector.js
-│   │   ├── CommentBank.jsx
-│   │   ├── ProgressPanel.jsx
-│   │   ├── BulkGradeActions.jsx
-│   │   └── shortcuts.js
+│   ├── utils/
+│   │   └── color.js               Theme and dark mode utilities
 │   │
-│   ├── settings/
-│   │   └── Settings.jsx
+│   ├── background/
+│   │   └── service-worker.js      MV3 service worker
 │   │
-│   └── popup/
+│   ├── content_scripts/           Injected into Canvas pages
+│   │   ├── main.js                Page detection
+│   │   └── ui-injector.js         Trigger button injection
+│   │
+│   ├── speedgrader/               SpeedGrader injection Tools (planned)
+│   │
+│   ├── settings/                  Settings page
+│   │   ├── index.html
+│   │   └── index.jsx
+│   │
+│   └── popup/                     Extension popup
 │       ├── popup.html
-│       └── Popup.jsx
+│       └── popup.jsx
 │
 ├── public/
 │   └── icons/
 │
-├── docs/
+├── design_docs/
 │
 ├── README.md
-├── CONTRIBUTING.md
 ├── LICENSE
-├── PRIVACY.md
-└── CHANGELOG.md
+└── PRIVACY.md
 ```
 
 ---

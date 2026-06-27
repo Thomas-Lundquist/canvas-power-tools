@@ -11,6 +11,7 @@ import { getAssignment } from '../../api/assignments.js'
 import { assignmentToFormFields } from '../../modules/assignments/templateHelpers.js'
 import '../../styles/global.css'
 import { ToastProvider, useToast } from '../../components/Toast.jsx'
+import { PinGateProvider } from '../../security/usePinGate.jsx'
 
 // ?saveFrom=courseId/assignmentId  â†’  pre-fill editor from a Canvas assignment
 function parseSaveFrom() {
@@ -172,7 +173,7 @@ function App() {
   )
 }
 
-createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)
+createRoot(document.getElementById('root')).render(<ToastProvider><PinGateProvider><App /></PinGateProvider></ToastProvider>)
 
 
 

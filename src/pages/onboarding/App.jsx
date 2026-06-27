@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { CheckCircle, ChevronDown, ChevronUp, Eye, EyeOff, AlertCircle, Loader } from 'lucide-react'
+import { CheckCircle, ChevronDown, ChevronUp, Eye, EyeOff, AlertCircle, Loader, ShieldCheck } from 'lucide-react'
 import { verifyToken } from '../../api/auth.js'
 import { saveAccount, markSetupComplete } from '../../storage/account.js'
+import { setupPin } from '../../security/pin.js'
 
-const STEPS = ['welcome', 'url', 'token', 'verifying', 'success']
+const STEPS = ['welcome', 'url', 'token', 'verifying', 'pin-setup', 'success']
 
 export default function App() {
   const [step, setStep] = useState('welcome')
@@ -14,6 +15,9 @@ export default function App() {
   const [urlError, setUrlError] = useState(null)
   const [verifyError, setVerifyError] = useState(null)
   const [verifiedUser, setVerifiedUser] = useState(null)
+  const [pin, setPin] = useState('')
+  const [pinConfirm, setPinConfirm] = useState('')
+  const [pinError, setPinError] = useState(null)
 
   async function handleVerify() {
     setVerifyError(null)
@@ -23,11 +27,18 @@ export default function App() {
       await saveAccount({ canvasUrl, token, userName: user.name })
       await markSetupComplete()
       setVerifiedUser(user)
-      setStep('success')
+      setStep('pin-setup')
     } catch (err) {
       setVerifyError(err.message)
       setStep('token')
     }
+  }
+
+  async function handleSetPin() {
+    if (pin.length < 4) { setPinError('PIN must be at least 4 digits.'); return }
+    if (pin !== pinConfirm) { setPinError('PINs do not match.'); return }
+    await setupPin(pin)
+    setStep('success')
   }
 
   async function pasteToken() {
@@ -182,6 +193,54 @@ export default function App() {
             <h2 className="text-lg font-semibold text-gray-900">Verifying your token...</h2>
             <p className="text-sm text-gray-500 mt-2">Connecting to Canvas</p>
           </div>
+        )}
+
+        {step === 'pin-setup' && (
+          <StepCard step={3} title="Protect your account">
+            <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-5">
+              <ShieldCheck size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-indigo-800">
+                A PIN prevents anyone else on this computer from making changes to your Canvas courses through Canvas Power Tools. Recommended for shared or classroom computers.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">Create a PIN (4–6 digits)</label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={pin}
+                  onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setPinError(null) }}
+                  placeholder="••••"
+                  className="input w-full text-center text-xl tracking-[0.4em] font-mono"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="label">Confirm PIN</label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={pinConfirm}
+                  onChange={e => { setPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 6)); setPinError(null) }}
+                  placeholder="••••"
+                  className="input w-full text-center text-xl tracking-[0.4em] font-mono"
+                  onKeyDown={e => { if (e.key === 'Enter') handleSetPin() }}
+                />
+              </div>
+              {pinError && <p className="text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{pinError}</p>}
+              <p className="text-xs text-gray-400">
+                If you forget your PIN, you will need to reset the extension. Your PIN cannot be recovered.
+              </p>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button className="btn-primary" disabled={pin.length < 4 || pinConfirm.length < 4} onClick={handleSetPin}>
+                Set PIN
+              </button>
+            </div>
+          </StepCard>
         )}
 
         {step === 'success' && (

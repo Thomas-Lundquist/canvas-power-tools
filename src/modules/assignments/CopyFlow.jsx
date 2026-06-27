@@ -10,6 +10,7 @@ import { getCourses } from '../../api/courses.js'
 import { getAssignments, createAssignment } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getPreferences } from '../../storage/preferences.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 
 function ModePill({ label, active, onClick }) {
   return (
@@ -53,6 +54,7 @@ function applyDateHandling(assignment, dateMode, shiftSign, shiftDays) {
 
 export default function CopyFlow({ initialCourseId }) {
   const toast = useToast()
+  const { requirePin } = usePinGate()
   const [step, setStep] = useState('source')
 
   // Source step
@@ -156,6 +158,20 @@ export default function CopyFlow({ initialCourseId }) {
   }
 
   async function executeCopy() {
+    const sourceCourse = courses.find(c => c.id === sourceCourseId)
+    const targetNames = [...targetIds].map(id => courses.find(c => c.id === id)?.name ?? id).join(', ')
+    await requirePin(
+      {
+        action: 'copy_assignments',
+        summary: `Copied ${selectedIds.size} assignment${selectedIds.size !== 1 ? 's' : ''} from ${sourceCourse?.name ?? sourceCourseId} to ${targetNames}`,
+        courseId: sourceCourseId,
+        courseName: sourceCourse?.name ?? sourceCourseId,
+      },
+      runCopy,
+    )
+  }
+
+  async function runCopy() {
     setCopying(true)
     setStep('results')
     setResults([])

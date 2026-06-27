@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, RotateCcw, X, AlertCircle, CheckCircle, Loader } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
 import { getChangeLog, addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 import { updateAssignment } from '../../api/assignments.js'
 import { formatDate } from '../../components/DateInput.jsx'
 
@@ -34,6 +35,7 @@ export default function ChangeLog({ courseId, courseName, onClose, onRevertCompl
   const [confirming, setConfirming] = useState(null)
   const [reverting, setReverting] = useState(null)
   const [revertResult, setRevertResult] = useState(null)
+  const { requirePin } = usePinGate()
 
   useEffect(() => {
     getChangeLog(courseId).then(setEntries)
@@ -48,6 +50,18 @@ export default function ChangeLog({ courseId, courseName, onClose, onRevertCompl
   }
 
   async function handleRevert(entry) {
+    await requirePin(
+      {
+        action: 'revert',
+        summary: `Reverted ${entry.changes.length} change${entry.changes.length !== 1 ? 's' : ''} in ${courseName}`,
+        courseId,
+        courseName,
+      },
+      () => runRevert(entry),
+    )
+  }
+
+  async function runRevert(entry) {
     setReverting(entry.id)
     setConfirming(null)
 

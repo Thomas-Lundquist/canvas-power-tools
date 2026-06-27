@@ -7,9 +7,11 @@ import { saveTemplate } from '../../storage/templates.js'
 import { getPreferences } from '../../storage/preferences.js'
 import { deployTemplateToCourse } from './templateHelpers.js'
 import { addAssignmentToModule } from '../../api/moduleItems.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 
 export default function DeployTemplate({ template, initialCourseId, moduleId, onDone, onBack }) {
   const toast = useToast()
+  const { requirePin } = usePinGate()
   const [courses, setCourses] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [selectedIds, setSelectedIds] = useState(new Set())
@@ -52,8 +54,22 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   }
 
   async function deploy() {
-    setDeploying(true)
     const selected = courses.filter(c => selectedIds.has(c.id))
+    const names = selected.map(c => c.name).join(', ')
+    await requirePin(
+      {
+        action: 'template_deploy',
+        summary: `Deployed template "${template.name}" to ${selected.length} course${selected.length !== 1 ? 's' : ''}: ${names}`,
+        courseId: selected[0]?.id ?? null,
+        courseName: names,
+      },
+      runDeploy,
+    )
+  }
+
+  async function runDeploy() {
+    const selected = courses.filter(c => selectedIds.has(c.id))
+    setDeploying(true)
     const deployResults = await Promise.all(
       selected.map(course => deployTemplateToCourse(template, course, dates, publishState))
     )

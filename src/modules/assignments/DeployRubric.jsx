@@ -4,6 +4,7 @@ import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { createRubricInCanvas } from '../../api/rubrics.js'
 import { saveRubric } from '../../storage/rubrics.js'
+import { usePinGate } from '../../security/usePinGate.jsx'
 
 function Toggle({ checked, onChange }) {
   return (
@@ -19,6 +20,7 @@ function Toggle({ checked, onChange }) {
 }
 
 export default function DeployRubric({ rubric, onDone, onBack }) {
+  const { requirePin } = usePinGate()
   const [courses, setCourses]                     = useState([])
   const [loadingCourses, setLoadingCourses]       = useState(true)
   const [selectedCourseId, setSelectedCourseId]   = useState('')
@@ -54,6 +56,20 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
   }, [selectedCourseId])
 
   async function deploy() {
+    const course = courses.find(c => c.id === selectedCourseId)
+    const assignment = assignments.find(a => a.id === selectedAssignmentId)
+    await requirePin(
+      {
+        action: 'rubric_deploy',
+        summary: `Deployed rubric "${rubric.name}" to ${course?.name ?? selectedCourseId}${assignment ? ` / ${assignment.name}` : ''}`,
+        courseId: selectedCourseId,
+        courseName: course?.name ?? selectedCourseId,
+      },
+      runDeploy,
+    )
+  }
+
+  async function runDeploy() {
     setDeploying(true)
     const course = courses.find(c => c.id === selectedCourseId)
     try {
