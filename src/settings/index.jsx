@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   RefreshCw, Eye, EyeOff, CheckCircle, AlertCircle, Loader,
@@ -10,7 +10,7 @@ import { ToastProvider, useToast } from '../components/Toast.jsx'
 import { TOOLS } from '../config/tools.jsx'
 import { getAccount, updateVerificationStatus } from '../storage/account.js'
 import { getPreferences, setPreference, resetPreferences, DEFAULTS } from '../storage/preferences.js'
-import { applyTheme, applyDarkMode } from '../utils/color.js'
+import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
 import { clearAllChangeLogs } from '../storage/changeLogs.js'
 import { getTemplates, saveTemplate, saveFolder } from '../storage/templates.js'
 import { verifyToken } from '../api/auth.js'
@@ -60,7 +60,7 @@ const SETTINGS_INDEX = [
   { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
     label: 'Default module on open', description: 'Which module to open when launching Canvas Power Tools.',
     render: (p, set) => (
-      <select value={p.navDefaultModule ?? 'last_used'} onChange={e => set('navDefaultModule', e.target.value)} className="input w-48 text-sm">
+      <select value={p.navDefaultModule ?? 'last_used'} onChange={e => set('navDefaultModule', e.target.value)} className="input text-sm">
         <option value="last_used">Last used</option>
         <option value="assignments">Assignments</option>
         <option value="grading">Grading</option>
@@ -76,7 +76,7 @@ const SETTINGS_INDEX = [
   { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
     label: 'Default landing page', description: 'Which page to open when launching Canvas Power Tools.',
     render: (p, set) => (
-      <select value={p.defaultLandingPage} onChange={e => set('defaultLandingPage', e.target.value)} className="input w-48 text-sm">
+      <select value={p.defaultLandingPage} onChange={e => set('defaultLandingPage', e.target.value)} className="input text-sm">
         <option value="last">Last visited page</option>
         <option value="bulk_editor">Bulk Editor</option>
         <option value="template_library">Template Library</option>
@@ -87,7 +87,7 @@ const SETTINGS_INDEX = [
   { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
     label: 'Default course', description: 'Which course to open when launching the Bulk Editor.',
     render: (p, set) => (
-      <select value={p.defaultCourse} onChange={e => set('defaultCourse', e.target.value)} className="input w-44 text-sm">
+      <select value={p.defaultCourse} onChange={e => set('defaultCourse', e.target.value)} className="input text-sm">
         <option value="last_used">Last used course</option>
         <option value="ask">Always ask</option>
       </select>
@@ -96,7 +96,7 @@ const SETTINGS_INDEX = [
   { section: 'navigation', sectionTitle: 'Navigation', tier: 'advanced',
     label: 'Sidebar default state', description: 'Whether the sidebar starts expanded or collapsed when a tool opens.',
     render: (p, set) => (
-      <select value={p.sidebarDefault ?? 'expanded'} onChange={e => set('sidebarDefault', e.target.value)} className="input w-36 text-sm">
+      <select value={p.sidebarDefault ?? 'expanded'} onChange={e => set('sidebarDefault', e.target.value)} className="input text-sm">
         <option value="expanded">Expanded</option>
         <option value="collapsed">Collapsed</option>
       </select>
@@ -107,7 +107,7 @@ const SETTINGS_INDEX = [
   { section: 'account', sectionTitle: 'Account', tier: 'standard',
     label: 'Verification frequency', description: 'How often to automatically re-check your API token.',
     render: (p, set) => (
-      <select value={p.verificationFrequency} onChange={e => set('verificationFrequency', e.target.value)} className="input w-44 text-sm">
+      <select value={p.verificationFrequency} onChange={e => set('verificationFrequency', e.target.value)} className="input text-sm">
         <option value="startup">On startup</option>
         <option value="daily">Daily (recommended)</option>
         <option value="weekly">Weekly</option>
@@ -146,7 +146,7 @@ const SETTINGS_INDEX = [
   { section: 'account', sectionTitle: 'Account', tier: 'advanced',
     label: 'Rate limit behavior', description: 'What to do when Canvas API rate limits are hit.',
     render: (p, set) => (
-      <select value={p.rateLimitBehavior} onChange={e => set('rateLimitBehavior', e.target.value)} className="input w-36 text-sm">
+      <select value={p.rateLimitBehavior} onChange={e => set('rateLimitBehavior', e.target.value)} className="input text-sm">
         <option value="queue">Queue and retry</option>
         <option value="warn">Warn and continue</option>
         <option value="silent">Continue silently</option>
@@ -158,7 +158,7 @@ const SETTINGS_INDEX = [
   { section: 'general', sectionTitle: 'General', tier: 'standard',
     label: 'Text size', description: 'Scale text and UI elements for readability.',
     render: (p, set) => (
-      <select value={p.textSize ?? 'medium'} onChange={e => set('textSize', e.target.value)} className="input w-44 text-sm">
+      <select value={p.textSize ?? 'medium'} onChange={e => set('textSize', e.target.value)} className="input text-sm">
         <option value="small">Small</option>
         <option value="medium">Medium (default)</option>
         <option value="large">Large</option>
@@ -169,7 +169,7 @@ const SETTINGS_INDEX = [
   { section: 'general', sectionTitle: 'General', tier: 'standard',
     label: 'Date format', description: 'How dates are displayed throughout the extension.',
     render: (p, set) => (
-      <select value={p.dateFormat} onChange={e => set('dateFormat', e.target.value)} className="input w-44 text-sm">
+      <select value={p.dateFormat} onChange={e => set('dateFormat', e.target.value)} className="input text-sm">
         <option value="MM/DD/YYYY">MM/DD/YYYY</option>
         <option value="DD/MM/YYYY">DD/MM/YYYY</option>
         <option value="YYYY-MM-DD">YYYY-MM-DD</option>
@@ -180,7 +180,7 @@ const SETTINGS_INDEX = [
   { section: 'general', sectionTitle: 'General', tier: 'standard',
     label: 'Time format', description: '12-hour or 24-hour clock display.',
     render: (p, set) => (
-      <select value={p.timeFormat} onChange={e => set('timeFormat', e.target.value)} className="input w-36 text-sm">
+      <select value={p.timeFormat} onChange={e => set('timeFormat', e.target.value)} className="input text-sm">
         <option value="12h">12-hour (2:30 PM)</option>
         <option value="24h">24-hour (14:30)</option>
       </select>
@@ -189,7 +189,7 @@ const SETTINGS_INDEX = [
   { section: 'general', sectionTitle: 'General', tier: 'standard',
     label: 'Timezone', description: 'Which timezone to use when displaying Canvas dates.',
     render: (p, set) => (
-      <select value={p.timezone} onChange={e => set('timezone', e.target.value)} className="input w-44 text-sm">
+      <select value={p.timezone} onChange={e => set('timezone', e.target.value)} className="input text-sm">
         <option value="canvas">Canvas course timezone</option>
         <option value="system">My local timezone</option>
       </select>
@@ -220,7 +220,7 @@ const SETTINGS_INDEX = [
   { section: 'general', sectionTitle: 'General', tier: 'advanced',
     label: 'First day of week', description: 'Used in calendar and date pickers.',
     render: (p, set) => (
-      <select value={p.firstDayOfWeek} onChange={e => set('firstDayOfWeek', e.target.value)} className="input w-36 text-sm">
+      <select value={p.firstDayOfWeek} onChange={e => set('firstDayOfWeek', e.target.value)} className="input text-sm">
         <option value="sunday">Sunday</option>
         <option value="monday">Monday</option>
       </select>
@@ -233,7 +233,7 @@ const SETTINGS_INDEX = [
   { section: 'general', sectionTitle: 'General', tier: 'advanced',
     label: 'Course display format', description: 'How course names appear in dropdowns.',
     render: (p, set) => (
-      <select value={p.courseDisplayFormat} onChange={e => set('courseDisplayFormat', e.target.value)} className="input w-44 text-sm">
+      <select value={p.courseDisplayFormat} onChange={e => set('courseDisplayFormat', e.target.value)} className="input text-sm">
         <option value="full">Full name</option>
         <option value="code">Course code</option>
         <option value="both">Both</option>
@@ -261,7 +261,7 @@ const SETTINGS_INDEX = [
   { section: 'bulkEditor', sectionTitle: 'Bulk Editor', tier: 'standard',
     label: 'Default shift direction', description: 'Whether date shifts move assignments forward or backward in time.',
     render: (p, set) => (
-      <select value={p.bulkEditorDefaultShiftDirection} onChange={e => set('bulkEditorDefaultShiftDirection', e.target.value)} className="input w-36 text-sm">
+      <select value={p.bulkEditorDefaultShiftDirection} onChange={e => set('bulkEditorDefaultShiftDirection', e.target.value)} className="input text-sm">
         <option value="forward">Forward</option>
         <option value="backward">Backward</option>
       </select>
@@ -271,7 +271,7 @@ const SETTINGS_INDEX = [
     label: 'Default sort', description: 'Initial sort order when opening the Bulk Editor.',
     render: (p, set) => (
       <div className="flex items-center gap-2">
-        <select value={p.bulkEditorDefaultSort} onChange={e => set('bulkEditorDefaultSort', e.target.value)} className="input text-sm w-36">
+        <select value={p.bulkEditorDefaultSort} onChange={e => set('bulkEditorDefaultSort', e.target.value)} className="input text-sm">
           <option value="name">Name</option>
           <option value="group">Group</option>
           <option value="module">Module</option>
@@ -293,7 +293,7 @@ const SETTINGS_INDEX = [
   { section: 'bulkEditor', sectionTitle: 'Bulk Editor', tier: 'standard',
     label: 'Shift null dates', description: 'What to do with assignments that have no due date when a date shift is applied.',
     render: (p, set) => (
-      <select value={p.bulkEditorShiftNullDates} onChange={e => set('bulkEditorShiftNullDates', e.target.value)} className="input w-52 text-sm">
+      <select value={p.bulkEditorShiftNullDates} onChange={e => set('bulkEditorShiftNullDates', e.target.value)} className="input text-sm">
         <option value="skip">Skip (leave undated)</option>
         <option value="set">Set a new date</option>
       </select>
@@ -302,7 +302,7 @@ const SETTINGS_INDEX = [
   { section: 'bulkEditor', sectionTitle: 'Bulk Editor', tier: 'standard',
     label: 'After applying changes', description: 'What happens to the view after a bulk edit is saved to Canvas.',
     render: (p, set) => (
-      <select value={p.bulkEditorAfterApply ?? 'stay'} onChange={e => set('bulkEditorAfterApply', e.target.value)} className="input w-52 text-sm">
+      <select value={p.bulkEditorAfterApply ?? 'stay'} onChange={e => set('bulkEditorAfterApply', e.target.value)} className="input text-sm">
         <option value="stay">Stay in place</option>
         <option value="scroll_top">Scroll to top</option>
         <option value="results_only">Show changed rows only</option>
@@ -312,7 +312,7 @@ const SETTINGS_INDEX = [
   { section: 'bulkEditor', sectionTitle: 'Bulk Editor', tier: 'advanced',
     label: 'Select All behavior', description: 'Whether "Select All" selects every row or only visible filtered rows.',
     render: (p, set) => (
-      <select value={p.bulkEditorSelectAllBehavior ?? 'filtered'} onChange={e => set('bulkEditorSelectAllBehavior', e.target.value)} className="input w-44 text-sm">
+      <select value={p.bulkEditorSelectAllBehavior ?? 'filtered'} onChange={e => set('bulkEditorSelectAllBehavior', e.target.value)} className="input text-sm">
         <option value="filtered">Filtered rows only</option>
         <option value="all">All rows</option>
       </select>
@@ -355,7 +355,7 @@ const SETTINGS_INDEX = [
   { section: 'templates', sectionTitle: 'Templates', tier: 'standard',
     label: 'Sort order', description: 'How templates are ordered in the library.',
     render: (p, set) => (
-      <select value={p.templatesSort} onChange={e => set('templatesSort', e.target.value)} className="input w-44 text-sm">
+      <select value={p.templatesSort} onChange={e => set('templatesSort', e.target.value)} className="input text-sm">
         <option value="last_used">Last used</option>
         <option value="name_asc">Name (A–Z)</option>
         <option value="name_desc">Name (Z–A)</option>
@@ -366,7 +366,7 @@ const SETTINGS_INDEX = [
   { section: 'templates', sectionTitle: 'Templates', tier: 'standard',
     label: 'Default folder', description: 'Which folder a new template is saved into by default.',
     render: (p, set) => (
-      <select value={p.templatesDefaultFolder} onChange={e => set('templatesDefaultFolder', e.target.value)} className="input w-44 text-sm">
+      <select value={p.templatesDefaultFolder} onChange={e => set('templatesDefaultFolder', e.target.value)} className="input text-sm">
         <option value="last_used">Last used folder</option>
         <option value="unfiled">Unfiled</option>
         <option value="ask">Always ask</option>
@@ -376,7 +376,7 @@ const SETTINGS_INDEX = [
   { section: 'templates', sectionTitle: 'Templates', tier: 'standard',
     label: 'After deploy', description: 'Where to go after deploying a template to Canvas.',
     render: (p, set) => (
-      <select value={p.templatesAfterDeploy} onChange={e => set('templatesAfterDeploy', e.target.value)} className="input w-48 text-sm">
+      <select value={p.templatesAfterDeploy} onChange={e => set('templatesAfterDeploy', e.target.value)} className="input text-sm">
         <option value="results">Stay on results</option>
         <option value="library">Return to library</option>
         <option value="bulk_editor">Open in Bulk Editor</option>
@@ -398,7 +398,7 @@ const SETTINGS_INDEX = [
   { section: 'templates', sectionTitle: 'Templates', tier: 'advanced',
     label: 'Search scope', description: 'Which fields are searched when filtering the template library.',
     render: (p, set) => (
-      <select value={p.templatesSearchScope} onChange={e => set('templatesSearchScope', e.target.value)} className="input w-48 text-sm">
+      <select value={p.templatesSearchScope} onChange={e => set('templatesSearchScope', e.target.value)} className="input text-sm">
         <option value="name">Name only</option>
         <option value="name_desc">Name and description</option>
         <option value="all">All fields</option>
@@ -408,7 +408,7 @@ const SETTINGS_INDEX = [
   { section: 'templates', sectionTitle: 'Templates', tier: 'advanced',
     label: 'Default submission type', description: 'Pre-filled submission type for new templates.',
     render: (p, set) => (
-      <select value={p.templatesDefaultSubmissionType} onChange={e => set('templatesDefaultSubmissionType', e.target.value)} className="input w-44 text-sm">
+      <select value={p.templatesDefaultSubmissionType} onChange={e => set('templatesDefaultSubmissionType', e.target.value)} className="input text-sm">
         <option value="online">Online</option>
         <option value="on_paper">On paper</option>
         <option value="no_submission">No submission</option>
@@ -419,7 +419,7 @@ const SETTINGS_INDEX = [
   { section: 'templates', sectionTitle: 'Templates', tier: 'advanced',
     label: 'Default grading type', description: 'Pre-filled grading type for new templates.',
     render: (p, set) => (
-      <select value={p.templatesDefaultGradingType} onChange={e => set('templatesDefaultGradingType', e.target.value)} className="input w-44 text-sm">
+      <select value={p.templatesDefaultGradingType} onChange={e => set('templatesDefaultGradingType', e.target.value)} className="input text-sm">
         <option value="points">Points</option>
         <option value="percent">Percentage</option>
         <option value="letter_grade">Letter grade</option>
@@ -446,7 +446,7 @@ const SETTINGS_INDEX = [
   { section: 'copyAssignments', sectionTitle: 'Copy Assignments', tier: 'standard',
     label: 'Default date handling', description: 'How dates are handled when copying assignments to another course.',
     render: (p, set) => (
-      <select value={p.copyDefaultDateMode} onChange={e => set('copyDefaultDateMode', e.target.value)} className="input text-sm w-44">
+      <select value={p.copyDefaultDateMode} onChange={e => set('copyDefaultDateMode', e.target.value)} className="input text-sm">
         <option value="keep">Keep original dates</option>
         <option value="clear">Clear all dates</option>
         <option value="shift">Shift dates</option>
@@ -468,7 +468,7 @@ const SETTINGS_INDEX = [
   { section: 'copyAssignments', sectionTitle: 'Copy Assignments', tier: 'standard',
     label: 'Default publish state', description: 'Publish state for assignments after they are copied to the target course.',
     render: (p, set) => (
-      <select value={p.copyDefaultPublishMode} onChange={e => set('copyDefaultPublishMode', e.target.value)} className="input text-sm w-44">
+      <select value={p.copyDefaultPublishMode} onChange={e => set('copyDefaultPublishMode', e.target.value)} className="input text-sm">
         <option value="keep">Keep original</option>
         <option value="published">Always publish</option>
         <option value="unpublished">Always unpublish</option>
@@ -495,7 +495,7 @@ const SETTINGS_INDEX = [
   { section: 'changeLog', sectionTitle: 'Change Log', tier: 'standard',
     label: 'Show revert summary', description: 'Display a results summary after a revert completes.',
     render: (p, set) => (
-      <select value={p.changeLogShowRevertSummary} onChange={e => set('changeLogShowRevertSummary', e.target.value)} className="input w-44 text-sm">
+      <select value={p.changeLogShowRevertSummary} onChange={e => set('changeLogShowRevertSummary', e.target.value)} className="input text-sm">
         <option value="always">Always</option>
         <option value="partial_failure">Only on partial failure</option>
         <option value="never">Never</option>
@@ -513,7 +513,7 @@ const SETTINGS_INDEX = [
   { section: 'changeLog', sectionTitle: 'Change Log', tier: 'advanced',
     label: 'Display order', description: 'Order in which change log entries are shown.',
     render: (p, set) => (
-      <select value={p.changeLogDisplayOrder} onChange={e => set('changeLogDisplayOrder', e.target.value)} className="input w-40 text-sm">
+      <select value={p.changeLogDisplayOrder} onChange={e => set('changeLogDisplayOrder', e.target.value)} className="input text-sm">
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
       </select>
@@ -522,7 +522,7 @@ const SETTINGS_INDEX = [
   { section: 'changeLog', sectionTitle: 'Change Log', tier: 'advanced',
     label: 'Timestamp detail', description: 'How much detail to show in change log timestamps.',
     render: (p, set) => (
-      <select value={p.changeLogTimestampDetail} onChange={e => set('changeLogTimestampDetail', e.target.value)} className="input w-40 text-sm">
+      <select value={p.changeLogTimestampDetail} onChange={e => set('changeLogTimestampDetail', e.target.value)} className="input text-sm">
         <option value="datetime">Date and time</option>
         <option value="date">Date only</option>
       </select>
@@ -730,6 +730,7 @@ function App() {
       setPrefs(p)
       applyTheme(p.buttonColor)
       applyDarkMode(p.themeMode ?? 'system')
+      applyTextSize(p.textSize ?? 'medium')
     })
     getCourses().then(setCourses).catch(() => {})
     getSecuritySettings().then(setSecSettings)
@@ -745,6 +746,7 @@ function App() {
     setPrefs(updated)
     if (key === 'buttonColor') applyTheme(value)
     if (key === 'themeMode') applyDarkMode(value)
+    if (key === 'textSize') applyTextSize(value)
   }
 
   async function doResetSection(sectionId) {
@@ -754,6 +756,7 @@ function App() {
     setPrefs(updated)
     applyTheme(updated.buttonColor)
     applyDarkMode(updated.themeMode ?? 'system')
+    applyTextSize(updated.textSize ?? 'medium')
     setResetConfirm(null)
   }
 
@@ -1067,7 +1070,7 @@ function App() {
                   <select
                     value={secSettings.inactivityTimeoutMinutes}
                     onChange={e => handleSaveTimeout(Number(e.target.value))}
-                    className="input w-36 text-sm"
+                    className="input text-sm"
                   >
                     <option value={5}>5 minutes</option>
                     <option value={10}>10 minutes</option>

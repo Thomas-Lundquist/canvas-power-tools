@@ -30,3 +30,12 @@ export function applyDarkMode(mode = 'system') {
   document.documentElement.classList.toggle('dark', isDark)
   try { localStorage.setItem('cpt_theme', mode) } catch { /* storage unavailable */ }
 }
+
+// Sets font-size on <html> so all rem-based sizes scale proportionally.
+// Persists to localStorage so theme-init.js can apply it before first paint.
+const TEXT_SIZE_MAP = { small: '14px', medium: '16px', large: '18px', 'extra-large': '20px' }
+
+export function applyTextSize(size = 'medium') {
+  document.documentElement.style.fontSize = TEXT_SIZE_MAP[size] ?? '16px'
+  try { localStorage.setItem('cpt_text_size', size) } catch { /* storage unavailable */ }
+}

@@ -1,9 +1,9 @@
-import React from 'react'
+﻿import React from 'react'
 import { createRoot } from 'react-dom/client'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import SectionsTool from '../../modules/people/SectionsTool.jsx'
 import { getPreferences } from '../../storage/preferences.js'
-import { applyTheme, applyDarkMode } from '../../utils/color.js'
+import { applyTheme, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import '../../styles/global.css'
 import { ToastProvider } from '../../components/Toast.jsx'
 import { PinGateProvider } from '../../security/usePinGate.jsx'
@@ -27,7 +27,7 @@ function App() {
   )
 }
 
-getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system') })
+getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
 createRoot(document.getElementById('root')).render(
   <ToastProvider><PinGateProvider><App /></PinGateProvider></ToastProvider>
 )

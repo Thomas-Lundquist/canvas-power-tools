@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { LayoutGrid, List, ChevronRight } from 'lucide-react'
 import { SettingsButton } from '../components/AppNav.jsx'
 import { TOOLS, MODULES } from '../config/tools.jsx'
 import { getPreferences, setPreference } from '../storage/preferences.js'
-import { applyTheme, applyDarkMode } from '../utils/color.js'
+import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
 import '../styles/global.css'
 import { ToastProvider } from '../components/Toast.jsx'
 
@@ -112,5 +112,5 @@ function App() {
   )
 }
 
-getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system') })
+getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
 createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)

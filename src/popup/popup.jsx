@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Settings, AlertCircle, BookOpen } from 'lucide-react'
 import { TOOLS, MODULES } from '../config/tools.jsx'
 import { isSetupComplete, getAccount } from '../storage/account.js'
 import { getPreferences } from '../storage/preferences.js'
-import { applyTheme, applyDarkMode } from '../utils/color.js'
+import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
 import '../styles/global.css'
 
 function open(path) {
