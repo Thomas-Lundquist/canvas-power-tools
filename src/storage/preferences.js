@@ -2,11 +2,13 @@ export const DEFAULTS = {
   // Account
   verificationFrequency: 'daily',        // 'startup' | 'daily' | 'weekly' | 'never'
   showConnectionInPopup: true,
+  showRateLimitWarnings: true,
   apiTimeout: 10000,                     // milliseconds
   resultsPerPage: 100,                   // 50 | 100
   rateLimitBehavior: 'queue',            // 'queue' | 'warn' | 'silent'
 
   // General
+  textSize: 'medium',                    // 'small' | 'medium' | 'large' | 'extra-large'
   dateFormat: 'MM/DD/YYYY',             // 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' | 'Month D YYYY'
   timeFormat: '12h',                    // '12h' | '24h'
   timezone: 'canvas',                   // 'canvas' | 'system'
@@ -27,6 +29,8 @@ export const DEFAULTS = {
 
   // Bulk Editor
   shiftAllDatesTogether: true,
+  bulkEditorAfterApply: 'stay',          // 'stay' | 'scroll_top' | 'results_only'
+  bulkEditorSelectAllBehavior: 'filtered', // 'filtered' | 'all'
   bulkEditorDefaultSort: 'dueAt',       // 'name' | 'group' | 'module' | 'dueAt' | 'points' | 'status'
   bulkEditorDefaultSortDir: 'asc',      // 'asc' | 'desc'
   bulkEditorDefaultDateShiftDays: 7,
@@ -72,6 +76,8 @@ export const DEFAULTS = {
   changeLogShowRevertSummary: 'always', // 'always' | 'partial_failure' | 'never'
 
   // Change Log - advanced
+  changeLogAutoExpandLatest: false,
+  changeLogContinueRevertPastFailures: true,
   changeLogDisplayOrder: 'newest',      // 'newest' | 'oldest'
   changeLogTimestampDetail: 'datetime', // 'datetime' | 'date'
   changeLogAutoClearOlderThan: null,    // null | days as integer

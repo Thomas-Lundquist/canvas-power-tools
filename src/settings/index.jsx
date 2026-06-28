@@ -40,13 +40,13 @@ const BRAND_COLORS = [
 // ─── Section reset key maps ────────────────────────────────────────────────────
 
 const SECTION_KEYS = {
-  account: ['verificationFrequency', 'showConnectionInPopup', 'apiTimeout', 'resultsPerPage', 'rateLimitBehavior'],
-  navigation: ['navDefaultModule', 'rememberLastTool', 'sidebarDefault'],
-  general: ['dateFormat', 'timeFormat', 'timezone', 'defaultLandingPage', 'defaultCourse', 'autoAddToModule', 'buttonColor', 'themeMode', 'homepageDisplayMode', 'defaultDueTime', 'defaultAvailableFromTime', 'defaultAvailableUntilTime', 'firstDayOfWeek', 'showCourseTerm', 'courseDisplayFormat'],
-  bulkEditor: ['shiftAllDatesTogether', 'bulkEditorDefaultSort', 'bulkEditorDefaultSortDir', 'bulkEditorDefaultDateShiftDays', 'bulkEditorDefaultShiftDirection', 'bulkEditorShowChangeLogAfterSave', 'bulkEditorShiftNullDates', 'bulkEditorRowsPerPage', 'bulkEditorVisibleColumns', 'bulkEditorIncludeGradedDiscussions', 'bulkEditorIncludeQuizzes', 'bulkEditorIncludeUngraded', 'bulkEditorIncludeLocked', 'bulkEditorIncludeUnpublished'],
+  account: ['verificationFrequency', 'showConnectionInPopup', 'showRateLimitWarnings', 'apiTimeout', 'resultsPerPage', 'rateLimitBehavior'],
+  navigation: ['navDefaultModule', 'rememberLastTool', 'defaultLandingPage', 'defaultCourse', 'sidebarDefault'],
+  general: ['textSize', 'dateFormat', 'timeFormat', 'timezone', 'autoAddToModule', 'buttonColor', 'themeMode', 'homepageDisplayMode', 'defaultDueTime', 'defaultAvailableFromTime', 'defaultAvailableUntilTime', 'firstDayOfWeek', 'showCourseTerm', 'courseDisplayFormat'],
+  bulkEditor: ['shiftAllDatesTogether', 'bulkEditorAfterApply', 'bulkEditorSelectAllBehavior', 'bulkEditorDefaultSort', 'bulkEditorDefaultSortDir', 'bulkEditorDefaultDateShiftDays', 'bulkEditorDefaultShiftDirection', 'bulkEditorShowChangeLogAfterSave', 'bulkEditorShiftNullDates', 'bulkEditorRowsPerPage', 'bulkEditorVisibleColumns', 'bulkEditorIncludeGradedDiscussions', 'bulkEditorIncludeQuizzes', 'bulkEditorIncludeUngraded', 'bulkEditorIncludeLocked', 'bulkEditorIncludeUnpublished'],
   templates: ['templatesSort', 'templatesDefaultFolder', 'templatesAfterDeploy', 'templatesActiveCoursesOnly', 'templateAutoExpandFolders', 'templateSkipDeleteConfirm', 'templatesSearchScope', 'templatesDefaultSubmissionType', 'templatesDefaultGradingType', 'templatesDefaultPoints', 'templatesDefaultPeerReview'],
   copyAssignments: ['copyDefaultDateMode', 'copyDefaultShiftDays', 'copyDefaultPublishMode'],
-  changeLog: ['changeLogRetentionPerCourse', 'changeLogConfirmRevert', 'changeLogShowRevertSummary', 'changeLogDisplayOrder', 'changeLogTimestampDetail', 'changeLogAutoClearOlderThan'],
+  changeLog: ['changeLogRetentionPerCourse', 'changeLogConfirmRevert', 'changeLogShowRevertSummary', 'changeLogAutoExpandLatest', 'changeLogContinueRevertPastFailures', 'changeLogDisplayOrder', 'changeLogTimestampDetail', 'changeLogAutoClearOlderThan'],
   popup: ['popupPinnedTools', 'popupCourseShortcuts'],
   confirmations: ['confirmRequirePreviewBeforeApply', 'confirmBulkPublish', 'confirmBulkUnpublish', 'confirmBulkPointChange', 'confirmDeleteTemplate', 'confirmClearAllLogs', 'confirmRevert', 'confirmSkipForSingle', 'confirmSkipPreviewForSingleField', 'confirmRememberDismissed'],
 }
@@ -73,6 +73,26 @@ const SETTINGS_INDEX = [
     label: 'Remember last used tool', description: 'Return to the same tool within a module when switching back to it.',
     render: (p, set) => <Toggle checked={p.rememberLastTool ?? true} onChange={v => set('rememberLastTool', v)} />,
   },
+  { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
+    label: 'Default landing page', description: 'Which page to open when launching Canvas Power Tools.',
+    render: (p, set) => (
+      <select value={p.defaultLandingPage} onChange={e => set('defaultLandingPage', e.target.value)} className="input w-48 text-sm">
+        <option value="last">Last visited page</option>
+        <option value="bulk_editor">Bulk Editor</option>
+        <option value="template_library">Template Library</option>
+        <option value="settings">Settings</option>
+      </select>
+    ),
+  },
+  { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
+    label: 'Default course', description: 'Which course to open when launching the Bulk Editor.',
+    render: (p, set) => (
+      <select value={p.defaultCourse} onChange={e => set('defaultCourse', e.target.value)} className="input w-44 text-sm">
+        <option value="last_used">Last used course</option>
+        <option value="ask">Always ask</option>
+      </select>
+    ),
+  },
   { section: 'navigation', sectionTitle: 'Navigation', tier: 'advanced',
     label: 'Sidebar default state', description: 'Whether the sidebar starts expanded or collapsed when a tool opens.',
     render: (p, set) => (
@@ -98,6 +118,10 @@ const SETTINGS_INDEX = [
   { section: 'account', sectionTitle: 'Account', tier: 'standard',
     label: 'Show connection status in popup', description: 'Display a connection indicator when you open the extension popup.',
     render: (p, set) => <Toggle checked={p.showConnectionInPopup} onChange={v => set('showConnectionInPopup', v)} />,
+  },
+  { section: 'account', sectionTitle: 'Account', tier: 'standard',
+    label: 'Show rate limit warnings', description: 'Display a notice when Canvas API rate limits are reached.',
+    render: (p, set) => <Toggle checked={p.showRateLimitWarnings ?? true} onChange={v => set('showRateLimitWarnings', v)} />,
   },
   { section: 'account', sectionTitle: 'Account', tier: 'advanced',
     label: 'API request timeout', description: 'How long to wait before cancelling a Canvas API request.',
@@ -132,6 +156,17 @@ const SETTINGS_INDEX = [
 
   // General ────────────────────────────────────────────────────────────────────
   { section: 'general', sectionTitle: 'General', tier: 'standard',
+    label: 'Text size', description: 'Scale text and UI elements for readability.',
+    render: (p, set) => (
+      <select value={p.textSize ?? 'medium'} onChange={e => set('textSize', e.target.value)} className="input w-44 text-sm">
+        <option value="small">Small</option>
+        <option value="medium">Medium (default)</option>
+        <option value="large">Large</option>
+        <option value="extra-large">Extra large</option>
+      </select>
+    ),
+  },
+  { section: 'general', sectionTitle: 'General', tier: 'standard',
     label: 'Date format', description: 'How dates are displayed throughout the extension.',
     render: (p, set) => (
       <select value={p.dateFormat} onChange={e => set('dateFormat', e.target.value)} className="input w-44 text-sm">
@@ -157,26 +192,6 @@ const SETTINGS_INDEX = [
       <select value={p.timezone} onChange={e => set('timezone', e.target.value)} className="input w-44 text-sm">
         <option value="canvas">Canvas course timezone</option>
         <option value="system">My local timezone</option>
-      </select>
-    ),
-  },
-  { section: 'general', sectionTitle: 'General', tier: 'standard',
-    label: 'Default landing page', description: 'Which page to open when launching Canvas Power Tools.',
-    render: (p, set) => (
-      <select value={p.defaultLandingPage} onChange={e => set('defaultLandingPage', e.target.value)} className="input w-48 text-sm">
-        <option value="last">Last visited page</option>
-        <option value="bulk_editor">Bulk Editor</option>
-        <option value="template_library">Template Library</option>
-        <option value="settings">Settings</option>
-      </select>
-    ),
-  },
-  { section: 'general', sectionTitle: 'General', tier: 'standard',
-    label: 'Default course', description: 'Which course to open when launching the Bulk Editor.',
-    render: (p, set) => (
-      <select value={p.defaultCourse} onChange={e => set('defaultCourse', e.target.value)} className="input w-44 text-sm">
-        <option value="last_used">Last used course</option>
-        <option value="ask">Always ask</option>
       </select>
     ),
   },
@@ -281,6 +296,25 @@ const SETTINGS_INDEX = [
       <select value={p.bulkEditorShiftNullDates} onChange={e => set('bulkEditorShiftNullDates', e.target.value)} className="input w-52 text-sm">
         <option value="skip">Skip (leave undated)</option>
         <option value="set">Set a new date</option>
+      </select>
+    ),
+  },
+  { section: 'bulkEditor', sectionTitle: 'Bulk Editor', tier: 'standard',
+    label: 'After applying changes', description: 'What happens to the view after a bulk edit is saved to Canvas.',
+    render: (p, set) => (
+      <select value={p.bulkEditorAfterApply ?? 'stay'} onChange={e => set('bulkEditorAfterApply', e.target.value)} className="input w-52 text-sm">
+        <option value="stay">Stay in place</option>
+        <option value="scroll_top">Scroll to top</option>
+        <option value="results_only">Show changed rows only</option>
+      </select>
+    ),
+  },
+  { section: 'bulkEditor', sectionTitle: 'Bulk Editor', tier: 'advanced',
+    label: 'Select All behavior', description: 'Whether "Select All" selects every row or only visible filtered rows.',
+    render: (p, set) => (
+      <select value={p.bulkEditorSelectAllBehavior ?? 'filtered'} onChange={e => set('bulkEditorSelectAllBehavior', e.target.value)} className="input w-44 text-sm">
+        <option value="filtered">Filtered rows only</option>
+        <option value="all">All rows</option>
       </select>
     ),
   },
@@ -467,6 +501,14 @@ const SETTINGS_INDEX = [
         <option value="never">Never</option>
       </select>
     ),
+  },
+  { section: 'changeLog', sectionTitle: 'Change Log', tier: 'advanced',
+    label: 'Auto-expand latest entry', description: 'Automatically open the most recent change log entry when the log loads.',
+    render: (p, set) => <Toggle checked={p.changeLogAutoExpandLatest ?? false} onChange={v => set('changeLogAutoExpandLatest', v)} />,
+  },
+  { section: 'changeLog', sectionTitle: 'Change Log', tier: 'advanced',
+    label: 'Continue revert past failures', description: 'When reverting a bulk edit, keep going if some assignments fail rather than stopping at the first error.',
+    render: (p, set) => <Toggle checked={p.changeLogContinueRevertPastFailures ?? true} onChange={v => set('changeLogContinueRevertPastFailures', v)} />,
   },
   { section: 'changeLog', sectionTitle: 'Change Log', tier: 'advanced',
     label: 'Display order', description: 'Order in which change log entries are shown.',
@@ -924,12 +966,6 @@ function App() {
         ) : (
         <>
 
-        {/* ── Navigation ── */}
-        <SectionCard {...sectionProps('navigation')} title="Navigation" hasAdvanced>
-          {renderIndexItems('navigation', 'standard')}
-          {advancedOpen.navigation && renderIndexItems('navigation', 'advanced')}
-        </SectionCard>
-
         {/* ── Account ── */}
         <SectionCard {...sectionProps('account')} title="Account" hasAdvanced>
           {/* Canvas URL — read only */}
@@ -972,6 +1008,12 @@ function App() {
 
           <>{/* advanced */}</>
           {advancedOpen.account && renderIndexItems('account', 'advanced')}
+        </SectionCard>
+
+        {/* ── Navigation ── */}
+        <SectionCard {...sectionProps('navigation')} title="Navigation" hasAdvanced>
+          {renderIndexItems('navigation', 'standard')}
+          {advancedOpen.navigation && renderIndexItems('navigation', 'advanced')}
         </SectionCard>
 
         {/* ── Security ── */}
