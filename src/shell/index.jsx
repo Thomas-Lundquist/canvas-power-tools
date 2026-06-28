@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { LayoutGrid, List, ChevronRight } from 'lucide-react'
-import { SettingsButton } from '../components/AppNav.jsx'
+import { SettingsButton, BrandMark } from '../components/AppNav.jsx'
 import { TOOLS, MODULES } from '../config/tools.jsx'
 import { getPreferences, setPreference } from '../storage/preferences.js'
 import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
@@ -40,13 +40,7 @@ function App() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                 style={{ backgroundColor: 'var(--cpt-color)' }}>
-              <span className="text-white text-xs font-black">C</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block">Canvas Power Tools</span>
-          </div>
+          <BrandMark />
           <div className="flex items-center gap-1">
             <button
               onClick={toggleMode}

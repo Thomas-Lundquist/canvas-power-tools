@@ -133,7 +133,8 @@ function App() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         {view === 'library' && (
           <>
-            <h1 className="text-xl font-bold text-gray-900 mb-6">Assignment Templates</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Assignment Templates</h1>
+            <p className="text-sm text-gray-500 mt-1 mb-6">Save assignment structures and deploy them to one or more courses instantly.</p>
             <TemplateLibrary
               templates={templates}
               folders={folders}

@@ -64,6 +64,7 @@ export default function App() {
         setButtonColor(color)
         applyTheme(color)
         applyDarkMode(prefs.themeMode ?? 'system')
+        applyTextSize(prefs.textSize ?? 'medium')
 
         // ?courseId=X from the content script takes priority over saved preferences
         const params = new URLSearchParams(window.location.search)
@@ -223,7 +224,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <BrandLogo />
-            <span className="text-gray-300 hidden sm:block">|</span>
+            <div className="w-px h-5 bg-gray-200 hidden sm:block shrink-0" aria-hidden="true" />
             <CourseSelector
               courses={courses}
               selectedId={selectedCourseId}
@@ -260,7 +261,8 @@ export default function App() {
 
         {/* Page heading + filter bar */}
         <div className="mb-4">
-          <h1 className="text-xl font-bold text-gray-900 mb-4">Bulk Assignment Editor</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bulk Assignment Editor</h1>
+          <p className="text-sm text-gray-500 mt-1 mb-4">Edit due dates, points, and publish status across all assignments at once.</p>
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -322,16 +324,33 @@ export default function App() {
                 </span>
               )}
             </div>
-            <AssignmentTable
-              assignments={filtered}
-              selectedIds={selectedIds}
-              onToggle={toggleId}
-              onToggleAll={toggleAll}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={handleSort}
-              loading={loadingAssignments}
-            />
+            {!loadingAssignments && assignments.length === 0 ? (
+              <div className="p-16 text-center">
+                <p className="text-sm font-medium text-gray-500">This course has no assignments yet.</p>
+                <p className="text-xs text-gray-400 mt-1">Create assignments in Canvas and they'll appear here.</p>
+              </div>
+            ) : !loadingAssignments && filtered.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-gray-500">No assignments match your filters.</p>
+                <button
+                  className="mt-2 text-xs underline text-gray-400 hover:text-gray-600"
+                  onClick={() => { setSearch(''); setFilterGroups([]); setFilterStatus([]) }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              <AssignmentTable
+                assignments={filtered}
+                selectedIds={selectedIds}
+                onToggle={toggleId}
+                onToggleAll={toggleAll}
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+                loading={loadingAssignments}
+              />
+            )}
           </div>
         )}
 

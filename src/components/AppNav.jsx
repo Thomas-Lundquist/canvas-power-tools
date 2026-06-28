@@ -98,18 +98,26 @@ export function SettingsButton() {
   )
 }
 
-export function BrandLogo() {
+export function BrandMark() {
   return (
-    <button
-      onClick={() => navigate('src/shell/index.html')}
-      className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
-      aria-label="Canvas Power Tools home"
-    >
+    <div className="flex items-center gap-2.5 shrink-0">
       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
            style={{ backgroundColor: 'var(--cpt-color)' }}>
         <span className="text-white text-xs font-black">C</span>
       </div>
       <span className="text-sm font-semibold text-gray-900 hidden sm:block">Canvas Power Tools</span>
+    </div>
+  )
+}
+
+export function BrandLogo() {
+  return (
+    <button
+      onClick={() => navigate('src/shell/index.html')}
+      className="hover:opacity-80 transition-opacity shrink-0"
+      aria-label="Canvas Power Tools home"
+    >
+      <BrandMark />
     </button>
   )
 }
