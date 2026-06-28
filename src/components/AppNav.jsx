@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Check, Settings } from 'lucide-react'
-import { TOOLS } from '../config/tools.jsx'
+import { TOOLS, MODULES } from '../config/tools.jsx'
 
 function navigate(path) {
   if (window.location.href.includes(path)) return
@@ -23,11 +23,19 @@ export default function AppNav({ current }) {
     return () => document.removeEventListener('mousedown', onMouseDown)
   }, [open])
 
+  // Group tools by module for the dropdown
+  const grouped = MODULES.map(mod => ({
+    ...mod,
+    tools: TOOLS.filter(t => t.module === mod.id),
+  })).filter(g => g.tools.length > 0)
+
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
         className="cpt-nav-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+        aria-haspopup="true"
+        aria-expanded={open}
       >
         <TriggerIcon size={14} />
         {currentTool?.shortLabel ?? 'Tools'}
@@ -35,30 +43,42 @@ export default function AppNav({ current }) {
       </button>
 
       {open && (
-        <div className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50">
-          {TOOLS.map(tool => {
-            const active = tool.id === current
-            return (
-              <button
-                key={tool.id}
-                onClick={() => { navigate(tool.path); setOpen(false) }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors"
-              >
-                <tool.Icon
-                  size={15}
-                  style={active ? { color: 'var(--cpt-color)' } : undefined}
-                  className={active ? '' : 'text-gray-400'}
-                />
-                <span
-                  className={active ? 'font-semibold' : 'text-gray-700'}
-                  style={active ? { color: 'var(--cpt-color)' } : undefined}
-                >
-                  {tool.label}
-                </span>
-                {active && <Check size={13} className="ml-auto shrink-0" style={{ color: 'var(--cpt-color)' }} />}
-              </button>
-            )
-          })}
+        <div
+          className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 max-h-[70vh] overflow-y-auto"
+          role="menu"
+        >
+          {grouped.map((group, gi) => (
+            <div key={group.id} role="group" aria-label={group.label}>
+              {/* Module header */}
+              <p className={`px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 ${gi > 0 ? 'pt-3 border-t border-gray-100 mt-1' : 'pt-2'}`}>
+                {group.label}
+              </p>
+              {group.tools.map(tool => {
+                const active = tool.id === current
+                return (
+                  <button
+                    key={tool.id}
+                    onClick={() => { navigate(tool.path); setOpen(false) }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors"
+                    role="menuitem"
+                  >
+                    <tool.Icon
+                      size={15}
+                      style={active ? { color: 'var(--cpt-color)' } : undefined}
+                      className={active ? '' : 'text-gray-400'}
+                    />
+                    <span
+                      className={active ? 'font-semibold' : 'text-gray-700'}
+                      style={active ? { color: 'var(--cpt-color)' } : undefined}
+                    >
+                      {tool.label}
+                    </span>
+                    {active && <Check size={13} className="ml-auto shrink-0" style={{ color: 'var(--cpt-color)' }} />}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -71,6 +91,7 @@ export function SettingsButton() {
       onClick={() => navigate('src/settings/index.html')}
       className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
       title="Settings"
+      aria-label="Settings"
     >
       <Settings size={16} />
     </button>
@@ -82,6 +103,7 @@ export function BrandLogo() {
     <button
       onClick={() => navigate('src/shell/index.html')}
       className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
+      aria-label="Canvas Power Tools home"
     >
       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
            style={{ backgroundColor: 'var(--cpt-color)' }}>

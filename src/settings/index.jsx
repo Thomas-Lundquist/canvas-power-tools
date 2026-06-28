@@ -41,6 +41,7 @@ const BRAND_COLORS = [
 
 const SECTION_KEYS = {
   account: ['verificationFrequency', 'showConnectionInPopup', 'apiTimeout', 'resultsPerPage', 'rateLimitBehavior'],
+  navigation: ['navDefaultModule', 'rememberLastTool', 'sidebarDefault'],
   general: ['dateFormat', 'timeFormat', 'timezone', 'defaultLandingPage', 'defaultCourse', 'autoAddToModule', 'buttonColor', 'themeMode', 'homepageDisplayMode', 'defaultDueTime', 'defaultAvailableFromTime', 'defaultAvailableUntilTime', 'firstDayOfWeek', 'showCourseTerm', 'courseDisplayFormat'],
   bulkEditor: ['shiftAllDatesTogether', 'bulkEditorDefaultSort', 'bulkEditorDefaultSortDir', 'bulkEditorDefaultDateShiftDays', 'bulkEditorDefaultShiftDirection', 'bulkEditorShowChangeLogAfterSave', 'bulkEditorShiftNullDates', 'bulkEditorRowsPerPage', 'bulkEditorVisibleColumns', 'bulkEditorIncludeGradedDiscussions', 'bulkEditorIncludeQuizzes', 'bulkEditorIncludeUngraded', 'bulkEditorIncludeLocked', 'bulkEditorIncludeUnpublished'],
   templates: ['templatesSort', 'templatesDefaultFolder', 'templatesAfterDeploy', 'templatesActiveCoursesOnly', 'templateAutoExpandFolders', 'templateSkipDeleteConfirm', 'templatesSearchScope', 'templatesDefaultSubmissionType', 'templatesDefaultGradingType', 'templatesDefaultPoints', 'templatesDefaultPeerReview'],
@@ -55,6 +56,33 @@ const SECTION_KEYS = {
 // Complex settings (token, color picker, course shortcuts) are inline-only.
 
 const SETTINGS_INDEX = [
+  // Navigation ──────────────────────────────────────────────────────────────────
+  { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
+    label: 'Default module on open', description: 'Which module to open when launching Canvas Power Tools.',
+    render: (p, set) => (
+      <select value={p.navDefaultModule ?? 'last_used'} onChange={e => set('navDefaultModule', e.target.value)} className="input w-48 text-sm">
+        <option value="last_used">Last used</option>
+        <option value="assignments">Assignments</option>
+        <option value="grading">Grading</option>
+        <option value="communication">Communication</option>
+        <option value="people">People</option>
+      </select>
+    ),
+  },
+  { section: 'navigation', sectionTitle: 'Navigation', tier: 'standard',
+    label: 'Remember last used tool', description: 'Return to the same tool within a module when switching back to it.',
+    render: (p, set) => <Toggle checked={p.rememberLastTool ?? true} onChange={v => set('rememberLastTool', v)} />,
+  },
+  { section: 'navigation', sectionTitle: 'Navigation', tier: 'advanced',
+    label: 'Sidebar default state', description: 'Whether the sidebar starts expanded or collapsed when a tool opens.',
+    render: (p, set) => (
+      <select value={p.sidebarDefault ?? 'expanded'} onChange={e => set('sidebarDefault', e.target.value)} className="input w-36 text-sm">
+        <option value="expanded">Expanded</option>
+        <option value="collapsed">Collapsed</option>
+      </select>
+    ),
+  },
+
   // Account ────────────────────────────────────────────────────────────────────
   { section: 'account', sectionTitle: 'Account', tier: 'standard',
     label: 'Verification frequency', description: 'How often to automatically re-check your API token.',
@@ -895,6 +923,12 @@ function App() {
           )
         ) : (
         <>
+
+        {/* ── Navigation ── */}
+        <SectionCard {...sectionProps('navigation')} title="Navigation" hasAdvanced>
+          {renderIndexItems('navigation', 'standard')}
+          {advancedOpen.navigation && renderIndexItems('navigation', 'advanced')}
+        </SectionCard>
 
         {/* ── Account ── */}
         <SectionCard {...sectionProps('account')} title="Account" hasAdvanced>

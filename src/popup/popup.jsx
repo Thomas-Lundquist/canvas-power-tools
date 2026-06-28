@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Settings, AlertCircle, BookOpen } from 'lucide-react'
-import { TOOLS } from '../config/tools.jsx'
+import { TOOLS, MODULES } from '../config/tools.jsx'
 import { isSetupComplete, getAccount } from '../storage/account.js'
 import { getPreferences } from '../storage/preferences.js'
 import { applyTheme, applyDarkMode } from '../utils/color.js'
@@ -49,10 +49,13 @@ function Popup() {
   }
 
   // null means show all; array means only show those ids
-  const pinnedIds   = prefs?.popupPinnedTools
-  const visibleTools = pinnedIds == null
-    ? TOOLS
-    : TOOLS.filter(t => pinnedIds.includes(t.id))
+  const pinnedIds = prefs?.popupPinnedTools
+
+  // Build module groups, filtered by pinned tools
+  const grouped = MODULES.map(mod => ({
+    ...mod,
+    tools: TOOLS.filter(t => t.module === mod.id && (pinnedIds == null || pinnedIds.includes(t.id))),
+  })).filter(g => g.tools.length > 0)
 
   return (
     <div className="p-4 space-y-3">
@@ -60,32 +63,46 @@ function Popup() {
       {account?.userName && (
         <p className="text-xs text-gray-500 truncate">{account.userName}</p>
       )}
-      <div className="space-y-1">
-        {visibleTools.map(tool => (
-          <NavItem
-            key={tool.id}
-            icon={<tool.Icon size={16} />}
-            label={tool.label}
-            onClick={() => open(tool.path)}
-          />
+
+      <div className="space-y-0">
+        {grouped.map((group, gi) => (
+          <div key={group.id}>
+            <p className={`text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-3 pb-1 ${gi > 0 ? 'pt-3' : 'pt-1'}`}>
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.tools.map(tool => (
+                <NavItem
+                  key={tool.id}
+                  icon={<tool.Icon size={15} />}
+                  label={tool.shortLabel}
+                  onClick={() => open(tool.path)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
+
       {prefs?.popupCourseShortcuts?.length > 0 && (
         <div className="border-t border-gray-100 pt-2">
-          <p className="text-xs text-gray-400 px-3 pb-1 font-medium uppercase tracking-wide">Quick Courses</p>
-          {prefs.popupCourseShortcuts.map(course => (
-            <NavItem
-              key={course.id}
-              icon={<BookOpen size={16} />}
-              label={course.name}
-              onClick={() => open(`src/pages/bulk-editor/index.html?courseId=${course.id}`)}
-            />
-          ))}
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-3 pb-1">Quick Courses</p>
+          <div className="space-y-0.5">
+            {prefs.popupCourseShortcuts.map(course => (
+              <NavItem
+                key={course.id}
+                icon={<BookOpen size={15} />}
+                label={course.name}
+                onClick={() => open(`src/pages/bulk-editor/index.html?courseId=${course.id}`)}
+              />
+            ))}
+          </div>
         </div>
       )}
+
       <div className="border-t border-gray-100 pt-2">
         <NavItem
-          icon={<Settings size={16} />}
+          icon={<Settings size={15} />}
           label="Settings"
           onClick={() => open('src/settings/index.html')}
           subtle

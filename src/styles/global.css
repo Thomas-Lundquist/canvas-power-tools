@@ -81,6 +81,11 @@
   .section-title {
     @apply text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3;
   }
+  .filter-active {
+    border-color: var(--cpt-color);
+    color: var(--cpt-color);
+    background-color: rgba(var(--cpt-color-rgb), 0.06);
+  }
 }
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────

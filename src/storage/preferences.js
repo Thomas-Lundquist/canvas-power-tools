@@ -90,6 +90,11 @@ export const DEFAULTS = {
   confirmSkipPreviewForSingleField: false,
   confirmRememberDismissed: false,
 
+  // Navigation
+  navDefaultModule: 'last_used',        // 'last_used' | module id
+  rememberLastTool: true,
+  sidebarDefault: 'expanded',           // 'expanded' | 'collapsed'
+
   // Popup
   popupPinnedTools: null,               // null = show all tools
   popupCourseShortcuts: [],             // [{ id, name }]
