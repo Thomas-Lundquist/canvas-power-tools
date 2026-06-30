@@ -264,7 +264,7 @@ export default function App() {
   ].reduce((a, b) => a + b, 0)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-48">
+    <div className="min-h-screen flex flex-col bg-gray-50 pb-48">
       {/* Top bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
@@ -290,7 +290,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-6 py-6 flex-1 flex flex-col min-h-0 w-full">
         {/* Error banner */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 text-sm text-red-700">
@@ -381,7 +381,7 @@ export default function App() {
 
         {/* Assignment table */}
         {!loadingCourses && selectedCourseId && (
-          <div className="card overflow-hidden">
+          <div className="card overflow-hidden flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
               {!loadingAssignments && filtered.length > 0 ? (
                 <button
@@ -430,6 +430,7 @@ export default function App() {
                 sortDir={sortDir}
                 onSort={handleSort}
                 loading={loadingAssignments}
+                fillHeight
               />
             )}
           </div>

@@ -1,8 +1,8 @@
 // Custom checkbox — consistent branded styling across the extension.
-// API: <Checkbox checked={bool} onChange={fn(bool)} indeterminate? disabled? />
+// API: <Checkbox checked={bool} onChange={fn(bool)} indeterminate? disabled? ariaLabel? />
 // Wrap with a <div onClick={same fn}> to make the label text clickable too.
 
-export function Checkbox({ checked, onChange, indeterminate, disabled }) {
+export function Checkbox({ checked, onChange, indeterminate, disabled, ariaLabel }) {
   const active = checked || indeterminate
 
   function handleClick(e) {
@@ -14,6 +14,7 @@ export function Checkbox({ checked, onChange, indeterminate, disabled }) {
     <span
       role="checkbox"
       aria-checked={indeterminate ? 'mixed' : checked}
+      aria-label={ariaLabel}
       tabIndex={disabled ? -1 : 0}
       onKeyDown={e => {
         if ((e.key === ' ' || e.key === 'Enter') && !disabled) {
