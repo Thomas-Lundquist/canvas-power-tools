@@ -72,6 +72,7 @@ export default function AssignmentGroupManager({ initialCourseId }) {
           : list[0]?.id ?? null
         if (start) loadCourseData(start)
       })
+      .catch(err => setError(err.message))
       .finally(() => setLoadingCourses(false))
   }, [])
 
