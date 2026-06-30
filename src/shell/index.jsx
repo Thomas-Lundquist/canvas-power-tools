@@ -7,6 +7,7 @@ import { getPreferences, setPreference } from '../storage/preferences.js'
 import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
 import '../styles/global.css'
 import { ToastProvider } from '../components/Toast.jsx'
+import SetupGuard from '../components/SetupGuard.jsx'
 
 function App() {
   const [displayMode, setDisplayMode] = useState('tiles')
@@ -107,4 +108,4 @@ function App() {
 }
 
 getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
-createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>)
+createRoot(document.getElementById('root')).render(<SetupGuard><ToastProvider><App /></ToastProvider></SetupGuard>)

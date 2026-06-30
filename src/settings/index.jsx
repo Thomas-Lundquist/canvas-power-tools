@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import AppNav, { BrandLogo } from '../components/AppNav.jsx'
 import { ToastProvider, useToast } from '../components/Toast.jsx'
+import SetupGuard from '../components/SetupGuard.jsx'
 import { TOOLS } from '../config/tools.jsx'
 import { getAccount, updateVerificationStatus } from '../storage/account.js'
 import { getPreferences, setPreference, resetPreferences, DEFAULTS } from '../storage/preferences.js'
@@ -1569,6 +1570,6 @@ function StorageBar({ label, used, max }) {
   )
 }
 
-createRoot(document.getElementById('root')).render(<ToastProvider><PinGateProvider><App /></PinGateProvider></ToastProvider>)
+createRoot(document.getElementById('root')).render(<SetupGuard><ToastProvider><PinGateProvider><App /></PinGateProvider></ToastProvider></SetupGuard>)
 
 
