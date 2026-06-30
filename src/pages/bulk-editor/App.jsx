@@ -553,14 +553,42 @@ export default function App() {
   )
 }
 
-function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
+function useFilterDropdownBehavior(isOpen, onToggle) {
   const triggerRef = useRef(null)
+  const panelRef = useRef(null)
+  const onToggleRef = useRef(onToggle)
   const wasOpen = useRef(false)
+
+  useEffect(() => { onToggleRef.current = onToggle }, [onToggle])
+
   useEffect(() => {
     if (wasOpen.current && !isOpen) triggerRef.current?.focus()
     wasOpen.current = isOpen
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isOpen) return
+    function handlePointerDown(e) {
+      if (!triggerRef.current?.contains(e.target) && !panelRef.current?.contains(e.target)) {
+        onToggleRef.current()
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onToggleRef.current()
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  return { triggerRef, panelRef }
+}
+
+function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
+  const { triggerRef, panelRef } = useFilterDropdownBehavior(isOpen, onToggle)
   const isActive = !!(value.from || value.to)
   const slug = label.toLowerCase().replace(/[^a-z0-9]/g, '-')
   const fromId = `date-filter-from-${slug}`
@@ -578,59 +606,47 @@ function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
         {label}{isActive ? ' ●' : ''}
       </button>
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={onToggle} aria-hidden="true" />
-          <div
-            className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[14rem]"
-            onKeyDown={e => e.key === 'Escape' && onToggle()}
-          >
-            <div className="space-y-2">
-              <div>
-                <label htmlFor={fromId} className="block text-xs text-gray-500 mb-1">From</label>
-                <input
-                  id={fromId}
-                  type="date"
-                  className="input text-sm w-full"
-                  value={value.from}
-                  max={value.to || undefined}
-                  onChange={e => onChange({ ...value, from: e.target.value })}
-                />
-              </div>
-              <div>
-                <label htmlFor={toId} className="block text-xs text-gray-500 mb-1">To</label>
-                <input
-                  id={toId}
-                  type="date"
-                  className="input text-sm w-full"
-                  value={value.to}
-                  min={value.from || undefined}
-                  onChange={e => onChange({ ...value, to: e.target.value })}
-                />
-              </div>
-              {isActive && (
-                <button
-                  className="text-xs text-gray-400 hover:text-gray-600 underline"
-                  onClick={() => { onChange(EMPTY_DATE_RANGE); onToggle() }}
-                >
-                  Clear
-                </button>
-              )}
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[14rem]">
+          <div className="space-y-2">
+            <div>
+              <label htmlFor={fromId} className="block text-xs text-gray-500 mb-1">From</label>
+              <input
+                id={fromId}
+                type="date"
+                className="input text-sm w-full"
+                value={value.from}
+                max={value.to || undefined}
+                onChange={e => onChange({ ...value, from: e.target.value })}
+              />
             </div>
+            <div>
+              <label htmlFor={toId} className="block text-xs text-gray-500 mb-1">To</label>
+              <input
+                id={toId}
+                type="date"
+                className="input text-sm w-full"
+                value={value.to}
+                min={value.from || undefined}
+                onChange={e => onChange({ ...value, to: e.target.value })}
+              />
+            </div>
+            {isActive && (
+              <button
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                onClick={() => { onChange(EMPTY_DATE_RANGE); onToggle() }}
+              >
+                Clear
+              </button>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   )
 }
 
 function PointsRangeFilter({ value, onChange, isOpen, onToggle }) {
-  const triggerRef = useRef(null)
-  const wasOpen = useRef(false)
-  useEffect(() => {
-    if (wasOpen.current && !isOpen) triggerRef.current?.focus()
-    wasOpen.current = isOpen
-  }, [isOpen])
-
+  const { triggerRef, panelRef } = useFilterDropdownBehavior(isOpen, onToggle)
   const isActive = value.min !== '' || value.max !== ''
   return (
     <div className="relative">
@@ -645,61 +661,49 @@ function PointsRangeFilter({ value, onChange, isOpen, onToggle }) {
         Points{isActive ? ' ●' : ''}
       </button>
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={onToggle} aria-hidden="true" />
-          <div
-            className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[11rem]"
-            onKeyDown={e => e.key === 'Escape' && onToggle()}
-          >
-            <div className="space-y-2">
-              <div>
-                <label htmlFor="points-filter-min" className="block text-xs text-gray-500 mb-1">Min points</label>
-                <input
-                  id="points-filter-min"
-                  type="number"
-                  min="0"
-                  className="input text-sm w-full"
-                  value={value.min}
-                  placeholder="0"
-                  onChange={e => onChange({ ...value, min: e.target.value })}
-                />
-              </div>
-              <div>
-                <label htmlFor="points-filter-max" className="block text-xs text-gray-500 mb-1">Max points</label>
-                <input
-                  id="points-filter-max"
-                  type="number"
-                  min="0"
-                  className="input text-sm w-full"
-                  value={value.max}
-                  placeholder="Any"
-                  onChange={e => onChange({ ...value, max: e.target.value })}
-                />
-              </div>
-              {isActive && (
-                <button
-                  className="text-xs text-gray-400 hover:text-gray-600 underline"
-                  onClick={() => { onChange(EMPTY_POINTS_RANGE); onToggle() }}
-                >
-                  Clear
-                </button>
-              )}
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[11rem]">
+          <div className="space-y-2">
+            <div>
+              <label htmlFor="points-filter-min" className="block text-xs text-gray-500 mb-1">Min points</label>
+              <input
+                id="points-filter-min"
+                type="number"
+                min="0"
+                className="input text-sm w-full"
+                value={value.min}
+                placeholder="0"
+                onChange={e => onChange({ ...value, min: e.target.value })}
+              />
             </div>
+            <div>
+              <label htmlFor="points-filter-max" className="block text-xs text-gray-500 mb-1">Max points</label>
+              <input
+                id="points-filter-max"
+                type="number"
+                min="0"
+                className="input text-sm w-full"
+                value={value.max}
+                placeholder="Any"
+                onChange={e => onChange({ ...value, max: e.target.value })}
+              />
+            </div>
+            {isActive && (
+              <button
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                onClick={() => { onChange(EMPTY_POINTS_RANGE); onToggle() }}
+              >
+                Clear
+              </button>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   )
 }
 
 function GroupFilter({ groups, selected, onChange, isOpen, onToggle }) {
-  const triggerRef = useRef(null)
-  const wasOpen = useRef(false)
-  useEffect(() => {
-    if (wasOpen.current && !isOpen) triggerRef.current?.focus()
-    wasOpen.current = isOpen
-  }, [isOpen])
-
+  const { triggerRef, panelRef } = useFilterDropdownBehavior(isOpen, onToggle)
   if (groups.length === 0) return null
   return (
     <div className="relative">
@@ -718,27 +722,21 @@ function GroupFilter({ groups, selected, onChange, isOpen, onToggle }) {
         Group{selected.length > 0 ? ` (${selected.length})` : ''}
       </button>
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={onToggle} aria-hidden="true" />
-          <div
-            className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1"
-            onKeyDown={e => e.key === 'Escape' && onToggle()}
-          >
-            {groups.map(g => (
-              <div
-                key={g.id}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
-                onClick={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
-              >
-                <Checkbox
-                  checked={selected.includes(g.id)}
-                  onChange={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
-                />
-                {g.name}
-              </div>
-            ))}
-          </div>
-        </>
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
+          {groups.map(g => (
+            <div
+              key={g.id}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+              onClick={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
+            >
+              <Checkbox
+                checked={selected.includes(g.id)}
+                onChange={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
+              />
+              {g.name}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
@@ -768,13 +766,7 @@ function FilterChip({ label, onRemove }) {
 }
 
 function StatusFilter({ selected, onChange, isOpen, onToggle }) {
-  const triggerRef = useRef(null)
-  const wasOpen = useRef(false)
-  useEffect(() => {
-    if (wasOpen.current && !isOpen) triggerRef.current?.focus()
-    wasOpen.current = isOpen
-  }, [isOpen])
-
+  const { triggerRef, panelRef } = useFilterDropdownBehavior(isOpen, onToggle)
   const options = [{ value: 'published', label: 'Published' }, { value: 'unpublished', label: 'Unpublished' }]
   return (
     <div className="relative">
@@ -793,27 +785,21 @@ function StatusFilter({ selected, onChange, isOpen, onToggle }) {
         Status{selected.length > 0 ? ` (${selected.length})` : ''}
       </button>
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={onToggle} aria-hidden="true" />
-          <div
-            className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1"
-            onKeyDown={e => e.key === 'Escape' && onToggle()}
-          >
-            {options.map(o => (
-              <div
-                key={o.value}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
-                onClick={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
-              >
-                <Checkbox
-                  checked={selected.includes(o.value)}
-                  onChange={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
-                />
-                {o.label}
-              </div>
-            ))}
-          </div>
-        </>
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
+          {options.map(o => (
+            <div
+              key={o.value}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+              onClick={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
+            >
+              <Checkbox
+                checked={selected.includes(o.value)}
+                onChange={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
+              />
+              {o.label}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
