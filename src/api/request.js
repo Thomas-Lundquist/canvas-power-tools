@@ -58,6 +58,20 @@ function extractNextPageUrl(linkHeader) {
   return match ? match[1] : null
 }
 
+function extractTotalEstimate(linkHeader) {
+  if (!linkHeader) return null
+  const match = linkHeader.match(/<([^>]*)>;\s*rel="last"/)
+  if (!match) return null
+  try {
+    const url = new URL(match[1])
+    const lastPage = parseInt(url.searchParams.get('page') ?? '1')
+    const perPage = parseInt(url.searchParams.get('per_page') ?? '100')
+    return lastPage * perPage
+  } catch {
+    return null
+  }
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -71,13 +85,16 @@ export async function canvasGet(path, params = {}) {
 export async function canvasGetAll(path, params = {}, onProgress) {
   let allResults = []
   let url = await buildUrl(path, params)
+  let estimatedTotal = null
 
   while (url) {
     const response = await executeRequest({ url, method: 'GET' })
     const data = await response.json()
     allResults = allResults.concat(Array.isArray(data) ? data : [data])
-    url = extractNextPageUrl(response.headers.get('Link'))
-    if (onProgress) onProgress(allResults.length)
+    const linkHeader = response.headers.get('Link')
+    if (estimatedTotal === null) estimatedTotal = extractTotalEstimate(linkHeader)
+    url = extractNextPageUrl(linkHeader)
+    if (onProgress) onProgress(allResults.length, estimatedTotal)
   }
 
   return allResults

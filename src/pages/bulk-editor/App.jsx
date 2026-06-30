@@ -65,6 +65,7 @@ export default function App() {
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [loadingAssignments, setLoadingAssignments] = useState(false)
   const [loadingCount, setLoadingCount] = useState(0)
+  const [loadingTotal, setLoadingTotal] = useState(null)
   const [error, setError] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
   const [applying, setApplying] = useState(false)
@@ -125,10 +126,14 @@ export default function App() {
     setFilterPoints(EMPTY_POINTS_RANGE)
     setLoadingAssignments(true)
     setLoadingCount(0)
+    setLoadingTotal(null)
     setError(null)
     try {
       const [fetched, grps, mods] = await Promise.all([
-        getAssignments(courseId, setLoadingCount),
+        getAssignments(courseId, (loaded, total) => {
+          setLoadingCount(loaded)
+          if (total != null) setLoadingTotal(total)
+        }),
         getAssignmentGroups(courseId),
         getModules(courseId),
       ])
@@ -382,7 +387,11 @@ export default function App() {
                 </button>
               ) : <span />}
               {loadingAssignments ? (
-                <span className="text-xs text-gray-400">Loading assignments...</span>
+                <span className="text-xs text-gray-400">
+                  {loadingCount > 0
+                    ? `Loading assignments… ${loadingCount}${loadingTotal != null ? ` of ${loadingTotal}` : ''}`
+                    : 'Loading assignments…'}
+                </span>
               ) : (
                 <span className="text-xs text-gray-500">
                   Showing {filtered.length} of {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
