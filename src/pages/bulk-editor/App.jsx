@@ -541,6 +541,9 @@ export default function App() {
 function DateRangeFilter({ label, value, onChange }) {
   const [open, setOpen] = useState(false)
   const isActive = !!(value.from || value.to)
+  const slug = label.toLowerCase().replace(/[^a-z0-9]/g, '-')
+  const fromId = `date-filter-from-${slug}`
+  const toId = `date-filter-to-${slug}`
   return (
     <div className="relative">
       <button
@@ -556,8 +559,9 @@ function DateRangeFilter({ label, value, onChange }) {
         <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[14rem]">
           <div className="space-y-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">From</label>
+              <label htmlFor={fromId} className="block text-xs text-gray-500 mb-1">From</label>
               <input
+                id={fromId}
                 type="date"
                 className="input text-sm w-full"
                 value={value.from}
@@ -566,8 +570,9 @@ function DateRangeFilter({ label, value, onChange }) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">To</label>
+              <label htmlFor={toId} className="block text-xs text-gray-500 mb-1">To</label>
               <input
+                id={toId}
                 type="date"
                 className="input text-sm w-full"
                 value={value.to}
@@ -608,8 +613,9 @@ function PointsRangeFilter({ value, onChange }) {
         <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[11rem]">
           <div className="space-y-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Min points</label>
+              <label htmlFor="points-filter-min" className="block text-xs text-gray-500 mb-1">Min points</label>
               <input
+                id="points-filter-min"
                 type="number"
                 min="0"
                 className="input text-sm w-full"
@@ -619,8 +625,9 @@ function PointsRangeFilter({ value, onChange }) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Max points</label>
+              <label htmlFor="points-filter-max" className="block text-xs text-gray-500 mb-1">Max points</label>
               <input
+                id="points-filter-max"
                 type="number"
                 min="0"
                 className="input text-sm w-full"

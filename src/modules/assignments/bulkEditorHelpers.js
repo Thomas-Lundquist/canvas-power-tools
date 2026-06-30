@@ -81,7 +81,10 @@ export function applyFilters(assignments, filters) {
     if (!range || (!range.from && !range.to)) continue
     result = result.filter(a => {
       if (!a[fieldKey]) return false
-      const dateStr = a[fieldKey].slice(0, 10)
+      // Convert UTC ISO timestamp to local YYYY-MM-DD so the comparison matches
+      // what the teacher sees in the date picker (which produces local dates).
+      const d = new Date(a[fieldKey])
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       if (range.from && dateStr < range.from) return false
       if (range.to && dateStr > range.to) return false
       return true
