@@ -76,6 +76,31 @@ export function applyFilters(assignments, filters) {
     })
   }
 
+  for (const [filterKey, fieldKey] of [['dueDate', 'dueAt'], ['unlockAt', 'unlockAt'], ['lockAt', 'lockAt']]) {
+    const range = filters[filterKey]
+    if (!range || (!range.from && !range.to)) continue
+    result = result.filter(a => {
+      if (!a[fieldKey]) return false
+      const dateStr = a[fieldKey].slice(0, 10)
+      if (range.from && dateStr < range.from) return false
+      if (range.to && dateStr > range.to) return false
+      return true
+    })
+  }
+
+  if (filters.points) {
+    const { min, max } = filters.points
+    if (min !== '' || max !== '') {
+      result = result.filter(a => {
+        const pts = a.pointsPossible
+        if (pts === null || pts === undefined) return false
+        if (min !== '' && pts < Number(min)) return false
+        if (max !== '' && pts > Number(max)) return false
+        return true
+      })
+    }
+  }
+
   return result
 }
 

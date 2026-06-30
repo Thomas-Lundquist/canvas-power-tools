@@ -19,6 +19,26 @@ import { addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs
 import { usePinGate } from '../../security/usePinGate.jsx'
 
 const EMPTY_SPEC = { dueAt: null, unlockAt: null, lockAt: null, points: null, published: null }
+const EMPTY_DATE_RANGE = { from: '', to: '' }
+const EMPTY_POINTS_RANGE = { min: '', max: '' }
+
+function fmtFilterDate(dateStr) {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function dateRangeChipLabel(label, { from, to }) {
+  if (from && to) return `${label}: ${fmtFilterDate(from)}–${fmtFilterDate(to)}`
+  if (from) return `${label}: after ${fmtFilterDate(from)}`
+  return `${label}: before ${fmtFilterDate(to)}`
+}
+
+function pointsChipLabel({ min, max }) {
+  if (min !== '' && max !== '') return `Points: ${min}–${max}`
+  if (min !== '') return `Points: ≥${min}`
+  return `Points: ≤${max}`
+}
 
 export default function App() {
   const [courses, setCourses] = useState([])
@@ -31,6 +51,10 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [filterGroups, setFilterGroups] = useState([])
   const [filterStatus, setFilterStatus] = useState([])
+  const [filterDueDate, setFilterDueDate] = useState(EMPTY_DATE_RANGE)
+  const [filterUnlockAt, setFilterUnlockAt] = useState(EMPTY_DATE_RANGE)
+  const [filterLockAt, setFilterLockAt] = useState(EMPTY_DATE_RANGE)
+  const [filterPoints, setFilterPoints] = useState(EMPTY_POINTS_RANGE)
   const [sortKey, setSortKey] = useState('position')
   const [sortDir, setSortDir] = useState('asc')
   const [buttonColor, setButtonColor] = useState('#4f46e5')
@@ -95,6 +119,10 @@ export default function App() {
     setSearch('')
     setFilterGroups([])
     setFilterStatus([])
+    setFilterDueDate(EMPTY_DATE_RANGE)
+    setFilterUnlockAt(EMPTY_DATE_RANGE)
+    setFilterLockAt(EMPTY_DATE_RANGE)
+    setFilterPoints(EMPTY_POINTS_RANGE)
     setLoadingAssignments(true)
     setLoadingCount(0)
     setError(null)
@@ -116,9 +144,12 @@ export default function App() {
   }
 
   const filtered = useMemo(() => {
-    const f = applyFilters(assignments, { search, groups: filterGroups, status: filterStatus })
+    const f = applyFilters(assignments, {
+      search, groups: filterGroups, status: filterStatus,
+      dueDate: filterDueDate, unlockAt: filterUnlockAt, lockAt: filterLockAt, points: filterPoints,
+    })
     return sortAssignments(f, sortKey, sortDir)
-  }, [assignments, search, filterGroups, filterStatus, sortKey, sortDir])
+  }, [assignments, search, filterGroups, filterStatus, filterDueDate, filterUnlockAt, filterLockAt, filterPoints, sortKey, sortDir])
 
   const selectedAssignments = useMemo(
     () => assignments.filter(a => selectedIds.has(a.id)),
@@ -215,6 +246,10 @@ export default function App() {
     search ? 1 : 0,
     filterGroups.length,
     filterStatus.length,
+    (filterDueDate.from || filterDueDate.to) ? 1 : 0,
+    (filterUnlockAt.from || filterUnlockAt.to) ? 1 : 0,
+    (filterLockAt.from || filterLockAt.to) ? 1 : 0,
+    (filterPoints.min !== '' || filterPoints.max !== '') ? 1 : 0,
   ].reduce((a, b) => a + b, 0)
 
   return (
@@ -282,16 +317,47 @@ export default function App() {
 
             <GroupFilter groups={groups} selected={filterGroups} onChange={setFilterGroups} />
             <StatusFilter selected={filterStatus} onChange={setFilterStatus} />
-
-            {activeFilterCount > 0 && (
-              <button
-                className="btn-ghost text-sm text-gray-500"
-                onClick={() => { setSearch(''); setFilterGroups([]); setFilterStatus([]) }}
-              >
-                Clear filters
-              </button>
-            )}
+            <DateRangeFilter label="Due Date" value={filterDueDate} onChange={setFilterDueDate} />
+            <DateRangeFilter label="Avail. From" value={filterUnlockAt} onChange={setFilterUnlockAt} />
+            <DateRangeFilter label="Avail. Until" value={filterLockAt} onChange={setFilterLockAt} />
+            <PointsRangeFilter value={filterPoints} onChange={setFilterPoints} />
           </div>
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {search && (
+                <FilterChip label={`"${search}"`} onRemove={() => setSearch('')} />
+              )}
+              {filterGroups.map(gId => {
+                const group = groups.find(g => g.id === gId)
+                return group ? (
+                  <FilterChip
+                    key={gId}
+                    label={group.name}
+                    onRemove={() => setFilterGroups(prev => prev.filter(id => id !== gId))}
+                  />
+                ) : null
+              })}
+              {filterStatus.map(s => (
+                <FilterChip
+                  key={s}
+                  label={s === 'published' ? 'Published' : 'Unpublished'}
+                  onRemove={() => setFilterStatus(prev => prev.filter(v => v !== s))}
+                />
+              ))}
+              {(filterDueDate.from || filterDueDate.to) && (
+                <FilterChip label={dateRangeChipLabel('Due Date', filterDueDate)} onRemove={() => setFilterDueDate(EMPTY_DATE_RANGE)} />
+              )}
+              {(filterUnlockAt.from || filterUnlockAt.to) && (
+                <FilterChip label={dateRangeChipLabel('Available From', filterUnlockAt)} onRemove={() => setFilterUnlockAt(EMPTY_DATE_RANGE)} />
+              )}
+              {(filterLockAt.from || filterLockAt.to) && (
+                <FilterChip label={dateRangeChipLabel('Available Until', filterLockAt)} onRemove={() => setFilterLockAt(EMPTY_DATE_RANGE)} />
+              )}
+              {(filterPoints.min !== '' || filterPoints.max !== '') && (
+                <FilterChip label={pointsChipLabel(filterPoints)} onRemove={() => setFilterPoints(EMPTY_POINTS_RANGE)} />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Loading courses spinner */}
@@ -334,7 +400,7 @@ export default function App() {
                 <p className="text-sm text-gray-500">No assignments match your filters.</p>
                 <button
                   className="mt-2 text-xs underline text-gray-400 hover:text-gray-600"
-                  onClick={() => { setSearch(''); setFilterGroups([]); setFilterStatus([]) }}
+                  onClick={() => { setSearch(''); setFilterGroups([]); setFilterStatus([]); setFilterDueDate(EMPTY_DATE_RANGE); setFilterUnlockAt(EMPTY_DATE_RANGE); setFilterLockAt(EMPTY_DATE_RANGE); setFilterPoints(EMPTY_POINTS_RANGE) }}
                 >
                   Clear filters
                 </button>
@@ -472,6 +538,112 @@ export default function App() {
   )
 }
 
+function DateRangeFilter({ label, value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const isActive = !!(value.from || value.to)
+  return (
+    <div className="relative">
+      <button
+        className="btn-secondary text-sm"
+        aria-expanded={open}
+        aria-haspopup="true"
+        style={isActive ? { borderColor: 'var(--cpt-color)', color: 'var(--cpt-color)', backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : undefined}
+        onClick={() => setOpen(o => !o)}
+      >
+        {label}{isActive ? ' ●' : ''}
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[14rem]">
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">From</label>
+              <input
+                type="date"
+                className="input text-sm w-full"
+                value={value.from}
+                max={value.to || undefined}
+                onChange={e => onChange({ ...value, from: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">To</label>
+              <input
+                type="date"
+                className="input text-sm w-full"
+                value={value.to}
+                min={value.from || undefined}
+                onChange={e => onChange({ ...value, to: e.target.value })}
+              />
+            </div>
+            {isActive && (
+              <button
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                onClick={() => { onChange(EMPTY_DATE_RANGE); setOpen(false) }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PointsRangeFilter({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const isActive = value.min !== '' || value.max !== ''
+  return (
+    <div className="relative">
+      <button
+        className="btn-secondary text-sm"
+        aria-expanded={open}
+        aria-haspopup="true"
+        style={isActive ? { borderColor: 'var(--cpt-color)', color: 'var(--cpt-color)', backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : undefined}
+        onClick={() => setOpen(o => !o)}
+      >
+        Points{isActive ? ' ●' : ''}
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[11rem]">
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Min points</label>
+              <input
+                type="number"
+                min="0"
+                className="input text-sm w-full"
+                value={value.min}
+                placeholder="0"
+                onChange={e => onChange({ ...value, min: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Max points</label>
+              <input
+                type="number"
+                min="0"
+                className="input text-sm w-full"
+                value={value.max}
+                placeholder="Any"
+                onChange={e => onChange({ ...value, max: e.target.value })}
+              />
+            </div>
+            {isActive && (
+              <button
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                onClick={() => { onChange(EMPTY_POINTS_RANGE); setOpen(false) }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function GroupFilter({ groups, selected, onChange }) {
   const [open, setOpen] = useState(false)
   if (groups.length === 0) return null
@@ -506,6 +678,29 @@ function GroupFilter({ groups, selected, onChange }) {
         </div>
       )}
     </div>
+  )
+}
+
+function FilterChip({ label, onRemove }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-medium"
+      style={{
+        backgroundColor: 'rgba(var(--cpt-color-rgb), 0.1)',
+        color: 'var(--cpt-color)',
+        border: '1px solid rgba(var(--cpt-color-rgb), 0.2)',
+      }}
+    >
+      {label}
+      <button
+        onClick={onRemove}
+        aria-label={`Remove filter: ${label}`}
+        className="rounded-full p-0.5 hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
+        style={{ outlineColor: 'var(--cpt-color)' }}
+      >
+        <X size={10} />
+      </button>
+    </span>
   )
 }
 
