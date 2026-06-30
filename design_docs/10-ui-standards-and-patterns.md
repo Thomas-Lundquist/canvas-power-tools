@@ -372,6 +372,43 @@ their OS settings.
 When a modal opens, focus moves to the first interactive element inside it.
 When it closes, focus returns to the element that opened it.
 
+**Dropdown / Popover Pattern**
+Custom dropdowns (filter menus, popovers, any non-modal overlay) must close
+on outside click and on Escape. Do not use a transparent backdrop div — it
+blocks other interactive elements and requires two clicks to switch between
+triggers. Instead, use `pointerdown` and `keydown` listeners on `document`
+and check containment via `ref.contains(e.target)`.
+
+The reusable implementation lives in `useFilterDropdownBehavior` in
+`src/pages/bulk-editor/App.jsx`. Apply the same pattern to any new dropdown:
+
+```js
+// Attach to document while open; cleans up on close or unmount.
+// pointerdown fires before click, so clicking a different trigger closes
+// the current panel and opens the new one in a single interaction.
+// keydown catches Escape regardless of where focus is in the panel.
+useEffect(() => {
+  if (!isOpen) return
+  function handlePointerDown(e) {
+    if (!triggerRef.current?.contains(e.target) && !panelRef.current?.contains(e.target)) {
+      onToggleRef.current()
+    }
+  }
+  function handleKeyDown(e) {
+    if (e.key === 'Escape') onToggleRef.current()
+  }
+  document.addEventListener('pointerdown', handlePointerDown)
+  document.addEventListener('keydown', handleKeyDown)
+  return () => {
+    document.removeEventListener('pointerdown', handlePointerDown)
+    document.removeEventListener('keydown', handleKeyDown)
+  }
+}, [isOpen])
+```
+
+Also restore focus to the trigger button when the panel closes — keyboard
+users lose their place without this.
+
 ### Component Foundation Recommendation
 
 Radix UI or shadcn/ui are accessibility-first component libraries for React.
