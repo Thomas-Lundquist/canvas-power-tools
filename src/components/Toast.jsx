@@ -68,10 +68,11 @@ export function ToastProvider({ children }) {
     }
   }, [toasts, startTimer, clearTimer])
 
-  // Escape dismisses the topmost (newest) toast
+  // Escape dismisses the topmost visible toast (newest of the visible slots)
   useEffect(() => {
     const onKeyDown = e => {
-      if (e.key === 'Escape' && toasts.length > 0) dismiss(toasts[0].id)
+      const visible = toasts.slice(0, MAX_VISIBLE)
+      if (e.key === 'Escape' && visible.length > 0) dismiss(visible.at(-1).id)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -82,9 +83,10 @@ export function ToastProvider({ children }) {
     const hasActions = Array.isArray(actions) && actions.length > 0
     const duration = hasActions ? null : (customDuration ?? DEFAULT_DURATION[type] ?? null)
     const id = Date.now() + Math.random()
+    // Append so the queue is FIFO: the first toasts to arrive get the visible slots
     setToasts(prev => [
-      { id, message, type, exiting: false, duration, actions: actions ?? [] },
       ...prev,
+      { id, message, type, exiting: false, duration, actions: actions ?? [] },
     ])
   }, [])
 
@@ -104,8 +106,9 @@ export function ToastProvider({ children }) {
     if (entry.totalMs > 0) startTimer(id, entry.totalMs)
   }, [startTimer])
 
-  const politeToasts = toasts.filter(t => t.type === 'success' || t.type === 'info')
-  const assertiveToasts = toasts.filter(t => t.type === 'warning' || t.type === 'error')
+  const visibleToasts = toasts.slice(0, MAX_VISIBLE)
+  const politeToasts = visibleToasts.filter(t => t.type === 'success' || t.type === 'info')
+  const assertiveToasts = visibleToasts.filter(t => t.type === 'warning' || t.type === 'error')
 
   return (
     <ToastContext.Provider value={toast}>
@@ -119,9 +122,9 @@ export function ToastProvider({ children }) {
         {assertiveToasts.map(t => <div key={t.id}>{t.message}</div>)}
       </div>
 
-      {/* Visual toast stack — top-right, newest on top */}
+      {/* Visual toast stack — top-right, newest visible on top (reverse FIFO order) */}
       <div className="fixed top-6 right-6 flex flex-col gap-2 z-50 pointer-events-none">
-        {toasts.slice(0, MAX_VISIBLE).map(t => {
+        {[...toasts.slice(0, MAX_VISIBLE)].reverse().map(t => {
           const Icon = ICONS[t.type] ?? ICONS.info
           const colors = COLORS[t.type] ?? COLORS.info
           return (
