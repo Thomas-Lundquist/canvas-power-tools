@@ -74,6 +74,7 @@ export default function App() {
   const [showChangeLog, setShowChangeLog] = useState(false)
   const { requirePin } = usePinGate()
   const selectGenRef = useRef(0)
+  const [openFilter, setOpenFilter] = useState(null)
 
   // Load courses and preferences on mount
   useEffect(() => {
@@ -325,12 +326,12 @@ export default function App() {
               )}
             </div>
 
-            <GroupFilter groups={groups} selected={filterGroups} onChange={setFilterGroups} />
-            <StatusFilter selected={filterStatus} onChange={setFilterStatus} />
-            <DateRangeFilter label="Due Date" value={filterDueDate} onChange={setFilterDueDate} />
-            <DateRangeFilter label="Avail. From" value={filterUnlockAt} onChange={setFilterUnlockAt} />
-            <DateRangeFilter label="Avail. Until" value={filterLockAt} onChange={setFilterLockAt} />
-            <PointsRangeFilter value={filterPoints} onChange={setFilterPoints} />
+            <GroupFilter groups={groups} selected={filterGroups} onChange={setFilterGroups} isOpen={openFilter === 'group'} onToggle={() => setOpenFilter(f => f === 'group' ? null : 'group')} />
+            <StatusFilter selected={filterStatus} onChange={setFilterStatus} isOpen={openFilter === 'status'} onToggle={() => setOpenFilter(f => f === 'status' ? null : 'status')} />
+            <DateRangeFilter label="Due Date" value={filterDueDate} onChange={setFilterDueDate} isOpen={openFilter === 'due-date'} onToggle={() => setOpenFilter(f => f === 'due-date' ? null : 'due-date')} />
+            <DateRangeFilter label="Avail. From" value={filterUnlockAt} onChange={setFilterUnlockAt} isOpen={openFilter === 'avail-from'} onToggle={() => setOpenFilter(f => f === 'avail-from' ? null : 'avail-from')} />
+            <DateRangeFilter label="Avail. Until" value={filterLockAt} onChange={setFilterLockAt} isOpen={openFilter === 'avail-until'} onToggle={() => setOpenFilter(f => f === 'avail-until' ? null : 'avail-until')} />
+            <PointsRangeFilter value={filterPoints} onChange={setFilterPoints} isOpen={openFilter === 'points'} onToggle={() => setOpenFilter(f => f === 'points' ? null : 'points')} />
           </div>
           {activeFilterCount > 0 && (
             <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -552,8 +553,7 @@ export default function App() {
   )
 }
 
-function DateRangeFilter({ label, value, onChange }) {
-  const [open, setOpen] = useState(false)
+function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
   const isActive = !!(value.from || value.to)
   const slug = label.toLowerCase().replace(/[^a-z0-9]/g, '-')
   const fromId = `date-filter-from-${slug}`
@@ -562,14 +562,14 @@ function DateRangeFilter({ label, value, onChange }) {
     <div className="relative">
       <button
         className="btn-secondary text-sm"
-        aria-expanded={open}
+        aria-expanded={isOpen}
         aria-haspopup="true"
         style={isActive ? { borderColor: 'var(--cpt-color)', color: 'var(--cpt-color)', backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : undefined}
-        onClick={() => setOpen(o => !o)}
+        onClick={onToggle}
       >
         {label}{isActive ? ' ●' : ''}
       </button>
-      {open && (
+      {isOpen && (
         <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[14rem]">
           <div className="space-y-2">
             <div>
@@ -597,7 +597,7 @@ function DateRangeFilter({ label, value, onChange }) {
             {isActive && (
               <button
                 className="text-xs text-gray-400 hover:text-gray-600 underline"
-                onClick={() => { onChange(EMPTY_DATE_RANGE); setOpen(false) }}
+                onClick={() => { onChange(EMPTY_DATE_RANGE); onToggle() }}
               >
                 Clear
               </button>
@@ -609,21 +609,20 @@ function DateRangeFilter({ label, value, onChange }) {
   )
 }
 
-function PointsRangeFilter({ value, onChange }) {
-  const [open, setOpen] = useState(false)
+function PointsRangeFilter({ value, onChange, isOpen, onToggle }) {
   const isActive = value.min !== '' || value.max !== ''
   return (
     <div className="relative">
       <button
         className="btn-secondary text-sm"
-        aria-expanded={open}
+        aria-expanded={isOpen}
         aria-haspopup="true"
         style={isActive ? { borderColor: 'var(--cpt-color)', color: 'var(--cpt-color)', backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : undefined}
-        onClick={() => setOpen(o => !o)}
+        onClick={onToggle}
       >
         Points{isActive ? ' ●' : ''}
       </button>
-      {open && (
+      {isOpen && (
         <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[11rem]">
           <div className="space-y-2">
             <div>
@@ -653,7 +652,7 @@ function PointsRangeFilter({ value, onChange }) {
             {isActive && (
               <button
                 className="text-xs text-gray-400 hover:text-gray-600 underline"
-                onClick={() => { onChange(EMPTY_POINTS_RANGE); setOpen(false) }}
+                onClick={() => { onChange(EMPTY_POINTS_RANGE); onToggle() }}
               >
                 Clear
               </button>
@@ -665,23 +664,24 @@ function PointsRangeFilter({ value, onChange }) {
   )
 }
 
-function GroupFilter({ groups, selected, onChange }) {
-  const [open, setOpen] = useState(false)
+function GroupFilter({ groups, selected, onChange, isOpen, onToggle }) {
   if (groups.length === 0) return null
   return (
     <div className="relative">
       <button
         className="btn-secondary text-sm"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
         style={selected.length > 0 ? {
           borderColor: 'var(--cpt-color)',
           color: 'var(--cpt-color)',
           backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
         } : undefined}
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
       >
         Group{selected.length > 0 ? ` (${selected.length})` : ''}
       </button>
-      {open && (
+      {isOpen && (
         <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
           {groups.map(g => (
             <div
@@ -725,23 +725,24 @@ function FilterChip({ label, onRemove }) {
   )
 }
 
-function StatusFilter({ selected, onChange }) {
-  const [open, setOpen] = useState(false)
+function StatusFilter({ selected, onChange, isOpen, onToggle }) {
   const options = [{ value: 'published', label: 'Published' }, { value: 'unpublished', label: 'Unpublished' }]
   return (
     <div className="relative">
       <button
         className="btn-secondary text-sm"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
         style={selected.length > 0 ? {
           borderColor: 'var(--cpt-color)',
           color: 'var(--cpt-color)',
           backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
         } : undefined}
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
       >
         Status{selected.length > 0 ? ` (${selected.length})` : ''}
       </button>
-      {open && (
+      {isOpen && (
         <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
           {options.map(o => (
             <div
