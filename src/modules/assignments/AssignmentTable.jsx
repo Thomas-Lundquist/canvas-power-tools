@@ -30,7 +30,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse table-fixed">
+      <table className="w-full min-w-[61.5rem] text-sm border-collapse table-fixed">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
             <th className="w-10 px-3 py-3">

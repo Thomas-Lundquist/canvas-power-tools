@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, useRef } from 'react'
 import { History, Search, X, AlertCircle, Loader, CheckCircle } from 'lucide-react'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
@@ -73,6 +73,7 @@ export default function App() {
   const [applyResult, setApplyResult] = useState(null)
   const [showChangeLog, setShowChangeLog] = useState(false)
   const { requirePin } = usePinGate()
+  const selectGenRef = useRef(0)
 
   // Load courses and preferences on mount
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function App() {
   }, [])
 
   async function selectCourse(courseId, courseList = courses) {
+    const gen = ++selectGenRef.current
     const course = courseList.find(c => c.id === courseId)
     setSelectedCourseId(courseId)
     setSelectedCourseName(course?.name ?? '')
@@ -131,20 +133,23 @@ export default function App() {
     try {
       const [fetched, grps, mods] = await Promise.all([
         getAssignments(courseId, (loaded, total) => {
+          if (selectGenRef.current !== gen) return
           setLoadingCount(loaded)
           if (total != null) setLoadingTotal(total)
         }),
         getAssignmentGroups(courseId),
         getModules(courseId),
       ])
+      if (selectGenRef.current !== gen) return
       setAssignments(fetched)
       setGroups(grps)
       setModules(mods)
       await setLastUsedCourse(courseId)
     } catch (err) {
+      if (selectGenRef.current !== gen) return
       setError(err.message)
     } finally {
-      setLoadingAssignments(false)
+      if (selectGenRef.current === gen) setLoadingAssignments(false)
     }
   }
 
@@ -389,7 +394,7 @@ export default function App() {
               {loadingAssignments ? (
                 <span className="text-xs text-gray-400">
                   {loadingCount > 0
-                    ? `Loading assignments… ${loadingCount}${loadingTotal != null ? ` of ${loadingTotal}` : ''}`
+                    ? `Loading assignments… ${loadingCount}${loadingTotal != null ? ` of ~${loadingTotal}` : ''}`
                     : 'Loading assignments…'}
                 </span>
               ) : (

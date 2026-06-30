@@ -64,8 +64,9 @@ function extractTotalEstimate(linkHeader) {
   if (!match) return null
   try {
     const url = new URL(match[1])
-    const lastPage = parseInt(url.searchParams.get('page') ?? '1')
-    const perPage = parseInt(url.searchParams.get('per_page') ?? '100')
+    const lastPage = parseInt(url.searchParams.get('page') ?? '')
+    const perPage = parseInt(url.searchParams.get('per_page') ?? '')
+    if (!lastPage || !perPage) return null
     return lastPage * perPage
   } catch {
     return null
