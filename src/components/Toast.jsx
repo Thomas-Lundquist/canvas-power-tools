@@ -22,16 +22,35 @@ const DEFAULT_DURATION = { success: 5000, info: 5000, warning: null, error: null
 
 const EXIT_DELAY = 150
 const MAX_VISIBLE = 3
+const MAX_QUEUE = 20
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const timerRefs = useRef(new Map())      // id → timeoutId
   const timerStartRefs = useRef(new Map()) // id → { startedAt, totalMs } — null startedAt = paused
+  const exitTimerRefs = useRef(new Set())  // EXIT_DELAY timeout IDs waiting to filter a dismissed toast
+  const toastsRef = useRef(toasts)         // stable ref so event listeners don't need toasts in deps
+
+  useEffect(() => { toastsRef.current = toasts }, [toasts])
+
+  // Cancel all pending timers when the provider unmounts
+  useEffect(() => {
+    const timers = timerRefs.current
+    const exitTimers = exitTimerRefs.current
+    return () => {
+      for (const id of timers.values()) clearTimeout(id)
+      for (const id of exitTimers) clearTimeout(id)
+    }
+  }, [])
 
   const startTimer = useCallback((id, ms) => {
     const timerId = setTimeout(() => {
       setToasts(t => t.map(x => x.id === id ? { ...x, exiting: true } : x))
-      setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), EXIT_DELAY)
+      const exitId = setTimeout(() => {
+        exitTimerRefs.current.delete(exitId)
+        setToasts(t => t.filter(x => x.id !== id))
+      }, EXIT_DELAY)
+      exitTimerRefs.current.add(exitId)
     }, ms)
     timerRefs.current.set(id, timerId)
     timerStartRefs.current.set(id, { startedAt: Date.now(), totalMs: ms })
@@ -43,13 +62,17 @@ export function ToastProvider({ children }) {
       clearTimeout(timerId)
       timerRefs.current.delete(id)
     }
+    timerStartRefs.current.delete(id)
   }, [])
 
   const dismiss = useCallback(id => {
     clearTimer(id)
-    timerStartRefs.current.delete(id)
     setToasts(t => t.map(x => x.id === id ? { ...x, exiting: true } : x))
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), EXIT_DELAY)
+    const exitId = setTimeout(() => {
+      exitTimerRefs.current.delete(exitId)
+      setToasts(t => t.filter(x => x.id !== id))
+    }, EXIT_DELAY)
+    exitTimerRefs.current.add(exitId)
   }, [clearTimer])
 
   // Start timers only when a toast becomes visible; cancel when it leaves the visible window
@@ -68,24 +91,37 @@ export function ToastProvider({ children }) {
     }
   }, [toasts, startTimer, clearTimer])
 
-  // Escape dismisses the topmost visible toast (newest of the visible slots)
+  // Escape dismisses the topmost visible toast; skip when focus is in a form field
   useEffect(() => {
     const onKeyDown = e => {
-      const visible = toasts.slice(0, MAX_VISIBLE)
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return
+      const visible = toastsRef.current.slice(0, MAX_VISIBLE)
       if (e.key === 'Escape' && visible.length > 0) dismiss(visible.at(-1).id)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [toasts, dismiss])
+  }, [dismiss])
+
+  // Resume hover-paused timers when the tab regains visibility
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.hidden) return
+      for (const [id, entry] of timerStartRefs.current.entries()) {
+        if (entry.startedAt === null && entry.totalMs > 0) startTimer(id, entry.totalMs)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [startTimer])
 
   const toast = useCallback((message, type = 'info', options = {}) => {
     const { actions, duration: customDuration } = typeof options === 'object' ? options : {}
     const hasActions = Array.isArray(actions) && actions.length > 0
     const duration = hasActions ? null : (customDuration ?? DEFAULT_DURATION[type] ?? null)
     const id = Date.now() + Math.random()
-    // Append so the queue is FIFO: the first toasts to arrive get the visible slots
+    // Append so the queue is FIFO; cap at MAX_QUEUE to bound memory
     setToasts(prev => [
-      ...prev,
+      ...prev.slice(-(MAX_QUEUE - 1)),
       { id, message, type, exiting: false, duration, actions: actions ?? [] },
     ])
   }, [])
@@ -147,9 +183,9 @@ export function ToastProvider({ children }) {
               </div>
               {t.actions.length > 0 && (
                 <div className="flex gap-3 mt-2 ml-7">
-                  {t.actions.map((action, i) => (
+                  {t.actions.map(action => (
                     <button
-                      key={i}
+                      key={action.label}
                       onClick={action.onClick}
                       className={`text-xs font-semibold underline underline-offset-2 ${colors.text}`}
                     >
