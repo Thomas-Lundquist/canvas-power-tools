@@ -89,15 +89,18 @@
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(0.5rem); }
-  to   { opacity: 1; transform: translateY(0);      }
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to   { opacity: 1; transform: translateY(0);       }
 }
 @keyframes toast-out {
-  from { opacity: 1; transform: translateY(0);      }
-  to   { opacity: 0; transform: translateY(0.5rem); }
+  from { opacity: 1; transform: translateY(0);       }
+  to   { opacity: 0; transform: translateY(-0.5rem); }
 }
 .toast-enter { animation: toast-in  0.15s ease-out both; }
 .toast-exit  { animation: toast-out 0.15s ease-in  both; }
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter, .toast-exit { animation: none; }
+}
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────
    Applied when html.dark class is present (set by theme-init.js + applyDarkMode).
