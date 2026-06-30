@@ -9,6 +9,12 @@
   --cpt-color-rgb: 79, 70, 229;
 }
 
+/* Text size — set via data-text-size attribute by applyTextSize() and theme-init.js */
+:root[data-text-size="small"]       { font-size: 13px; }
+:root[data-text-size="medium"]      { font-size: 15px; }
+:root[data-text-size="large"]       { font-size: 17px; }
+:root[data-text-size="extra-large"] { font-size: 20px; }
+
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
@@ -18,6 +24,15 @@
   input[type='checkbox'],
   input[type='radio'] {
     accent-color: var(--cpt-color);
+  }
+  /* Keyboard focus ring — accent-colored, suppressed for mouse clicks */
+  :focus-visible {
+    outline: 3px solid var(--cpt-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 }
 
@@ -47,9 +62,9 @@
   }
   .input {
     @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400
-           focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed;
+           disabled:bg-gray-100 disabled:cursor-not-allowed;
   }
-  .input:focus {
+  .input:focus-visible {
     border-color: var(--cpt-color);
     box-shadow: 0 0 0 2px rgba(var(--cpt-color-rgb), 0.2);
   }
@@ -67,8 +82,7 @@
     background-size: 12px 12px;
   }
   /* Native selects outside .input also get a themed focus ring */
-  select:focus {
-    outline: none;
+  select:focus-visible {
     border-color: var(--cpt-color);
     box-shadow: 0 0 0 2px rgba(var(--cpt-color-rgb), 0.2);
   }
@@ -99,7 +113,11 @@
 .toast-enter { animation: toast-in  0.15s ease-out both; }
 .toast-exit  { animation: toast-out 0.15s ease-in  both; }
 @media (prefers-reduced-motion: reduce) {
-  .toast-enter, .toast-exit { animation: none; }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────
