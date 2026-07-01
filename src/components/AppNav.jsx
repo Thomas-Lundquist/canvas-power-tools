@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { ChevronDown, Check, Settings } from 'lucide-react'
 import { TOOLS, MODULES } from '../config/tools.jsx'
 
@@ -10,18 +10,35 @@ function navigate(path) {
 export default function AppNav({ current }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const wasOpen = useRef(false)
 
   const currentTool = TOOLS.find(t => t.id === current)
   const TriggerIcon = currentTool?.Icon ?? TOOLS[0].Icon
 
+  const close = useCallback(() => setOpen(false), [])
+
+  // Return focus to trigger when dropdown closes
+  useEffect(() => {
+    if (wasOpen.current && !open) triggerRef.current?.focus()
+    wasOpen.current = open
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     function onMouseDown(e) {
-      if (!ref.current?.contains(e.target)) setOpen(false)
+      if (!ref.current?.contains(e.target)) close()
+    }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') close()
     }
     document.addEventListener('mousedown', onMouseDown)
-    return () => document.removeEventListener('mousedown', onMouseDown)
-  }, [open])
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open, close])
 
   // Group tools by module for the dropdown
   const grouped = MODULES.map(mod => ({
@@ -32,9 +49,10 @@ export default function AppNav({ current }) {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(o => !o)}
         className="cpt-nav-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-        aria-haspopup="true"
+        aria-haspopup="menu"
         aria-expanded={open}
       >
         <TriggerIcon size={14} />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { CheckCircle, ChevronDown, ChevronUp, Eye, EyeOff, AlertCircle, Loader, ShieldCheck } from 'lucide-react'
 import { verifyToken } from '../../api/auth.js'
 import { saveAccount, markSetupComplete } from '../../storage/account.js'
@@ -18,6 +18,7 @@ export default function App() {
   const [pin, setPin] = useState('')
   const [pinConfirm, setPinConfirm] = useState('')
   const [pinError, setPinError] = useState(null)
+  const pinConfirmRef = useRef(null)
 
   async function handleVerify() {
     setVerifyError(null)
@@ -90,6 +91,7 @@ export default function App() {
               type="url"
               value={canvasUrl}
               onChange={e => { setCanvasUrl(e.target.value); setUrlError(null) }}
+              onKeyDown={e => { if (e.key === 'Enter' && validateUrl()) setStep('token') }}
               placeholder="https://yourschool.instructure.com"
               className="input"
               autoFocus
@@ -159,6 +161,7 @@ export default function App() {
                   type={showToken ? 'text' : 'password'}
                   value={token}
                   onChange={e => setToken(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && token.trim()) handleVerify() }}
                   placeholder="Paste your API token"
                   className="input pr-10"
                   autoFocus
@@ -212,6 +215,7 @@ export default function App() {
                   inputMode="numeric"
                   value={pin}
                   onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setPinError(null) }}
+                  onKeyDown={e => { if (e.key === 'Enter') pinConfirmRef.current?.focus() }}
                   placeholder="••••"
                   className="input w-full text-center text-xl tracking-[0.4em] font-mono"
                   autoFocus
@@ -220,6 +224,7 @@ export default function App() {
               <div>
                 <label className="label">Confirm PIN</label>
                 <input
+                  ref={pinConfirmRef}
                   type="tel"
                   inputMode="numeric"
                   value={pinConfirm}
