@@ -715,32 +715,20 @@ DOM simultaneously causes performance problems at scale.
 
 ### Solution
 
-Only render rows currently visible on screen plus a small buffer. As the
-teacher scrolls, rows swap in and out of the DOM. To the teacher everything
-appears to be there. To the browser only 20-30 rows exist at any time.
+`AssignmentTable` uses `@tanstack/react-virtual` to render only the rows
+visible in the scroll container plus a 5-row overscan buffer. The table body
+scrolls independently while the header and filter controls remain fixed.
 
-**Library:** @tanstack/react-virtual
+The scroll container defaults to `max-h-[34rem]`; pass `fillHeight` to make
+it fill available flex space instead. Column widths are fixed via
+`table-layout: fixed` + Tailwind width classes on each `<th>` so layout is
+stable as rows swap in and out. The `thead` is `position: sticky` within the
+scroll container.
 
-```javascript
-import { useVirtualizer } from '@tanstack/react-virtual'
-
-const rowVirtualizer = useVirtualizer({
-  count: filteredAssignments.length,
-  getScrollElement: () => parentRef.current,
-  estimateSize: () => 48,  // row height in pixels
-  overscan: 5              // render 5 extra rows above and below viewport
-})
-```
-
-### Thresholds
-
-| Assignment Count | Strategy |
-|---|---|
-| Under 100 | Standard rendering |
-| 100 to 500 | Virtual scrolling |
-| Over 500 | Virtual scrolling plus group-based pagination |
-
-Thresholds are applied automatically. The teacher never toggles this.
+Instead of absolutely positioning rows (which breaks table layout), spacer
+`<tr>` rows above and below the visible window reserve the correct scroll
+height. See `06-technical-infrastructure.md` for the full implementation
+pattern.
 
 ### Search and Filter Performance
 

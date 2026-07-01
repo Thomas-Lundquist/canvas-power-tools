@@ -519,45 +519,79 @@ nodes at any time.
 
 **Library:** @tanstack/react-virtual
 
+**Implementation — `AssignmentTable.jsx`**
+
+The table component manages its own scroll container. By default the container
+is `max-h-[34rem]` (≈ 544px). When `fillHeight` is `true` it becomes
+`flex-1 min-h-0`, filling the remaining height of a flex parent — used when
+the bulk editor page wants the table to grow to the full available space.
+
+The table uses `table-layout: fixed` with Tailwind width classes on each `<th>`
+column. This keeps column widths stable regardless of which rows are rendered.
+
+The `thead` is `position: sticky; top: 0` so column headers remain visible
+while scrolling.
+
+Rather than absolutely positioning rows (which breaks table layout), the
+virtualizer uses padding spacer rows — empty `<tr>` elements above and below
+the visible window that reserve the correct scroll space:
+
 ```javascript
+import { useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
+const parentRef = useRef(null)
+
 const rowVirtualizer = useVirtualizer({
-  count: filteredAssignments.length,
+  count: loading ? 0 : assignments.length,  // stays 0 while loading
   getScrollElement: () => parentRef.current,
-  estimateSize: () => 48,   // estimated row height in pixels
-  overscan: 5               // render 5 extra rows above and below viewport
+  estimateSize: () => 48,  // px — @tanstack/react-virtual API contract
+  overscan: 5,
 })
+
+const virtualItems = rowVirtualizer.getVirtualItems()
+const totalSize = rowVirtualizer.getTotalSize()
+const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0
+const paddingBottom = virtualItems.length > 0
+  ? totalSize - virtualItems[virtualItems.length - 1].end
+  : 0
 ```
 
-**Accessibility requirement:** Virtual scrolling breaks screen reader table
-navigation without explicit ARIA attributes. The table element must carry
-aria-rowcount set to the total number of rows. Each rendered tr must carry
-aria-rowindex set to its position in the full (virtual) table. This tells
-screen readers the true table size even when most rows are not in the DOM.
-
-```javascript
-<table aria-rowcount={filteredAssignments.length}>
-  {rowVirtualizer.getVirtualItems().map(virtualRow => (
-    <tr
-      key={virtualRow.index}
-      aria-rowindex={virtualRow.index + 1}
-    >
-      ...
-    </tr>
-  ))}
-</table>
+```jsx
+<div ref={parentRef} className={`overflow-auto ${fillHeight ? 'flex-1 min-h-0' : 'max-h-[34rem]'}`}>
+  <table
+    className="w-full min-w-[61.5rem] text-sm border-collapse table-fixed"
+    role="grid"
+    aria-label="Assignments"
+    aria-rowcount={assignments.length}
+    aria-multiselectable="true"
+  >
+    <thead className="sticky top-0 z-10">...</thead>
+    <tbody>
+      {paddingTop > 0 && (
+        <tr><td colSpan={totalCols} style={{ height: paddingTop }} /></tr>
+      )}
+      {virtualItems.map(vr => (
+        <AssignmentRow
+          key={assignments[vr.index].id}
+          assignment={assignments[vr.index]}
+          rowIndex={vr.index}   // component adds +2 for 1-indexed ARIA (header = row 1)
+          ...
+        />
+      ))}
+      {paddingBottom > 0 && (
+        <tr><td colSpan={totalCols} style={{ height: paddingBottom }} /></tr>
+      )}
+    </tbody>
+  </table>
+</div>
 ```
 
-**Thresholds:**
-
-| Count | Strategy |
-|---|---|
-| Under 100 | Standard rendering |
-| 100 to 500 | Virtual scrolling |
-| Over 500 | Virtual scrolling plus group-based pagination |
-
-Thresholds apply automatically. The teacher never configures this.
+**Accessibility:** The `table` carries `aria-rowcount` set to the total row
+count and `aria-multiselectable="true"`. Each rendered `<tr>` carries
+`aria-rowindex` (1-based; header = 1, first data row = 2) and
+`aria-selected`. This tells screen readers the true table size even when
+most rows are not in the DOM.
 
 **Search and filter performance:** Client-side filtering on an already-fetched
 list is instant up to approximately 500 items. Text search is debounced by
