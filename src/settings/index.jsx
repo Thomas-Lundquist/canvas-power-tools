@@ -6,6 +6,7 @@ import {
   Download, Lock, ShieldOff,
 } from 'lucide-react'
 import AppNav, { BrandLogo } from '../components/AppNav.jsx'
+import SkipLink from '../components/SkipLink.jsx'
 import { ToastProvider, useToast } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
 import { TOOLS } from '../config/tools.jsx'
@@ -914,6 +915,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SkipLink />
       {/* Topbar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -922,7 +924,7 @@ function App() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+      <div id="main-content" className="max-w-3xl mx-auto px-6 py-8 space-y-6">
 
         {/* Search bar */}
         <div className="relative">

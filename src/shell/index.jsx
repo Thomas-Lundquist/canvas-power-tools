@@ -8,6 +8,7 @@ import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
 import '../styles/global.css'
 import { ToastProvider } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
+import SkipLink from '../components/SkipLink.jsx'
 
 function App() {
   const [displayMode, setDisplayMode] = useState('tiles')
@@ -38,6 +39,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SkipLink />
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
@@ -57,7 +59,7 @@ function App() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+      <div id="main-content" className="max-w-7xl mx-auto px-6 py-10 space-y-10">
         {grouped.map(group => (
           <section key={group.id} aria-label={group.label}>
             <h2 className="section-title mb-4">{group.label}</h2>

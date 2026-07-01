@@ -17,6 +17,7 @@ import { applyTheme, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import SkipLink from '../../components/SkipLink.jsx'
 
 const EMPTY_SPEC = { dueAt: null, unlockAt: null, lockAt: null, points: null, published: null }
 const EMPTY_DATE_RANGE = { from: '', to: '' }
@@ -265,6 +266,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 pb-48">
+      <SkipLink />
       {/* Top bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
@@ -290,7 +292,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 flex-1 flex flex-col min-h-0 w-full">
+      <div id="main-content" className="max-w-7xl mx-auto px-6 py-6 flex-1 flex flex-col min-h-0 w-full">
         {/* Error banner */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 text-sm text-red-700">
