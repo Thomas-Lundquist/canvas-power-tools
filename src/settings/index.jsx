@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import AppNav, { BrandLogo } from '../components/AppNav.jsx'
 import SkipLink from '../components/SkipLink.jsx'
+import { useKeyboardShortcuts } from '../utils/useKeyboardShortcuts.js'
+import ShortcutsPanel from '../components/ShortcutsPanel.jsx'
 import { ToastProvider, useToast } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
 import { TOOLS } from '../config/tools.jsx'
@@ -725,6 +727,7 @@ function App() {
   const [confirmDisablePin, setConfirmDisablePin] = useState(false)
   const [confirmClearAudit, setConfirmClearAudit] = useState(false)
   const toast = useToast()
+  const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
   useEffect(() => {
     Promise.all([getAccount(), getPreferences()]).then(([acc, p]) => {
@@ -1551,6 +1554,7 @@ function App() {
         )}
       </div>
 
+      {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} />}
     </div>
   )
 }

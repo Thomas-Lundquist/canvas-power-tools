@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import SkipLink from '../../components/SkipLink.jsx'
+import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
+import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 import NudgeTool from '../../modules/communication/NudgeTool.jsx'
 import ThresholdMessenger from '../../modules/communication/ThresholdMessenger.jsx'
 import Announcements from '../../modules/communication/Announcements.jsx'
@@ -13,6 +15,7 @@ const TABS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('nudge')
+  const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -47,6 +50,7 @@ export default function App() {
         {activeTab === 'threshold'     && <ThresholdMessenger />}
         {activeTab === 'announcements' && <Announcements />}
       </div>
+      {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} />}
     </div>
   )
 }

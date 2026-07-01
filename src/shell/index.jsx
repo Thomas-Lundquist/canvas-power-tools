@@ -9,6 +9,8 @@ import '../styles/global.css'
 import { ToastProvider } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
 import SkipLink from '../components/SkipLink.jsx'
+import { useKeyboardShortcuts } from '../utils/useKeyboardShortcuts.js'
+import ShortcutsPanel from '../components/ShortcutsPanel.jsx'
 
 function App() {
   const [displayMode, setDisplayMode] = useState('tiles')
@@ -36,6 +38,8 @@ function App() {
     ...mod,
     tools: TOOLS.filter(t => t.module === mod.id),
   })).filter(g => g.tools.length > 0)
+
+  const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -105,6 +109,7 @@ function App() {
           </section>
         ))}
       </div>
+      {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} />}
     </div>
   )
 }

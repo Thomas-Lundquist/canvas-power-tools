@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import SkipLink from '../../components/SkipLink.jsx'
+import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
+import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 import GradingDashboard from '../../modules/grading/GradingDashboard.jsx'
 import MissingWork from '../../modules/grading/MissingWork.jsx'
 import GradeAdjustments from '../../modules/grading/GradeAdjustments.jsx'
@@ -15,6 +17,7 @@ const TABS = [
 
 export default function App({ initialCourseId }) {
   const [activeTab, setActiveTab] = useState('overview')
+  const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -50,6 +53,7 @@ export default function App({ initialCourseId }) {
         {activeTab === 'adjustments'  && <GradeAdjustments />}
         {activeTab === 'late-policy'  && <LatePolicyTool />}
       </div>
+      {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} />}
     </div>
   )
 }

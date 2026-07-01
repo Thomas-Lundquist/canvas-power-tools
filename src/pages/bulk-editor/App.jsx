@@ -18,6 +18,8 @@ import { Checkbox } from '../../components/FormControls.jsx'
 import { addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import SkipLink from '../../components/SkipLink.jsx'
+import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
+import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 
 const EMPTY_SPEC = { dueAt: null, unlockAt: null, lockAt: null, points: null, published: null }
 const EMPTY_DATE_RANGE = { from: '', to: '' }
@@ -75,6 +77,7 @@ export default function App() {
   const [showChangeLog, setShowChangeLog] = useState(false)
   const { requirePin } = usePinGate()
   const selectGenRef = useRef(0)
+  const searchRef = useRef(null)
   const [openFilter, setOpenFilter] = useState(null)
 
   // Load courses and preferences on mount
@@ -264,6 +267,16 @@ export default function App() {
     (filterPoints.min !== '' || filterPoints.max !== '') ? 1 : 0,
   ].reduce((a, b) => a + b, 0)
 
+  const bulkEditorShortcuts = [
+    { combo: 'Ctrl + A',         description: 'Select all visible assignments', key: 'a', ctrl: true,  shift: false, action: () => toggleAll(true) },
+    { combo: 'Ctrl + Shift + A', description: 'Deselect all',                   key: 'a', ctrl: true,  shift: true,  action: () => setSelectedIds(new Set()) },
+    { combo: 'Ctrl + Enter',     description: 'Preview changes',                key: 'Enter', ctrl: true,  shift: false, action: () => { if (pendingChanges.length > 0) setShowPreview(true) } },
+    { combo: 'Ctrl + F',         description: 'Focus search bar',               key: 'f', ctrl: true,  shift: false, action: () => searchRef.current?.focus() },
+    { combo: 'Ctrl + Shift + F', description: 'Clear all filters',              key: 'f', ctrl: true,  shift: true,  action: () => { setSearch(''); setFilterGroups([]); setFilterStatus([]); setFilterDueDate(EMPTY_DATE_RANGE); setFilterUnlockAt(EMPTY_DATE_RANGE); setFilterLockAt(EMPTY_DATE_RANGE); setFilterPoints(EMPTY_POINTS_RANGE) } },
+  ]
+
+  const { showPanel, setShowPanel } = useKeyboardShortcuts(bulkEditorShortcuts)
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 pb-48">
       <SkipLink />
@@ -315,6 +328,7 @@ export default function App() {
             <div className="relative flex-1 max-w-sm">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
+                ref={searchRef}
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -550,6 +564,14 @@ export default function App() {
           courseName={selectedCourseName}
           onClose={() => setShowChangeLog(false)}
           onRevertComplete={() => selectCourse(selectedCourseId)}
+        />
+      )}
+
+      {/* Keyboard shortcut reference */}
+      {showPanel && (
+        <ShortcutsPanel
+          sections={[{ label: 'Bulk Editor', shortcuts: bulkEditorShortcuts }]}
+          onClose={() => setShowPanel(false)}
         />
       )}
     </div>
