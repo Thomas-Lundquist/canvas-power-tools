@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useLayoutEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { formatDate } from '../../components/DateInput.jsx'
@@ -26,11 +26,18 @@ const SKELETON_WIDTHS = [
   ['w-60', 'w-24', 'w-24', 'w-24', 'w-24', 'w-8',  'w-20'],
 ]
 
-export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading, fillHeight = false }) {
+export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading, fillHeight = false, actionBarVisible = false }) {
   const allSelected = assignments.length > 0 && assignments.every(a => selectedIds.has(a.id))
   const someSelected = assignments.some(a => selectedIds.has(a.id))
 
   const parentRef = useRef(null)
+  const [skeletonRowCount, setSkeletonRowCount] = useState(SKELETON_WIDTHS.length)
+
+  useLayoutEffect(() => {
+    if (!loading || !parentRef.current) return
+    const count = Math.ceil(parentRef.current.clientHeight / 48)
+    setSkeletonRowCount(Math.max(count, 1))
+  }, [loading])
   // count must stay 0 while loading — the skeleton/empty branches below don't read from the virtualizer
   const rowVirtualizer = useVirtualizer({
     count: loading ? 0 : assignments.length,
@@ -46,7 +53,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
   const paddingBottom = virtualItems.length > 0 ? totalSize - virtualItems[virtualItems.length - 1].end : 0
 
   return (
-    <div ref={parentRef} className={`overflow-auto ${fillHeight ? 'flex-1 min-h-0' : 'max-h-[34rem]'}`}>
+    <div ref={parentRef} className={`overflow-auto ${fillHeight ? 'flex-1 min-h-0' : 'max-h-[34rem]'} ${actionBarVisible ? 'pb-48' : ''}`}>
       <table
         className="w-full min-w-[61.5rem] text-sm border-collapse table-fixed"
         role="grid"
@@ -83,7 +90,9 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
         </thead>
         <tbody>
           {loading
-            ? SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
+            ? Array.from({ length: skeletonRowCount }, (_, i) => (
+                <SkeletonRow key={i} widths={SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]} />
+              ))
             : assignments.length === 0
               ? (
                 <tr>

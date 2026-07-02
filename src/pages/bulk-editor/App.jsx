@@ -278,7 +278,7 @@ export default function App() {
   const { showPanel, setShowPanel } = useKeyboardShortcuts(bulkEditorShortcuts)
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 pb-48">
+    <div className="h-screen flex flex-col bg-gray-50">
       <SkipLink />
       {/* Top bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -447,6 +447,7 @@ export default function App() {
                 onSort={handleSort}
                 loading={loadingAssignments}
                 fillHeight
+                actionBarVisible={!applying && selectedIds.size > 0}
               />
             )}
           </div>

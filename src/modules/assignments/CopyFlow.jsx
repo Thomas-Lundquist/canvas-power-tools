@@ -265,7 +265,7 @@ export default function CopyFlow({ initialCourseId }) {
 
   if (step === 'source') {
     return (
-      <div>
+      <div className="flex-1 flex flex-col min-h-0">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Copy Assignments</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -304,7 +304,7 @@ export default function CopyFlow({ initialCourseId }) {
           </div>
         </div>
 
-        <div className="card overflow-hidden mb-4">
+        <div className="card overflow-hidden flex-1 flex flex-col min-h-0 mb-4">
           {!sourceCourseId ? (
             <div className="text-sm text-gray-400 p-6">Select a source course to load assignments.</div>
           ) : (
@@ -340,6 +340,7 @@ export default function CopyFlow({ initialCourseId }) {
                   sortDir={sortDir}
                   onSort={handleSort}
                   loading={loadingAssignments}
+                  fillHeight
                 />
               ) : (
                 <div className="text-sm text-gray-400 p-6">
@@ -375,7 +376,7 @@ export default function CopyFlow({ initialCourseId }) {
     const sourceCourse = courses.find(c => c.id === sourceCourseId)
 
     return (
-      <div>
+      <div className="flex-1 overflow-auto">
         <div className="mb-6">
           <button
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4"
@@ -515,7 +516,7 @@ export default function CopyFlow({ initialCourseId }) {
 
   if (copying) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4">
+      <div className="flex-1 flex flex-col items-center justify-center py-24 gap-4">
         <Loader size={32} className="animate-spin" style={{ color: 'var(--cpt-color)' }} />
         <p className="text-sm text-gray-500">{copyProgress}</p>
       </div>
@@ -526,7 +527,7 @@ export default function CopyFlow({ initialCourseId }) {
   const totalFailed = results.reduce((n, r) => n + (r.assignments.length - r.succeeded), 0)
 
   return (
-    <div>
+    <div className="flex-1 overflow-auto">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <CheckCircle size={22} className="text-green-600" />
