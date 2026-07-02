@@ -13,10 +13,10 @@ import ShortcutsPanel from '../components/ShortcutsPanel.jsx'
 import { ToastProvider, useToast } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
 import { TOOLS } from '../config/tools.jsx'
-import { getAccount, updateVerificationStatus, saveAccount } from '../storage/account.js'
+import { getAccount, updateVerificationStatus, saveAccount, markSetupComplete } from '../storage/account.js'
 import { getPreferences, setPreference, resetPreferences, DEFAULTS } from '../storage/preferences.js'
 import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
-import { clearAllChangeLogs, purgeOldChangeLogs } from '../storage/changeLogs.js'
+import { clearAllChangeLogs } from '../storage/changeLogs.js'
 import { getTemplates, saveTemplate, saveFolder } from '../storage/templates.js'
 import { verifyToken } from '../api/auth.js'
 import { getDecryptedToken } from '../storage/encryption.js'
@@ -743,9 +743,6 @@ function App() {
       applyTheme(p.buttonColor)
       applyDarkMode(p.themeMode ?? 'system')
       applyTextSize(p.textSize ?? 'medium')
-      if (p.changeLogAutoClearOlderThan) {
-        purgeOldChangeLogs(p.changeLogAutoClearOlderThan).catch(() => {})
-      }
     })
     getCourses().then(setCourses).catch(() => {})
     getSecuritySettings().then(setSecSettings)
@@ -872,7 +869,8 @@ function App() {
   }
 
   function handleExportSettings() {
-    const payload = { version: 1, exportedAt: new Date().toISOString(), preferences: prefs }
+    const { lastUsedCourseId, popupCourseShortcuts, ...portablePrefs } = prefs
+    const payload = { version: 1, exportedAt: new Date().toISOString(), preferences: portablePrefs }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -886,13 +884,22 @@ function App() {
     const file = e.target.files?.[0]
     if (!file) return
     setImportError(null)
+    let payload
     try {
-      const payload = JSON.parse(await file.text())
-      if (!payload.preferences || typeof payload.preferences !== 'object') {
-        setImportError('Invalid settings file — "preferences" key not found.')
-        return
-      }
-      const updated = { ...DEFAULTS, ...payload.preferences }
+      payload = JSON.parse(await file.text())
+    } catch {
+      setImportError('Could not read file — make sure it is a valid Canvas Power Tools backup.')
+      return
+    }
+    if (!payload.preferences || typeof payload.preferences !== 'object' || Array.isArray(payload.preferences)) {
+      setImportError('Invalid settings file — "preferences" key not found.')
+      return
+    }
+    const { lastUsedCourseId: _lcid, popupCourseShortcuts: _pcs, ...importablePrefs } = payload.preferences
+    const updated = { ...DEFAULTS, ...importablePrefs }
+    if (!Array.isArray(updated.popupPinnedTools))         updated.popupPinnedTools         = DEFAULTS.popupPinnedTools
+    if (!Array.isArray(updated.bulkEditorVisibleColumns)) updated.bulkEditorVisibleColumns  = DEFAULTS.bulkEditorVisibleColumns
+    try {
       await chrome.storage.sync.set({ preferences: updated })
       await chrome.storage.local.set({ preferences: updated })
       setPrefs(updated)
@@ -900,9 +907,10 @@ function App() {
       applyDarkMode(updated.themeMode ?? 'system')
       applyTextSize(updated.textSize ?? 'medium')
       toast('Settings imported successfully', 'success')
-      e.target.value = ''
     } catch {
-      setImportError('Could not read file — make sure it is a valid Canvas Power Tools backup.')
+      setImportError('Could not save settings — storage quota may be exceeded.')
+    } finally {
+      e.target.value = ''
     }
   }
 
@@ -1662,6 +1670,7 @@ function ReconnectModal({ account, onClose, onSuccess }) {
     try {
       const user = await verifyToken(url.trim(), token.trim())
       await saveAccount({ canvasUrl: url.trim(), token: token.trim(), userName: user.name })
+      await markSetupComplete()
       onSuccess()
     } catch (err) {
       setError(err.message ?? 'Could not verify your token. Check the URL and try again.')
@@ -1764,7 +1773,7 @@ function ReconnectModal({ account, onClose, onSuccess }) {
                 'Enter "Canvas Power Tools" as the purpose',
                 'Set expiry to the end of your school year (recommended)',
                 'Click Generate Token — copy the token, it is only shown once',
-              ].map((step, i) => <li key={i}>{step}</li>)}
+              ].map(step => <li key={step}>{step}</li>)}
             </ol>
           )}
         </div>

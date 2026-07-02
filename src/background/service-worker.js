@@ -18,10 +18,12 @@ chrome.runtime.onStartup.addListener(ensurePurgeAlarm)
 
 chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name !== 'purgeChangeLogs') return
-  const prefs = await getPreferences()
-  if (prefs.changeLogAutoClearOlderThan) {
-    await purgeOldChangeLogs(prefs.changeLogAutoClearOlderThan)
-  }
+  try {
+    const prefs = await getPreferences()
+    if (prefs.changeLogAutoClearOlderThan) {
+      await purgeOldChangeLogs(prefs.changeLogAutoClearOlderThan)
+    }
+  } catch {}
 })
 
 // Open extension pages from content script messages

@@ -44,7 +44,10 @@ export async function purgeOldChangeLogs(days) {
   const updates = {}
   for (const [key, entries] of Object.entries(all)) {
     if (!key.startsWith('changeLog_') || !Array.isArray(entries)) continue
-    const filtered = entries.filter(e => new Date(e.timestamp).getTime() >= cutoff)
+    const filtered = entries.filter(e => {
+      const ts = new Date(e.timestamp).getTime()
+      return isNaN(ts) || ts >= cutoff
+    })
     if (filtered.length !== entries.length) updates[key] = filtered
   }
   if (Object.keys(updates).length > 0) await chrome.storage.local.set(updates)
