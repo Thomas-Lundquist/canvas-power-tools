@@ -74,15 +74,15 @@ export const TOOLS = [
     path:        'src/pages/grading/index.html',
   },
 
-  // ── Communication ──────────────────────────────────────────────────────────
+  // ── Communication (alphabetical) ───────────────────────────────────────────
   {
-    id:          'submission-reminders',
+    id:          'announcements',
     module:      'communication',
-    label:       'Submission Reminders',
-    shortLabel:  'Reminders',
-    description: 'Send targeted reminders to students who have not submitted an assignment.',
-    Icon:        Bell,
-    path:        'src/pages/submission-reminders/index.html',
+    label:       'Announcements',
+    shortLabel:  'Announcements',
+    description: 'Write once and send to multiple courses. Supports scheduling and drafts.',
+    Icon:        Megaphone,
+    path:        'src/pages/announcements/index.html',
   },
   {
     id:          'grade-outreach',
@@ -94,13 +94,13 @@ export const TOOLS = [
     path:        'src/pages/grade-outreach/index.html',
   },
   {
-    id:          'announcements',
+    id:          'submission-reminders',
     module:      'communication',
-    label:       'Announcements',
-    shortLabel:  'Announcements',
-    description: 'Write once and send to multiple courses. Supports scheduling and drafts.',
-    Icon:        Megaphone,
-    path:        'src/pages/announcements/index.html',
+    label:       'Submission Reminders',
+    shortLabel:  'Reminders',
+    description: 'Send targeted reminders to students who have not submitted an assignment.',
+    Icon:        Bell,
+    path:        'src/pages/submission-reminders/index.html',
   },
 
   // ── People (alphabetical) ──────────────────────────────────────────────────
