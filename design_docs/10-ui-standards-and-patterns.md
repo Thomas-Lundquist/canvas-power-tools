@@ -14,6 +14,78 @@ reason and a decision recorded in the relevant design document.
 
 ---
 
+## Page Layout Patterns
+
+Two layout strategies exist. The right one depends on whether the table is
+the primary content of the page.
+
+### Table-Primary Tools
+
+A tool is table-primary when the assignment table is the entirety of the
+main content area — after the filter bar and toolbar, there is nothing else
+on the page. The table should fill the remaining viewport height and scroll
+internally rather than making the page scroll.
+
+**Current table-primary tools:** Bulk Assignment Editor, Copy Assignments
+(source step)
+
+**Layout pattern:**
+
+```jsx
+<div className="h-screen flex flex-col bg-gray-50">
+  <header />  {/* sticky top bar — natural height */}
+  <div className="max-w-7xl mx-auto px-6 py-6 flex-1 flex flex-col min-h-0 w-full">
+    <div className="mb-4">  {/* filter bar / heading — natural height */}
+      ...
+    </div>
+    <div className="card overflow-hidden flex-1 flex flex-col min-h-0">
+      <AssignmentTable fillHeight />
+    </div>
+  </div>
+</div>
+```
+
+**Rules:**
+
+- The root div uses `h-screen` (exact 100vh), **not** `min-h-screen`. The
+  virtualizer requires the scroll element to have a bounded height.
+  `min-h-screen` expands to fit content, destroying the constraint and
+  causing the table to extend well below the viewport.
+- Every intermediate div in the flex chain uses `flex-1 min-h-0`. The
+  `min-h-0` overrides flex's default `min-height: auto`, which would
+  otherwise allow items to overflow their container.
+- `AssignmentTable` receives the `fillHeight` prop, switching its scroll
+  container from `max-h-[34rem]` to `flex-1 min-h-0`.
+- If a fixed-position overlay (such as the BulkActionBar) sits above the
+  bottom of the table, add bottom clearance to the **table's scroll
+  container**, not the page root. Pass `actionBarVisible` to
+  `AssignmentTable` so it conditionally adds `pb-48`. Padding on the root
+  div creates a permanent gap even when the overlay is not showing.
+
+### Mixed-Content Tools
+
+A tool is mixed-content when the table is accompanied by substantial
+non-table content: configuration panels, detail views, step flows, or
+forms. These tools use page-scrolling layout — the page can be as tall as
+its content requires.
+
+**Current mixed-content tools:** Rubrics, Templates, Accommodations, Grade
+Adjustments, Copy Assignments (target and results steps)
+
+For mixed-content tools the page root uses `min-h-screen` and
+`AssignmentTable` uses its default `max-h-[34rem]` scroll container. Do
+not pass `fillHeight`.
+
+### Classifying a New Tool
+
+> After the toolbar and filters, is the assignment table the only content on
+> the page?
+
+- **Yes** → table-primary. Use `h-screen` layout, pass `fillHeight`.
+- **No** → mixed-content. Use `min-h-screen`, omit `fillHeight`.
+
+---
+
 ## Loading States
 
 Every API call takes time. These states are shown while data is being

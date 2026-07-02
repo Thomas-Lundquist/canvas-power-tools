@@ -593,6 +593,32 @@ count and `aria-multiselectable="true"`. Each rendered `<tr>` carries
 `aria-selected`. This tells screen readers the true table size even when
 most rows are not in the DOM.
 
+**Layout requirement for `fillHeight` mode:** The virtualizer computes
+visible rows by measuring `parentRef.current.clientHeight`. For that
+measurement to be bounded, every ancestor in the flex chain must have a
+definite height. This means the page root **must** use `h-screen`
+(`height: 100vh`), not `min-h-screen`. With `min-h-screen` the root
+expands to fit content, the flex chain has no upper bound, and the
+virtualizer renders all rows — making the table extend far below the
+viewport. See Doc 10 — Page Layout Patterns for the complete layout
+template.
+
+**`actionBarVisible` prop:** When a fixed-position element overlays the
+bottom of the table (e.g., the BulkActionBar), pass `actionBarVisible`
+to `AssignmentTable`. It conditionally applies `pb-48` to the scroll
+container so users can scroll through content that would otherwise be
+hidden behind the overlay. This padding must live on the scroll container,
+not the page root — root-level padding creates a permanent gap even when
+the overlay is not visible.
+
+**Skeleton auto-sizing:** In `fillHeight` mode the scroll container has a
+bounded height that varies by viewport. A fixed number of skeleton rows
+would leave visible empty space on large screens or overflow on small ones.
+`AssignmentTable` uses `useLayoutEffect` to measure `parentRef.current
+.clientHeight` when `loading` becomes `true` and computes the row count
+as `Math.ceil(height / 48)`. The 8 skeleton width patterns cycle with
+modulo so any count is supported.
+
 **Search and filter performance:** Client-side filtering on an already-fetched
 list is instant up to approximately 500 items. Text search is debounced by
 150ms to avoid re-rendering on every keystroke.
