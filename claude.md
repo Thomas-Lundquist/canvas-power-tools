@@ -384,6 +384,51 @@ PR description must include:
 - How to test it
 - Any design document updated
 
+### Bug Tracking with GitHub CLI
+
+All bugs are tracked as GitHub issues. Always use the `gh` CLI — never
+create or manage issues through the GitHub web UI or any other tool.
+
+**Creating a bug:**
+```
+gh issue create --title "fix(scope): short description" --label bug --body "$(cat <<'EOF'
+## Steps to reproduce
+1.
+2.
+
+## Expected behavior
+
+## Actual behavior
+
+## Notes
+EOF
+)"
+```
+
+**Listing open bugs:**
+```
+gh issue list --label bug --state open
+```
+
+**Viewing a specific bug:**
+```
+gh issue view <number>
+```
+
+**Closing a bug when fixed:**
+```
+gh issue close <number> --comment "Fixed in <commit-sha> — <one-line summary>"
+```
+
+**Linking a commit to an issue:**
+Include `Closes #<number>` or `Fixes #<number>` in the commit body so
+GitHub closes the issue automatically when the commit lands on the default branch.
+
+**Rules:**
+- Every bug discovered during development gets a GitHub issue before work begins on the fix.
+- If a bug is found and deferred, label it `deferred` and leave a comment explaining why.
+- Do not close an issue until the fix is committed and verified.
+
 ---
 
 ## Security Rules
@@ -478,6 +523,8 @@ justification.
 - Add aria attributes to every interactive element
 - Write functions that do one thing
 - Name things clearly — never abbreviate unless the abbreviation is universal
+- Create a GitHub issue with `gh issue create` before fixing any discovered bug
+- Close GitHub issues with `gh issue close` only after the fix is committed and verified
 
 ## What Claude Should Never Do
 
