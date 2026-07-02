@@ -35,7 +35,7 @@ export default function SentLogPanel({ entries, onClose }) {
             <div className="divide-y divide-gray-100">
               {entries.map(entry => {
                 const open = expanded.has(entry.id)
-                const typeLabel = entry.type === 'nudge' ? 'Nudge' : entry.type === 'threshold' ? 'Threshold' : 'Announcement'
+                const typeLabel = entry.type === 'nudge' ? 'Submission Reminder' : entry.type === 'threshold' ? 'Grade Outreach' : 'Announcement'
                 return (
                   <div key={entry.id}>
                     <button

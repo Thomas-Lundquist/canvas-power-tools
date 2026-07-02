@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Loader, AlertTriangle, Send, BookTemplate, Save, FileText, Trash2, X } from 'lucide-react'
+import { Loader, AlertTriangle, Send, BookTemplate, Save, FileText, Trash2, Clock } from 'lucide-react'
+import Modal from '../../components/Modal.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { getCourses } from '../../api/courses.js'
 import { createAnnouncement } from '../../api/discussions.js'
@@ -9,118 +10,126 @@ import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import SentLogPanel from './SentLogPanel.jsx'
 
+function CountdownButton({ onConfirm, sending, progress }) {
+  const [seconds, setSeconds] = useState(5)
+
+  useEffect(() => {
+    if (seconds <= 0) return
+    const t = setTimeout(() => setSeconds(s => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [seconds])
+
+  const ready = seconds <= 0 && !sending
+
+  return (
+    <button
+      className="btn-primary flex items-center gap-2 min-w-[10rem] justify-center"
+      disabled={!ready}
+      onClick={onConfirm}
+    >
+      {sending ? (
+        <><Loader size={14} className="animate-spin" />{progress || 'Sending…'}</>
+      ) : seconds > 0 ? (
+        <><Clock size={14} />Send in {seconds}…</>
+      ) : (
+        <><Send size={14} />Confirm and Send</>
+      )}
+    </button>
+  )
+}
+
 function PreviewModal({ subject, body, selectedCourses, schedule, onConfirm, onCancel, sending, progress }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[85vh]">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h3 className="font-semibold text-gray-900">Preview — Announcement</h3>
+    <Modal
+      title="Preview — Announcement"
+      onClose={onCancel}
+      size="sm"
+      footer={<>
+        <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
+        <CountdownButton onConfirm={onConfirm} sending={sending} progress={progress} />
+      </>}
+    >
+      <div className="space-y-4">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Subject</p>
+          <p className="text-sm font-medium text-gray-900">{subject}</p>
         </div>
-
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Subject</p>
-            <p className="text-sm font-medium text-gray-900">{subject}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Message</p>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-lg p-3">{body}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Sending to</p>
-            <ul className="text-sm text-gray-700 space-y-0.5">
-              {selectedCourses.map(c => <li key={c.id}>{c.name}</li>)}
-            </ul>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Schedule</p>
-            <p className="text-sm text-gray-700">
-              {schedule ? `Scheduled for ${new Date(schedule).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Send immediately'}
-            </p>
-          </div>
-          <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            <span>Announcements cannot be recalled once sent.</span>
-          </div>
-          {sending && progress && <p className="text-xs text-gray-400">{progress}</p>}
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Message</p>
+          <p className="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-lg p-3">{body}</p>
         </div>
-
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 shrink-0">
-          <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
-          <button className="btn-primary flex items-center gap-1.5" onClick={onConfirm} disabled={sending}>
-            {sending
-              ? <><Loader size={13} className="animate-spin" /> Sending…</>
-              : <><Send size={14} /> Confirm and Send</>}
-          </button>
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Sending to</p>
+          <ul className="text-sm text-gray-700 space-y-0.5">
+            {selectedCourses.map(c => <li key={c.id}>{c.name}</li>)}
+          </ul>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Schedule</p>
+          <p className="text-sm text-gray-700">
+            {schedule ? `Scheduled for ${new Date(schedule).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Send immediately'}
+          </p>
+        </div>
+        <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>Announcements cannot be recalled once sent.</span>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
 function DraftsPanel({ drafts, onLoad, onDelete, onClose }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col max-h-[70vh]">
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h3 className="font-semibold text-gray-900">Saved Drafts</h3>
-          <button className="btn-ghost p-1" onClick={onClose} aria-label="Close drafts"><X size={16} /></button>
-        </div>
-        <div className="overflow-y-auto flex-1">
-          {drafts.length === 0 ? (
-            <p className="text-sm text-gray-400 py-10 text-center">No saved drafts.</p>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {drafts.map(d => (
-                <div key={d.id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{d.subject || '(no subject)'}</p>
-                    <p className="text-xs text-gray-400">Saved {new Date(d.savedAt).toLocaleDateString()}</p>
-                  </div>
-                  <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(d)}>Load</button>
-                  <button className="btn-ghost p-1.5 text-red-400 hover:text-red-600" onClick={() => onDelete(d.id)} aria-label="Delete draft">
-                    <Trash2 size={14} />
-                  </button>
+    <Modal title="Saved Drafts" onClose={onClose} size="sm">
+      <div className="-mx-6 -my-4">
+        {drafts.length === 0 ? (
+          <p className="text-sm text-gray-400 py-10 text-center">No saved drafts.</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {drafts.map(d => (
+              <div key={d.id} className="flex items-center gap-3 px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{d.subject || '(no subject)'}</p>
+                  <p className="text-xs text-gray-400">Saved {new Date(d.savedAt).toLocaleDateString()}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(d)}>Load</button>
+                <button className="btn-ghost p-1.5 text-red-400 hover:text-red-600" onClick={() => onDelete(d.id)} aria-label="Delete draft">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   )
 }
 
 function TemplatesPanel({ templates, onLoad, onDelete, onClose }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col max-h-[70vh]">
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h3 className="font-semibold text-gray-900">Announcement Templates</h3>
-          <button className="btn-ghost p-1" onClick={onClose} aria-label="Close templates"><X size={16} /></button>
-        </div>
-        <div className="overflow-y-auto flex-1">
-          {templates.length === 0 ? (
-            <p className="text-sm text-gray-400 py-10 text-center">No saved templates.</p>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {templates.map(t => (
-                <div key={t.id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{t.subject || '(no subject)'}</p>
-                  </div>
-                  <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(t)}>Use</button>
-                  <button className="btn-ghost p-1.5 text-red-400 hover:text-red-600" onClick={() => onDelete(t.id)} aria-label="Delete template">
-                    <Trash2 size={14} />
-                  </button>
+    <Modal title="Announcement Templates" onClose={onClose} size="sm">
+      <div className="-mx-6 -my-4">
+        {templates.length === 0 ? (
+          <p className="text-sm text-gray-400 py-10 text-center">No saved templates.</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {templates.map(t => (
+              <div key={t.id} className="flex items-center gap-3 px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{t.subject || '(no subject)'}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(t)}>Use</button>
+                <button className="btn-ghost p-1.5 text-red-400 hover:text-red-600" onClick={() => onDelete(t.id)} aria-label="Delete template">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -400,26 +409,25 @@ export default function Announcements() {
         </div>
       </div>
 
-      {/* Save template name prompt */}
       {showSaveTemplate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full space-y-4">
-            <h3 className="font-semibold text-gray-900">Save as Template</h3>
-            <input
-              type="text"
-              className="input w-full text-sm"
-              value={saveTemplateName}
-              onChange={e => setSaveTemplateName(e.target.value)}
-              placeholder="Template name…"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
-            />
-            <div className="flex justify-end gap-3">
-              <button className="btn-secondary" onClick={() => setShowSaveTemplate(false)}>Cancel</button>
-              <button className="btn-primary" disabled={!saveTemplateName.trim()} onClick={handleSaveTemplate}>Save</button>
-            </div>
-          </div>
-        </div>
+        <Modal
+          title="Save as Template"
+          onClose={() => setShowSaveTemplate(false)}
+          size="sm"
+          footer={<>
+            <button className="btn-secondary" onClick={() => setShowSaveTemplate(false)}>Cancel</button>
+            <button className="btn-primary" disabled={!saveTemplateName.trim()} onClick={handleSaveTemplate}>Save</button>
+          </>}
+        >
+          <input
+            type="text"
+            className="input w-full text-sm"
+            value={saveTemplateName}
+            onChange={e => setSaveTemplateName(e.target.value)}
+            placeholder="Template name…"
+            onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
+          />
+        </Modal>
       )}
 
       {showPreview && (

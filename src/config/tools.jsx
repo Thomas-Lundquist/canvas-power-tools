@@ -1,6 +1,7 @@
 import {
   LayoutList, BarChart2, Layers, BookTemplate, Copy,
-  ClipboardList, Users, MessageSquare, SplitSquareVertical, Clock,
+  ClipboardList, Users, SplitSquareVertical, Clock,
+  Bell, TrendingDown, Megaphone,
 } from 'lucide-react'
 
 // Single source of truth for all tool pages.
@@ -75,13 +76,31 @@ export const TOOLS = [
 
   // ── Communication ──────────────────────────────────────────────────────────
   {
-    id:          'communication',
+    id:          'submission-reminders',
     module:      'communication',
-    label:       'Communication',
-    shortLabel:  'Messages',
-    description: 'Nudge students who have not submitted, message by grade threshold, and send announcements to multiple courses.',
-    Icon:        MessageSquare,
-    path:        'src/pages/communication/index.html',
+    label:       'Submission Reminders',
+    shortLabel:  'Reminders',
+    description: 'Send targeted reminders to students who have not submitted an assignment.',
+    Icon:        Bell,
+    path:        'src/pages/submission-reminders/index.html',
+  },
+  {
+    id:          'grade-outreach',
+    module:      'communication',
+    label:       'Grade Outreach',
+    shortLabel:  'Grade Outreach',
+    description: 'Message students who scored above or below a grade threshold.',
+    Icon:        TrendingDown,
+    path:        'src/pages/grade-outreach/index.html',
+  },
+  {
+    id:          'announcements',
+    module:      'communication',
+    label:       'Announcements',
+    shortLabel:  'Announcements',
+    description: 'Write once and send to multiple courses. Supports scheduling and drafts.',
+    Icon:        Megaphone,
+    path:        'src/pages/announcements/index.html',
   },
 
   // ── People (alphabetical) ──────────────────────────────────────────────────

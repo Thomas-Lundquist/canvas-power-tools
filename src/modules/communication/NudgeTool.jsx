@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Loader, AlertTriangle, Send, Clock } from 'lucide-react'
+import Modal from '../../components/Modal.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { getCourses } from '../../api/courses.js'
@@ -54,40 +55,35 @@ function PreviewModal({ recipients, message, assignment, course, teacherName, on
     : ''
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[85vh]">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h3 className="font-semibold text-gray-900">Preview — Nudge Messages</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{recipients.length} message{recipients.length !== 1 ? 's' : ''} will be sent. Each is personalized per student.</p>
-        </div>
-
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-          {recipients[0] && (
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
-              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap border border-gray-200">
-                {example}
-              </div>
-            </div>
-          )}
-
+    <Modal
+      title="Preview — Nudge Messages"
+      subtitle={`${recipients.length} message${recipients.length !== 1 ? 's' : ''} will be sent. Each is personalized per student.`}
+      onClose={onCancel}
+      size="sm"
+      footer={<>
+        <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
+        <CountdownButton onSend={onSend} sending={sending} progress={progress} />
+      </>}
+    >
+      <div className="space-y-4">
+        {recipients[0] && (
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recipients</p>
-            <p className="text-sm text-gray-700">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
+            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap border border-gray-200">
+              {example}
+            </div>
           </div>
-
-          <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            <span>This will send {recipients.length} message{recipients.length !== 1 ? 's' : ''} via Canvas Inbox. Messages cannot be unsent.</span>
-          </div>
+        )}
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recipients</p>
+          <p className="text-sm text-gray-700">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
         </div>
-
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 shrink-0">
-          <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
-          <CountdownButton onSend={onSend} sending={sending} progress={progress} />
+        <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>This will send {recipients.length} message{recipients.length !== 1 ? 's' : ''} via Canvas Inbox. Messages cannot be unsent.</span>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -216,7 +212,7 @@ export default function NudgeTool() {
     <div>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Nudge Tool</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Submission Reminders</h1>
           <p className="text-sm text-gray-500 mt-1">Message students who have not submitted an assignment.</p>
         </div>
         <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
@@ -288,7 +284,11 @@ export default function NudgeTool() {
                     disabled={s.excused}
                   />
                   <span className="flex-1 text-sm text-gray-800">{s.userName ?? 'Unknown Student'}</span>
-                  {s.excused && <span className="text-xs text-gray-400">Excused — skip</span>}
+                  {s.excused
+                    ? <span className="text-xs text-gray-400">Excused — skip</span>
+                    : selectedAssignment?.dueAt
+                      ? <span className="text-xs text-gray-400">Missing since {new Date(selectedAssignment.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      : null}
                 </label>
               ))}
             </div>
