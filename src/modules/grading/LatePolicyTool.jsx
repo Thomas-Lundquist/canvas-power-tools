@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Loader, Calculator } from 'lucide-react'
+import Modal from '../../components/Modal.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { getCourses } from '../../api/courses.js'
@@ -36,47 +37,13 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
   const changed = rows.filter(r => r.penalty !== null)
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-[80vh]">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <div>
-            <h3 className="font-semibold text-gray-900">Preview Late Penalties</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{changed.length} submission{changed.length !== 1 ? 's' : ''} will be adjusted</p>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Assignment</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Days Late</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Penalty</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {rows.map((r, i) => (
-                <tr key={i} className={r.penalty === null ? 'opacity-30' : ''}>
-                  <td className="px-4 py-2.5 text-gray-800 max-w-[10rem] truncate" title={r.assignmentName}>{r.assignmentName}</td>
-                  <td className="px-4 py-2.5 text-gray-800">{r.userName ?? 'Unknown'}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">{r.penalty ? r.penalty.daysLate : '—'}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    {r.penalty ? <span className="text-red-500 font-medium">−{r.penalty.penaltyPct}%</span> : '—'}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">{r.currentScore ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-gray-900">
-                    {r.penalty ? r.penalty.newScore : r.currentScore ?? '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="px-6 py-4 border-t border-gray-100 shrink-0">
+    <Modal
+      title="Preview Late Penalties"
+      subtitle={`${changed.length} submission${changed.length !== 1 ? 's' : ''} will be adjusted`}
+      onClose={onCancel}
+      size="lg"
+      footer={
+        <div className="w-full">
           {applying && <p className="text-xs text-gray-400 mb-3">{progress}</p>}
           <div className="flex justify-end gap-3">
             <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
@@ -90,8 +57,39 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
             </button>
           </div>
         </div>
+      }
+    >
+      <div className="-mx-6 -my-4">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Assignment</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Days Late</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Penalty</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {rows.map((r, i) => (
+              <tr key={i} className={r.penalty === null ? 'opacity-30' : ''}>
+                <td className="px-4 py-2.5 text-gray-800 max-w-[10rem] truncate" title={r.assignmentName}>{r.assignmentName}</td>
+                <td className="px-4 py-2.5 text-gray-800">{r.userName ?? 'Unknown'}</td>
+                <td className="px-4 py-2.5 text-right text-gray-500">{r.penalty ? r.penalty.daysLate : '—'}</td>
+                <td className="px-4 py-2.5 text-right">
+                  {r.penalty ? <span className="text-red-500 font-medium">−{r.penalty.penaltyPct}%</span> : '—'}
+                </td>
+                <td className="px-4 py-2.5 text-right text-gray-500">{r.currentScore ?? '—'}</td>
+                <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                  {r.penalty ? r.penalty.newScore : r.currentScore ?? '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </Modal>
   )
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Loader, TrendingUp } from 'lucide-react'
+import Modal from '../../components/Modal.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignmentsWithGradingData, getAssignmentSubmissions, updateSubmissionGrade } from '../../api/submissions.js'
@@ -63,51 +64,15 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
   const max = assignment.pointsPossible
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col max-h-[80vh]">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <div>
-            <h3 className="font-semibold text-gray-900">Preview Grade Changes</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{assignment.name} · {changed.length} grade{changed.length !== 1 ? 's' : ''} will change</p>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Change</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {rows.map(r => {
-                const delta = r.newScore !== null && r.currentScore !== null ? r.newScore - r.currentScore : null
-                const unchanged = r.newScore === r.currentScore
-                return (
-                  <tr key={r.userId} className={unchanged ? 'opacity-40' : ''}>
-                    <td className="px-4 py-2.5 text-gray-900">{r.userName ?? 'Unknown'}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-500">{fmt(r.currentScore, max)}</td>
-                    <td className="px-4 py-2.5 text-right font-medium text-gray-900">{fmt(r.newScore, max)}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      {delta !== null && delta !== 0 && (
-                        <span className={delta > 0 ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
-                          {delta > 0 ? '+' : ''}{applyRound(delta)}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="px-6 py-4 border-t border-gray-100 shrink-0">
+    <Modal
+      title="Preview Grade Changes"
+      subtitle={`${assignment.name} · ${changed.length} grade${changed.length !== 1 ? 's' : ''} will change`}
+      onClose={onCancel}
+      size="md"
+      footer={
+        <div className="w-full">
           {beforeAvg !== null && afterAvg !== null && (
-            <p className="text-xs text-gray-400 mb-4">
+            <p className="text-xs text-gray-400 mb-3">
               Class average: <span className="font-medium text-gray-700">{applyRound(beforeAvg)}</span>
               {' → '}
               <span className="font-medium text-gray-700">{applyRound(afterAvg)}</span>
@@ -127,8 +92,41 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
             </button>
           </div>
         </div>
+      }
+    >
+      <div className="-mx-6 -my-4">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Change</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {rows.map(r => {
+              const delta = r.newScore !== null && r.currentScore !== null ? r.newScore - r.currentScore : null
+              const unchanged = r.newScore === r.currentScore
+              return (
+                <tr key={r.userId} className={unchanged ? 'opacity-40' : ''}>
+                  <td className="px-4 py-2.5 text-gray-900">{r.userName ?? 'Unknown'}</td>
+                  <td className="px-4 py-2.5 text-right text-gray-500">{fmt(r.currentScore, max)}</td>
+                  <td className="px-4 py-2.5 text-right font-medium text-gray-900">{fmt(r.newScore, max)}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    {delta !== null && delta !== 0 && (
+                      <span className={delta > 0 ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
+                        {delta > 0 ? '+' : ''}{applyRound(delta)}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </Modal>
   )
 }
 
