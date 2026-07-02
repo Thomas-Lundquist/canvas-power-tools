@@ -2,20 +2,21 @@
 import { createRoot } from 'react-dom/client'
 import {
   RefreshCw, Eye, EyeOff, CheckCircle, AlertCircle, Loader,
-  Search, ExternalLink, ChevronRight, RotateCcw, X, Settings, Sun, Moon,
-  Download, Lock, ShieldOff,
+  Search, ExternalLink, ChevronRight, ChevronDown, RotateCcw, X, Settings, Sun, Moon,
+  Download, Upload, Lock, ShieldOff,
 } from 'lucide-react'
 import AppNav, { BrandLogo } from '../components/AppNav.jsx'
 import SkipLink from '../components/SkipLink.jsx'
+import Modal from '../components/Modal.jsx'
 import { useKeyboardShortcuts } from '../utils/useKeyboardShortcuts.js'
 import ShortcutsPanel from '../components/ShortcutsPanel.jsx'
 import { ToastProvider, useToast } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
 import { TOOLS } from '../config/tools.jsx'
-import { getAccount, updateVerificationStatus } from '../storage/account.js'
+import { getAccount, updateVerificationStatus, saveAccount } from '../storage/account.js'
 import { getPreferences, setPreference, resetPreferences, DEFAULTS } from '../storage/preferences.js'
 import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
-import { clearAllChangeLogs } from '../storage/changeLogs.js'
+import { clearAllChangeLogs, purgeOldChangeLogs } from '../storage/changeLogs.js'
 import { getTemplates, saveTemplate, saveFolder } from '../storage/templates.js'
 import { verifyToken } from '../api/auth.js'
 import { getDecryptedToken } from '../storage/encryption.js'
@@ -609,11 +610,14 @@ function Toggle({ checked, onChange }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${checked ? '' : 'bg-gray-300'}`}
       style={checked ? { backgroundColor: 'var(--cpt-color)' } : undefined}
     >
       <span
+        aria-hidden="true"
         className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full shadow transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`}
         style={{ backgroundColor: 'white' }}
       />
@@ -674,9 +678,10 @@ function SectionCard({ id, title, advancedOpen, onToggleAdvanced, resetConfirm, 
         <div className="mt-4 pt-4 border-t border-gray-100">
           <button
             onClick={onToggleAdvanced}
+            aria-expanded={advancedOpen}
             className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <ChevronRight size={12} className={`transition-transform ${advancedOpen ? 'rotate-90' : ''}`} />
+            <ChevronRight size={12} className={`transition-transform ${advancedOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
             Advanced
           </button>
           {advancedOpen && (
@@ -726,6 +731,8 @@ function App() {
   const [changePinSaving, setChangePinSaving] = useState(false)
   const [confirmDisablePin, setConfirmDisablePin] = useState(false)
   const [confirmClearAudit, setConfirmClearAudit] = useState(false)
+  const [reconnectOpen, setReconnectOpen]         = useState(false)
+  const [importError, setImportError]             = useState(null)
   const toast = useToast()
   const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
@@ -736,6 +743,9 @@ function App() {
       applyTheme(p.buttonColor)
       applyDarkMode(p.themeMode ?? 'system')
       applyTextSize(p.textSize ?? 'medium')
+      if (p.changeLogAutoClearOlderThan) {
+        purgeOldChangeLogs(p.changeLogAutoClearOlderThan).catch(() => {})
+      }
     })
     getCourses().then(setCourses).catch(() => {})
     getSecuritySettings().then(setSecSettings)
@@ -859,6 +869,41 @@ function App() {
     setAuditEntries([])
     setConfirmClearAudit(false)
     toast('Audit log cleared', 'success')
+  }
+
+  function handleExportSettings() {
+    const payload = { version: 1, exportedAt: new Date().toISOString(), preferences: prefs }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cpt-settings-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function handleImportSettings(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportError(null)
+    try {
+      const payload = JSON.parse(await file.text())
+      if (!payload.preferences || typeof payload.preferences !== 'object') {
+        setImportError('Invalid settings file — "preferences" key not found.')
+        return
+      }
+      const updated = { ...DEFAULTS, ...payload.preferences }
+      await chrome.storage.sync.set({ preferences: updated })
+      await chrome.storage.local.set({ preferences: updated })
+      setPrefs(updated)
+      applyTheme(updated.buttonColor)
+      applyDarkMode(updated.themeMode ?? 'system')
+      applyTextSize(updated.textSize ?? 'medium')
+      toast('Settings imported successfully', 'success')
+      e.target.value = ''
+    } catch {
+      setImportError('Could not read file — make sure it is a valid Canvas Power Tools backup.')
+    }
   }
 
   function sectionProps(id) {
@@ -1005,7 +1050,7 @@ function App() {
                 {verifying ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                 Verify
               </button>
-              <button className="btn-ghost text-xs" onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_PAGE', path: 'src/pages/onboarding/index.html' })}>
+              <button className="btn-ghost text-xs" onClick={() => setReconnectOpen(true)}>
                 Redo setup
               </button>
             </div>
@@ -1271,6 +1316,8 @@ function App() {
                 <button
                   key={c.hex}
                   title={c.name}
+                  aria-label={prefs.buttonColor === c.hex ? `${c.name} (selected)` : c.name}
+                  aria-pressed={prefs.buttonColor === c.hex}
                   onClick={() => setPref('buttonColor', c.hex)}
                   className="w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center"
                   style={{
@@ -1280,7 +1327,7 @@ function App() {
                   }}
                 >
                   {prefs.buttonColor === c.hex && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
                       <path d="M2 5.5l2.5 2.5 4-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
@@ -1441,6 +1488,28 @@ function App() {
             </div>
           )}
 
+          {/* Export / Import settings */}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Settings backup</p>
+              <p className="text-xs text-gray-500 mt-0.5">Export your preferences or restore from a backup file.</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={handleExportSettings}>
+                <Download size={12} aria-hidden="true" /> Export
+              </button>
+              <label className="btn-secondary text-xs flex items-center gap-1.5 cursor-pointer">
+                <Upload size={12} aria-hidden="true" /> Import
+                <input type="file" accept=".json" className="sr-only" onChange={handleImportSettings} />
+              </label>
+            </div>
+          </div>
+          {importError && (
+            <p role="alert" className="text-xs text-red-600 flex items-center gap-1 -mt-2">
+              <AlertCircle size={12} aria-hidden="true" /> {importError}
+            </p>
+          )}
+
           {/* Clear change logs */}
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div>
@@ -1448,7 +1517,7 @@ function App() {
               <p className="text-xs text-gray-500 mt-0.5">All bulk edit history across all courses.</p>
             </div>
             {confirmClearLogs ? (
-              <div className="flex items-center gap-2">
+              <div role="alert" className="flex items-center gap-2">
                 <span className="text-xs text-gray-600">Clear all logs?</span>
                 <button className="btn-danger text-xs px-2 py-1" onClick={clearLogs}>Clear</button>
                 <button className="btn-ghost text-xs" onClick={() => setConfirmClearLogs(false)}>Cancel</button>
@@ -1467,7 +1536,7 @@ function App() {
               <p className="text-xs text-gray-500 mt-0.5">All saved templates and folders.</p>
             </div>
             {confirmClearTemplates ? (
-              <div className="flex items-center gap-2">
+              <div role="alert" className="flex items-center gap-2">
                 <span className="text-xs text-gray-600">Delete all templates?</span>
                 <button className="btn-danger text-xs px-2 py-1" onClick={clearTemplates}>Delete</button>
                 <button className="btn-ghost text-xs" onClick={() => setConfirmClearTemplates(false)}>Cancel</button>
@@ -1555,7 +1624,152 @@ function App() {
       </div>
 
       {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} />}
+
+      {reconnectOpen && (
+        <ReconnectModal
+          account={account}
+          onClose={() => setReconnectOpen(false)}
+          onSuccess={async () => {
+            setReconnectOpen(false)
+            setAccount(await getAccount())
+            toast('Canvas connection updated successfully', 'success')
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function ReconnectModal({ account, onClose, onSuccess }) {
+  const [url, setUrl]                           = useState(account.canvasUrl ?? '')
+  const [token, setToken]                       = useState('')
+  const [showToken, setShowToken]               = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
+  const [verifying, setVerifying]               = useState(false)
+  const [error, setError]                       = useState(null)
+
+  async function pasteToken() {
+    try {
+      const text = await navigator.clipboard.readText()
+      setToken(text.trim())
+    } catch {}
+  }
+
+  async function handleVerify() {
+    if (!token.trim()) return
+    setVerifying(true)
+    setError(null)
+    try {
+      const user = await verifyToken(url.trim(), token.trim())
+      await saveAccount({ canvasUrl: url.trim(), token: token.trim(), userName: user.name })
+      onSuccess()
+    } catch (err) {
+      setError(err.message ?? 'Could not verify your token. Check the URL and try again.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  return (
+    <Modal
+      title="Reconnect Canvas Power Tools"
+      subtitle="Enter a new API token to restore your Canvas connection."
+      onClose={onClose}
+      size="sm"
+      footer={
+        <>
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button
+            className="btn-primary flex items-center gap-2"
+            onClick={handleVerify}
+            disabled={!token.trim() || verifying}
+          >
+            {verifying && <Loader size={13} className="animate-spin" aria-hidden="true" />}
+            Verify Token
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="label" htmlFor="reconnect-url">Canvas URL</label>
+          <input
+            id="reconnect-url"
+            type="url"
+            value={url}
+            onChange={e => { setUrl(e.target.value); setError(null) }}
+            className="input"
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="reconnect-token">New API Token</label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                id="reconnect-token"
+                type={showToken ? 'text' : 'password'}
+                value={token}
+                onChange={e => { setToken(e.target.value); setError(null) }}
+                onKeyDown={e => { if (e.key === 'Enter' && token.trim()) handleVerify() }}
+                placeholder="Paste your token"
+                className="input pr-10"
+                autoFocus
+              />
+              <button
+                type="button"
+                aria-label={showToken ? 'Hide token' : 'Reveal token'}
+                onClick={() => setShowToken(!showToken)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showToken ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
+              </button>
+            </div>
+            <button className="btn-secondary" onClick={pasteToken}>Paste</button>
+          </div>
+        </div>
+
+        {error && (
+          <div role="alert" className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+            <AlertCircle size={15} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <p className="font-medium">Could not verify token</p>
+              <p className="mt-0.5 text-xs text-red-600">{error}</p>
+              <p className="mt-1 text-xs text-gray-500">Common causes: token not fully copied, token expired, or incorrect Canvas URL.</p>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <button
+            type="button"
+            aria-expanded={showInstructions}
+            onClick={() => setShowInstructions(!showInstructions)}
+            className="flex items-center gap-1.5 text-sm font-medium"
+            style={{ color: 'var(--cpt-color)' }}
+          >
+            <ChevronDown
+              size={15}
+              aria-hidden="true"
+              className={`transition-transform ${showInstructions ? 'rotate-180' : ''}`}
+            />
+            Need help finding your token?
+          </button>
+          {showInstructions && (
+            <ol className="mt-3 space-y-1.5 text-sm text-gray-700 list-decimal list-inside bg-gray-50 rounded-lg p-4">
+              {[
+                'Open Canvas and go to Account > Settings',
+                'Scroll down to Approved Integrations',
+                'Click New Access Token',
+                'Enter "Canvas Power Tools" as the purpose',
+                'Set expiry to the end of your school year (recommended)',
+                'Click Generate Token — copy the token, it is only shown once',
+              ].map((step, i) => <li key={i}>{step}</li>)}
+            </ol>
+          )}
+        </div>
+      </div>
+    </Modal>
   )
 }
 

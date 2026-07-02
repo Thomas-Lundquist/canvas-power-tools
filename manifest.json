@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "A faster, smarter interface for Canvas LMS workflows. Bulk edit assignments, manage templates, and more.",
   "permissions": [
+    "alarms",
     "storage",
     "activeTab",
     "scripting"

@@ -38,6 +38,18 @@ export async function clearAllChangeLogs() {
   if (keys.length > 0) await chrome.storage.local.remove(keys)
 }
 
+export async function purgeOldChangeLogs(days) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+  const all = await chrome.storage.local.get(null)
+  const updates = {}
+  for (const [key, entries] of Object.entries(all)) {
+    if (!key.startsWith('changeLog_') || !Array.isArray(entries)) continue
+    const filtered = entries.filter(e => new Date(e.timestamp).getTime() >= cutoff)
+    if (filtered.length !== entries.length) updates[key] = filtered
+  }
+  if (Object.keys(updates).length > 0) await chrome.storage.local.set(updates)
+}
+
 function summarize(changes) {
   const assignmentIds = new Set(changes.map(c => c.assignmentId))
   return `${changes.length} change${changes.length !== 1 ? 's' : ''} across ${assignmentIds.size} assignment${assignmentIds.size !== 1 ? 's' : ''}`
