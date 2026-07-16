@@ -1,12 +1,16 @@
 import { ChevronDown } from 'lucide-react'
 
 export default function CourseSelector({ courses, selectedId, onChange, loading }) {
+  const selected = courses.find(c => String(c.id) === String(selectedId))
+  const titleText = selected ? `${selected.name}${selected.term ? ` — ${selected.term}` : ''}` : undefined
+
   return (
-    <div className="relative min-w-0 max-w-56">
+    <div className="relative flex-1 min-w-0 max-w-sm">
       <select
         value={selectedId ?? ''}
         onChange={e => onChange(e.target.value)}
         disabled={loading || courses.length === 0}
+        title={titleText}
         className="appearance-none pl-3 pr-9 py-2 w-full bg-white border border-gray-300 rounded-lg text-sm
                    font-medium text-gray-900 shadow-sm
                    disabled:opacity-50 disabled:cursor-not-allowed"
