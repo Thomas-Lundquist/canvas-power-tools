@@ -42,16 +42,16 @@ function App() {
   const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[var(--color-bg-page)]">
       <SkipLink />
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="bg-[var(--color-bg-surface)] border-b border-[var(--color-border)] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <BrandMark />
           <div className="flex items-center gap-1">
             <button
               onClick={toggleMode}
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
               title={displayMode === 'tiles' ? 'Switch to list view' : 'Switch to tile view'}
               aria-label={displayMode === 'tiles' ? 'Switch to list view' : 'Switch to tile view'}
             >
@@ -74,14 +74,13 @@ function App() {
                   <button
                     key={tool.id}
                     onClick={() => navigateTo(tool.path)}
-                    className="card p-6 text-left hover:shadow-md transition-shadow"
+                    className="group card p-6 text-left hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-                         style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.1)' }}>
-                      <tool.Icon size={20} style={{ color: 'var(--cpt-color)' }} />
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4">
+                      <tool.Icon size={20} className="text-[var(--color-text-muted)] group-hover:text-[var(--cpt-color)] transition-colors duration-75" />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">{tool.label}</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">{tool.description}</p>
+                    <h3 className="text-sm font-semibold tracking-tight text-[var(--color-text-body)] mb-1">{tool.label}</h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{tool.description}</p>
                   </button>
                 ))}
               </div>
@@ -91,17 +90,16 @@ function App() {
                   <button
                     key={tool.id}
                     onClick={() => navigateTo(tool.path)}
-                    className={`w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                    className={`group w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-[var(--color-bg-hover)] transition-colors duration-75 ${i > 0 ? 'border-t border-[var(--color-border-subtle)]' : ''}`}
                   >
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                         style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.1)' }}>
-                      <tool.Icon size={18} style={{ color: 'var(--cpt-color)' }} />
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
+                      <tool.Icon size={18} className="text-[var(--color-text-muted)] group-hover:text-[var(--cpt-color)] transition-colors duration-75" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-900">{tool.label}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{tool.description}</div>
+                      <div className="text-sm font-semibold tracking-tight text-[var(--color-text-body)]">{tool.label}</div>
+                      <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">{tool.description}</div>
                     </div>
-                    <ChevronRight size={15} className="shrink-0 text-gray-300" />
+                    <ChevronRight size={15} className="shrink-0 text-[var(--color-text-disabled)]" />
                   </button>
                 ))}
               </div>

@@ -62,13 +62,13 @@ export default function AppNav({ current }) {
 
       {open && (
         <div
-          className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 max-h-[70vh] overflow-y-auto"
+          className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-60 bg-[var(--color-bg-surface)] rounded-md border border-[var(--color-border)] py-1.5 z-50 max-h-[70vh] overflow-y-auto"
           role="menu"
         >
           {grouped.map((group, gi) => (
             <div key={group.id} role="group" aria-label={group.label}>
               {/* Module header */}
-              <p className={`px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 ${gi > 0 ? 'pt-3 border-t border-gray-100 mt-1' : 'pt-2'}`}>
+              <p className={`px-4 pb-1 text-[10px] font-medium uppercase tracking-widest text-[var(--color-text-muted)] ${gi > 0 ? 'pt-3 border-t border-[var(--color-border-subtle)] mt-1' : 'pt-2'}`}>
                 {group.label}
               </p>
               {group.tools.map(tool => {
@@ -77,16 +77,16 @@ export default function AppNav({ current }) {
                   <button
                     key={tool.id}
                     onClick={() => { navigate(tool.path); setOpen(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
                     role="menuitem"
                   >
                     <tool.Icon
                       size={15}
                       style={active ? { color: 'var(--cpt-color)' } : undefined}
-                      className={active ? '' : 'text-gray-400'}
+                      className={active ? '' : 'text-[var(--color-text-muted)]'}
                     />
                     <span
-                      className={active ? 'font-semibold' : 'text-gray-700'}
+                      className={active ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}
                       style={active ? { color: 'var(--cpt-color)' } : undefined}
                     >
                       {tool.label}
@@ -107,7 +107,7 @@ export function SettingsButton() {
   return (
     <button
       onClick={() => navigate('src/settings/index.html')}
-      className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+      className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
       title="Settings"
       aria-label="Settings"
     >
@@ -123,7 +123,7 @@ export function BrandMark() {
            style={{ backgroundColor: 'var(--cpt-color)' }}>
         <span className="text-white text-xs font-black">C</span>
       </div>
-      <span className="text-sm font-semibold text-gray-900 hidden sm:block">Canvas Power Tools</span>
+      <span className="text-sm font-semibold text-[var(--color-text-body)] hidden sm:block">Canvas Power Tools</span>
     </div>
   )
 }
