@@ -534,7 +534,7 @@ export default function App() {
                 </div>
                 {applyResult.succeeded.map(id => {
                   const name = assignments.find(a => a.id === id)?.name ?? id
-                  return <div key={id} className="pl-6 text-sm text-gray-700">{name}</div>
+                  return <div key={id} className="pl-6 text-sm text-[var(--color-text-body)]">{name}</div>
                 })}
               </div>
             )}
@@ -547,7 +547,7 @@ export default function App() {
                 {applyResult.failed.map(f => {
                   const name = assignments.find(a => a.id === f.id)?.name ?? f.id
                   return (
-                    <div key={f.id} className="pl-6 text-sm text-gray-700">
+                    <div key={f.id} className="pl-6 text-sm text-[var(--color-text-body)]">
                       {name} — <span className="text-red-600">{f.error}</span>
                     </div>
                   )

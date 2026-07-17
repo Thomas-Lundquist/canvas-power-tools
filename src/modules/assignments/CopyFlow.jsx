@@ -17,8 +17,8 @@ function ModePill({ label, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-        active ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+      className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-75 ${
+        active ? 'text-white' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-body)]'
       }`}
       style={active ? { backgroundColor: 'var(--cpt-color)' } : undefined}
     >
@@ -267,14 +267,14 @@ export default function CopyFlow({ initialCourseId }) {
     return (
       <div className="flex-1 flex flex-col min-h-0">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Copy Assignments</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Copy Assignments</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
             Select assignments from a source course, then choose one or more destination courses.
           </p>
         </div>
 
         <div className="card p-4 mb-4 flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0">Source Course</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Source Course</span>
           <CourseSelector
             courses={courses}
             selectedId={sourceCourseId}
@@ -285,7 +285,7 @@ export default function CopyFlow({ initialCourseId }) {
 
         <div className="mb-3">
           <div className="relative max-w-sm">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
             <input
               type="text"
               value={search}
@@ -295,7 +295,7 @@ export default function CopyFlow({ initialCourseId }) {
             />
             {search && (
               <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors duration-75"
                 onClick={() => setSearch('')}
               >
                 <X size={14} />
@@ -306,10 +306,10 @@ export default function CopyFlow({ initialCourseId }) {
 
         <div className="card overflow-hidden flex-1 flex flex-col min-h-0 mb-4">
           {!sourceCourseId ? (
-            <div className="text-sm text-gray-400 p-6">Select a source course to load assignments.</div>
+            <div className="text-sm text-[var(--color-text-muted)] p-6">Select a source course to load assignments.</div>
           ) : (
             <>
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg-page)]">
                 {!loadingAssignments && sortedFiltered.length > 0 ? (
                   <button
                     className="text-xs font-medium"
@@ -320,9 +320,9 @@ export default function CopyFlow({ initialCourseId }) {
                   </button>
                 ) : <span />}
                 {loadingAssignments ? (
-                  <span className="text-xs text-gray-400">Loading assignments...</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">Loading assignments...</span>
                 ) : (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-[var(--color-text-secondary)]">
                     {sortedFiltered.length === assignments.length
                       ? `${assignments.length} assignment${assignments.length !== 1 ? 's' : ''}`
                       : `${sortedFiltered.length} of ${assignments.length}`}
@@ -343,7 +343,7 @@ export default function CopyFlow({ initialCourseId }) {
                   fillHeight
                 />
               ) : (
-                <div className="text-sm text-gray-400 p-6">
+                <div className="text-sm text-[var(--color-text-muted)] p-6">
                   {search ? 'No assignments match your search.' : 'No assignments found in this course.'}
                 </div>
               )}
@@ -352,7 +352,7 @@ export default function CopyFlow({ initialCourseId }) {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-[var(--color-text-secondary)]">
             {selectedIds.size === 0
               ? 'Select assignments to copy'
               : `${selectedIds.size} assignment${selectedIds.size !== 1 ? 's' : ''} selected`}
@@ -379,22 +379,22 @@ export default function CopyFlow({ initialCourseId }) {
       <div className="flex-1 overflow-auto">
         <div className="mb-6">
           <button
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4"
+            className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-body)] transition-colors duration-75 mb-4"
             onClick={() => setStep('source')}
           >
             <ArrowLeft size={14} /> Back to source
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Choose Destinations</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Copying <span className="font-medium text-gray-700">{selectedIds.size} assignment{selectedIds.size !== 1 ? 's' : ''}</span>
-            {' '}from <span className="font-medium text-gray-700">{sourceCourse?.name ?? sourceCourseId}</span>
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Choose Destinations</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+            Copying <span className="font-medium text-[var(--color-text-body)]">{selectedIds.size} assignment{selectedIds.size !== 1 ? 's' : ''}</span>
+            {' '}from <span className="font-medium text-[var(--color-text-body)]">{sourceCourse?.name ?? sourceCourseId}</span>
           </p>
         </div>
 
         {/* Target course list */}
         <div className="card p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">Destination Courses</h2>
+            <h2 className="text-sm font-semibold text-[var(--color-text-body)]">Destination Courses</h2>
             <button
               className="text-xs font-medium"
               style={{ color: 'var(--cpt-color)' }}
@@ -404,19 +404,19 @@ export default function CopyFlow({ initialCourseId }) {
             </button>
           </div>
           {targetableCourses.length === 0 ? (
-            <p className="text-sm text-gray-400">No other courses available.</p>
+            <p className="text-sm text-[var(--color-text-muted)]">No other courses available.</p>
           ) : (
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {targetableCourses.map(c => (
                 <div
                   key={c.id}
-                  className="flex items-center gap-3 cursor-pointer px-2 py-2 rounded-lg hover:bg-gray-50"
+                  className="flex items-center gap-3 cursor-pointer px-2 py-2 rounded hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
                   onClick={() => toggleTarget(c.id)}
                 >
                   <Checkbox checked={targetIds.has(c.id)} onChange={() => toggleTarget(c.id)} />
-                  <span className="text-sm text-gray-800">
+                  <span className="text-sm text-[var(--color-text-body)]">
                     {c.name}
-                    {c.term && <span className="text-gray-400 ml-1.5 text-xs">{c.term}</span>}
+                    {c.term && <span className="text-[var(--color-text-muted)] ml-1.5 text-xs">{c.term}</span>}
                   </span>
                 </div>
               ))}
@@ -426,17 +426,17 @@ export default function CopyFlow({ initialCourseId }) {
 
         {/* Date handling */}
         <div className="card p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Date Handling</h2>
+          <h2 className="text-sm font-semibold text-[var(--color-text-body)] mb-3">Date Handling</h2>
           <div className="flex items-center gap-1.5 mb-3">
             <ModePill label="Keep original" active={dateMode === 'keep'} onClick={() => setDateMode('keep')} />
             <ModePill label="Clear all" active={dateMode === 'clear'} onClick={() => setDateMode('clear')} />
             <ModePill label="Shift" active={dateMode === 'shift'} onClick={() => setDateMode('shift')} />
           </div>
           {dateMode === 'keep' && (
-            <p className="text-xs text-gray-400">Due dates, availability dates, and lock dates will be copied exactly from the source.</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Due dates, availability dates, and lock dates will be copied exactly from the source.</p>
           )}
           {dateMode === 'clear' && (
-            <p className="text-xs text-gray-400">Assignments will be created without any dates. You can set them later with the Bulk Assignment Editor.</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Assignments will be created without any dates. You can set them later with the Bulk Assignment Editor.</p>
           )}
           {dateMode === 'shift' && (
             <div className="flex items-center gap-2">
@@ -456,19 +456,19 @@ export default function CopyFlow({ initialCourseId }) {
                 placeholder="days"
                 className="input w-24 text-sm py-1.5"
               />
-              <span className="text-sm text-gray-500">days from original dates</span>
+              <span className="text-sm text-[var(--color-text-secondary)]">days from original dates</span>
             </div>
           )}
         </div>
 
         {/* Published status */}
         <div className="card p-5 mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Published Status</h2>
+          <h2 className="text-sm font-semibold text-[var(--color-text-body)] mb-3">Published Status</h2>
           <div className="flex items-center gap-1.5">
             <ModePill label="Keep original" active={publishMode === 'keep'} onClick={() => setPublishMode('keep')} />
             <ModePill label="Force unpublished" active={publishMode === 'unpublished'} onClick={() => setPublishMode('unpublished')} />
           </div>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-[var(--color-text-muted)] mt-2">
             {publishMode === 'keep'
               ? 'Published assignments will remain published in the destination course.'
               : 'All copied assignments will be created as unpublished regardless of their source status.'}
@@ -482,13 +482,13 @@ export default function CopyFlow({ initialCourseId }) {
             style={{
               backgroundColor: 'rgba(var(--cpt-color-rgb), 0.07)',
               border: '1px solid rgba(var(--cpt-color-rgb), 0.18)',
-              color: '#374151',
+              color: 'var(--color-text-body)',
             }}
           >
             <p className="font-medium">
               Copying {selectedIds.size} assignment{selectedIds.size !== 1 ? 's' : ''} to {targetIds.size} course{targetIds.size !== 1 ? 's' : ''}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
               Dates: {dateMode === 'keep' ? 'Kept from source' : dateMode === 'clear' ? 'Cleared' : `Shifted ${shiftSign}${shiftDays || 0} days`}
               {' Â· '}Status: {publishMode === 'keep' ? 'Keep original' : 'Force unpublished'}
             </p>
@@ -518,7 +518,7 @@ export default function CopyFlow({ initialCourseId }) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 gap-4">
         <Loader size={32} className="animate-spin" style={{ color: 'var(--cpt-color)' }} />
-        <p className="text-sm text-gray-500">{copyProgress}</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">{copyProgress}</p>
       </div>
     )
   }
@@ -531,9 +531,9 @@ export default function CopyFlow({ initialCourseId }) {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <CheckCircle size={22} className="text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Copy Complete</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Copy Complete</h1>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           {totalSucceeded} assignment{totalSucceeded !== 1 ? 's' : ''} created
           {totalFailed > 0 && <>, <span className="text-red-600">{totalFailed} failed</span></>}
           {' '}across {results.length} course{results.length !== 1 ? 's' : ''}
@@ -544,14 +544,14 @@ export default function CopyFlow({ initialCourseId }) {
         {results.map(r => (
           <div key={r.courseId} className="card p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-semibold text-gray-900">{r.courseName}</span>
+              <span className="font-semibold text-[var(--color-text-body)]">{r.courseName}</span>
               <span className={`text-sm font-medium ${r.succeeded === r.assignments.length ? 'text-green-600' : 'text-yellow-600'}`}>
                 {r.succeeded} of {r.assignments.length} created
               </span>
             </div>
             <div className="space-y-1.5">
               {r.assignments.map((a, i) => (
-                <div key={i} className={`flex items-start gap-2 text-sm ${a.success ? 'text-gray-700' : 'text-red-600'}`}>
+                <div key={i} className={`flex items-start gap-2 text-sm ${a.success ? 'text-[var(--color-text-body)]' : 'text-red-600'}`}>
                   {a.success
                     ? <Check size={14} className="text-green-600 shrink-0 mt-0.5" />
                     : <AlertCircle size={14} className="shrink-0 mt-0.5" />}

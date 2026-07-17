@@ -114,7 +114,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <h2 className="text-xl font-bold text-gray-900">Assignments Created</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-body)]">Assignments Created</h2>
 
         <div className="card p-6 space-y-4">
           {succeeded.length > 0 && (
@@ -125,7 +125,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
               </div>
               <div className="space-y-1.5">
                 {succeeded.map(r => (
-                  <div key={r.courseId} className="pl-6 text-sm text-gray-700">
+                  <div key={r.courseId} className="pl-6 text-sm text-[var(--color-text-body)]">
                     <span className="font-medium">{r.courseName}</span>
                     {r.warning && (
                       <div className="flex items-center gap-1 text-yellow-600 text-xs mt-0.5">
@@ -156,7 +156,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
               </div>
               <div className="space-y-1.5">
                 {failed.map(r => (
-                  <div key={r.courseId} className="pl-6 text-sm text-gray-700">
+                  <div key={r.courseId} className="pl-6 text-sm text-[var(--color-text-body)]">
                     <span className="font-medium">{r.courseName}</span>
                     <span className="ml-2 text-red-600">{r.error}</span>
                   </div>
@@ -183,9 +183,9 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Deploy Template</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Creating <span className="font-medium text-gray-700">"{template.fields.name}"</span>
+        <h2 className="text-xl font-bold text-[var(--color-text-body)]">Deploy Template</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          Creating <span className="font-medium text-[var(--color-text-body)]">"{template.fields.name}"</span>
           {' '}— {template.fields.points != null ? `${template.fields.points} pts` : 'ungraded'}
           {template.fields.assignmentGroup ? ` · ${template.fields.assignmentGroup}` : ''}
         </p>
@@ -199,14 +199,14 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
       {/* Course selection */}
       <div className="card p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Select courses</h3>
+          <h3 className="text-sm font-semibold text-[var(--color-text-body)]">Select courses</h3>
           <button className="text-xs font-medium" style={{ color: 'var(--cpt-color)' }} onClick={() => toggleAll(!allSelected)}>
             {allSelected ? 'Deselect all' : 'Select all'}
           </button>
         </div>
 
         {loadingCourses && (
-          <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+          <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm py-2">
             <Loader size={14} className="animate-spin" /> Loading courses...
           </div>
         )}
@@ -215,13 +215,13 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           {courses.map(c => (
             <div
               key={c.id}
-              className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
               onClick={() => toggleCourse(c.id)}
             >
               <Checkbox checked={selectedIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
-              <span className="text-sm text-gray-800">
+              <span className="text-sm text-[var(--color-text-body)]">
                 {c.name}
-                {c.term && <span className="text-gray-400 ml-1.5 text-xs">{c.term}</span>}
+                {c.term && <span className="text-[var(--color-text-muted)] ml-1.5 text-xs">{c.term}</span>}
                 {moduleId && Number(c.id) === Number(initialCourseId) && (
                   <span className="ml-2 text-xs font-medium" style={{ color: 'var(--cpt-color)' }}>→ module</span>
                 )}
@@ -233,7 +233,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
 
       {/* Dates */}
       <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700">Set Dates <span className="font-normal text-gray-400">(optional)</span></h3>
+        <h3 className="text-sm font-semibold text-[var(--color-text-body)]">Set Dates <span className="font-normal text-[var(--color-text-muted)]">(optional)</span></h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="label">Due Date</label>
@@ -248,7 +248,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
             <input type="date" value={dates.lockAt} onChange={e => setDate('lockAt', e.target.value)} className="input text-sm" />
           </div>
         </div>
-        <div className="pt-2 border-t border-gray-100">
+        <div className="pt-2 border-t border-[var(--color-border)]">
           <label className="label mb-1.5">Publish state</label>
           <div className="flex items-center gap-1.5">
             {[
@@ -260,8 +260,8 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
                 key={opt.value}
                 type="button"
                 onClick={() => setPublishState(opt.value)}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  publishState === opt.value ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-75 ${
+                  publishState === opt.value ? 'text-white' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
                 }`}
                 style={publishState === opt.value ? { backgroundColor: 'var(--cpt-color)' } : undefined}
               >
@@ -279,13 +279,13 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           style={{
             backgroundColor: 'rgba(var(--cpt-color-rgb), 0.07)',
             border: '1px solid rgba(var(--cpt-color-rgb), 0.18)',
-            color: '#374151',
+            color: 'var(--color-text-body)',
           }}
         >
           <p className="font-medium mb-1">
             Creating "{template.fields.name}" in {selectedIds.size} course{selectedIds.size !== 1 ? 's' : ''}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--color-text-secondary)]">
             {template.fields.points != null ? `${template.fields.points} pts` : 'Ungraded'}
             {template.fields.assignmentGroup ? ` · Group: ${template.fields.assignmentGroup}` : ''}
             {' · '}Status: {resolvedPublished ? 'Published' : 'Unpublished'}

@@ -105,7 +105,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">{isEditing ? `Edit Template — ${template.name}` : 'New Template'}</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-body)]">{isEditing ? `Edit Template — ${template.name}` : 'New Template'}</h2>
       </div>
 
       <div className="card p-6 space-y-6">
@@ -135,16 +135,16 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
                 <option value="">Unfiled</option>
                 {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
-              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
             </div>
           </div>
         </div>
 
-        <hr className="border-gray-100" />
+        <hr className="border-[var(--color-border)]" />
 
         {/* Assignment fields */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Assignment Fields</h3>
+          <h3 className="section-label">Assignment Fields</h3>
 
           <div>
             <label className="label">Assignment Name <span className="text-red-500">*</span></label>
@@ -155,7 +155,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
               placeholder="e.g. Weekly Quiz — Week ___"
               className={`input ${errors.name ? 'border-red-400' : ''}`}
             />
-            <p className="mt-1 text-xs text-gray-400">This becomes the assignment name when deployed. Edit per use.</p>
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">This becomes the assignment name when deployed. Edit per use.</p>
             {errors.name && <FieldError msg={errors.name} />}
           </div>
 
@@ -196,7 +196,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
                     <option value="">— None —</option>
                     {groups.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
                   </select>
-                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
                 </div>
               ) : (
                 <input
@@ -207,7 +207,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
                   className="input"
                 />
               )}
-              <p className="mt-1 text-xs text-gray-400">Matched by name at deploy time.</p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">Matched by name at deploy time.</p>
             </div>
           </div>
 
@@ -218,7 +218,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
                 <select value={form.gradingType} onChange={e => set('gradingType', e.target.value)} className="input appearance-none pr-8">
                   {GRADING_TYPES.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                 </select>
-                <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
               </div>
             </div>
 
@@ -228,7 +228,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
                 <select value={form.submissionType} onChange={e => set('submissionType', e.target.value)} className="input appearance-none pr-8">
                   {SUBMISSION_TYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
-                <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
               </div>
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
                 {ONLINE_FORMATS.map(f => (
                   <div
                     key={f.value}
-                    className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                    className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
                     onClick={() => toggleFormat(f.value)}
                   >
                     <Checkbox
@@ -256,7 +256,7 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
           )}
 
           <div
-            className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+            className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
             onClick={() => set('peerReview', !form.peerReview)}
           >
             <Checkbox checked={form.peerReview} onChange={v => set('peerReview', v)} />
@@ -264,12 +264,12 @@ export default function TemplateEditor({ template, folders, initialFolderId, ini
           </div>
         </div>
 
-        <hr className="border-gray-100" />
+        <hr className="border-[var(--color-border)]" />
 
-        <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500 space-y-1">
-          <p className="font-medium text-gray-600">Fields saved in this template:</p>
+        <div className="bg-[var(--color-bg-page)] rounded p-3 text-xs text-[var(--color-text-secondary)] space-y-1">
+          <p className="font-medium text-[var(--color-text-secondary)]">Fields saved in this template:</p>
           <p>Name, Instructions, Points, Submission Type, Allowed Formats, Assignment Group, Grading Type, Peer Review</p>
-          <p className="text-gray-400">Not saved: Due Date, Available From, Available Until (set these at deploy time)</p>
+          <p className="text-[var(--color-text-muted)]">Not saved: Due Date, Available From, Available Until (set these at deploy time)</p>
         </div>
       </div>
 

@@ -138,11 +138,11 @@ function SkeletonRow({ widths }) {
   return (
     <tr className="border-b border-[var(--color-border-subtle)]">
       <td className="px-3 py-3.5">
-        <div className="h-4 w-4 rounded bg-gray-200 animate-pulse" />
+        <div className="h-4 w-4 rounded bg-[var(--color-border)] animate-pulse" />
       </td>
       {widths.map((w, i) => (
         <td key={i} className="px-3 py-3.5">
-          <div className={`h-3.5 ${w} rounded bg-gray-200 animate-pulse`} />
+          <div className={`h-3.5 ${w} rounded bg-[var(--color-border)] animate-pulse`} />
         </td>
       ))}
     </tr>
@@ -172,7 +172,7 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
       <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.lockAt)}</td>
       <td className="px-3 py-3 text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</td>
       <td className="px-3 py-3">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${a.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${a.published ? 'bg-green-100 text-green-800' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'}`}>
           {a.published ? 'Published' : 'Unpublished'}
         </span>
       </td>

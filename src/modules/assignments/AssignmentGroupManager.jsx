@@ -25,10 +25,10 @@ const GROUP_SKELETON_WIDTHS = [
 
 function SkeletonRow({ widths }) {
   return (
-    <tr className="border-b border-gray-100">
+    <tr className="border-b border-[var(--color-border)]">
       {widths.map((w, i) => (
         <td key={i} className="px-3 py-3.5">
-          <div className={`h-3.5 ${w} rounded bg-gray-200 animate-pulse`} />
+          <div className={`h-3.5 ${w} rounded bg-[var(--color-border)] animate-pulse`} />
         </td>
       ))}
     </tr>
@@ -292,14 +292,14 @@ export default function AssignmentGroupManager({ initialCourseId }) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Assignment Groups</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Assignment Groups</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Manage assignment groups and grade weights. Expand a group to see its assignments or move them to another group.
         </p>
       </div>
 
       <div className="card p-4 mb-6 flex items-center gap-4">
-        <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
         <CourseSelector courses={courses} selectedId={courseId} onChange={loadCourseData} loading={loadingCourses} />
       </div>
 
@@ -313,15 +313,15 @@ export default function AssignmentGroupManager({ initialCourseId }) {
       <div className="card overflow-hidden mb-4">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
               <th className="w-8 px-3 py-3" />
-              <th className="w-16 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Order</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Group</th>
-              <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
+              <th className="w-16 px-3 py-3 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Order</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Group</th>
+              <th className="w-24 px-3 py-3 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Weight</th>
               <th className="w-36 px-3 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[var(--color-border)]">
             {loadingGroups
               ? GROUP_SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
               : (
@@ -359,7 +359,7 @@ export default function AssignmentGroupManager({ initialCourseId }) {
                         />
                         {expandedGroupId === group.id && (
                           <tr key={`${group.id}-expand`}>
-                            <td colSpan={5} className="bg-gray-50 border-b border-gray-100 px-0 py-0">
+                            <td colSpan={5} className="bg-[var(--color-bg-page)] border-b border-[var(--color-border)] px-0 py-0">
                               <AssignmentList
                                 assignments={assignmentsByGroup[group.id] ?? []}
                                 groups={groups}
@@ -394,10 +394,10 @@ export default function AssignmentGroupManager({ initialCourseId }) {
         </table>
 
         {!loadingGroups && (
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-xs text-gray-400">
+          <div className="px-4 py-3 bg-[var(--color-bg-page)] border-t border-[var(--color-border)] flex items-center justify-between">
+            <p className="text-xs text-[var(--color-text-muted)]">
               Total weight:{' '}
-              <span className={`font-semibold ${weightOk ? 'text-green-600' : weightNonZero ? 'text-yellow-600' : 'text-gray-400'}`}>
+              <span className={`font-semibold ${weightOk ? 'text-green-600' : weightNonZero ? 'text-yellow-600' : 'text-[var(--color-text-muted)]'}`}>
                 {weightDisplay}%
               </span>
               {!weightOk && weightNonZero && (
@@ -413,7 +413,7 @@ export default function AssignmentGroupManager({ initialCourseId }) {
         )}
       </div>
 
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-[var(--color-text-muted)]">
         Grade weighting is enabled or disabled in Canvas Course Settings. Weights set here only affect grades when weighting is active.
       </p>
 
@@ -437,10 +437,10 @@ export default function AssignmentGroupManager({ initialCourseId }) {
             </>
           }
         >
-          <p className="text-sm text-gray-600 mb-1">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">
             This action is permanent and cannot be undone.
           </p>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
             The {(assignmentsByGroup[deleteTarget.id] ?? []).length} assignment{(assignmentsByGroup[deleteTarget.id] ?? []).length !== 1 ? 's' : ''} in this group will be moved to another group before deletion.
           </p>
           {groups.filter(g => g.id !== deleteTarget.id).length > 0 && (
@@ -479,10 +479,10 @@ export default function AssignmentGroupManager({ initialCourseId }) {
             </>
           }
         >
-          <p className="text-sm text-gray-600 mb-1">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-1">
             This action is permanent and cannot be undone.
           </p>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
             All {(assignmentsByGroup[mergeSource.id] ?? []).length} assignment{(assignmentsByGroup[mergeSource.id] ?? []).length !== 1 ? 's' : ''} from <strong>"{mergeSource.name}"</strong> will be moved to the selected group, then the group will be deleted.
           </p>
           <div>
@@ -507,23 +507,23 @@ function GroupRow({ group, index, total, count, expanded, onToggleExpand,
                     onMoveUp, onMoveDown, onCopy, onMerge, onEdit, onDelete,
                     deleteDisabled, mergeDisabled }) {
   return (
-    <tr className="hover:bg-gray-50 cursor-pointer" onClick={onToggleExpand}>
+    <tr className="hover:bg-[var(--color-bg-hover)] transition-colors duration-75 cursor-pointer" onClick={onToggleExpand}>
       <td className="px-3 py-3 w-8">
         <ChevronRight
           size={13}
-          className={`text-gray-300 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
+          className={`text-[var(--color-text-disabled)] transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
         />
       </td>
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-0.5">
           <button
-            className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed"
+            className="p-1 rounded text-[var(--color-text-disabled)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors duration-75"
             onClick={onMoveUp} disabled={index === 0} title="Move up"
           >
             <ChevronUp size={13} />
           </button>
           <button
-            className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-25 disabled:cursor-not-allowed"
+            className="p-1 rounded text-[var(--color-text-disabled)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors duration-75"
             onClick={onMoveDown} disabled={index === total - 1} title="Move down"
           >
             <ChevronDown size={13} />
@@ -532,37 +532,37 @@ function GroupRow({ group, index, total, count, expanded, onToggleExpand,
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="font-medium text-gray-900">{group.name}</span>
-          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full leading-none">
+          <span className="font-medium text-[var(--color-text-body)]">{group.name}</span>
+          <span className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-full leading-none">
             {count}
           </span>
         </div>
       </td>
-      <td className="px-3 py-3 text-gray-500 text-sm">
-        {group.groupWeight > 0 ? `${group.groupWeight}%` : <span className="text-gray-300">—</span>}
+      <td className="px-3 py-3 text-[var(--color-text-secondary)] text-sm">
+        {group.groupWeight > 0 ? `${group.groupWeight}%` : <span className="text-[var(--color-text-disabled)]">—</span>}
       </td>
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-1 justify-end">
           <button
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
             onClick={onCopy} title="Duplicate group"
           >
             <Copy size={13} />
           </button>
           <button
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-75"
             onClick={onMerge} disabled={mergeDisabled} title="Merge into another group"
           >
             <GitMerge size={13} />
           </button>
           <button
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
             onClick={onEdit} title="Edit"
           >
             <Pencil size={13} />
           </button>
           <button
-            className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-75"
             onClick={onDelete} disabled={deleteDisabled} title="Delete"
           >
             <Trash2 size={13} />
@@ -576,38 +576,38 @@ function GroupRow({ group, index, total, count, expanded, onToggleExpand,
 function AssignmentList({ assignments, groups, currentGroupId, loading, movingId, onMove }) {
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-gray-400 px-6 py-4">
+      <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] px-6 py-4">
         <Loader size={12} className="animate-spin" /> Loading assignments...
       </div>
     )
   }
   if (assignments.length === 0) {
-    return <p className="text-xs text-gray-400 italic px-6 py-4">No assignments in this group.</p>
+    return <p className="text-xs text-[var(--color-text-muted)] italic px-6 py-4">No assignments in this group.</p>
   }
   return (
     <table className="w-full text-xs">
       <thead>
-        <tr className="border-b border-gray-200">
-          <th className="pl-6 pr-3 py-2 text-left font-medium text-gray-400 uppercase tracking-wide">Assignment</th>
-          <th className="w-16 px-3 py-2 text-right font-medium text-gray-400 uppercase tracking-wide">Points</th>
-          <th className="w-36 px-3 py-2 text-left font-medium text-gray-400 uppercase tracking-wide">Due</th>
-          <th className="w-44 px-3 py-2 text-right font-medium text-gray-400 uppercase tracking-wide pr-4">Move to group</th>
+        <tr className="border-b border-[var(--color-border)]">
+          <th className="pl-6 pr-3 py-2 text-left font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Assignment</th>
+          <th className="w-16 px-3 py-2 text-right font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Points</th>
+          <th className="w-36 px-3 py-2 text-left font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Due</th>
+          <th className="w-44 px-3 py-2 text-right font-medium text-[var(--color-text-muted)] uppercase tracking-wide pr-4">Move to group</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-gray-100">
+      <tbody className="divide-y divide-[var(--color-border)]">
         {assignments.map(a => (
-          <tr key={a.id} className="hover:bg-gray-100/50">
-            <td className="pl-6 pr-3 py-2.5 text-gray-700">{a.name}</td>
-            <td className="px-3 py-2.5 text-right text-gray-500">{a.pointsPossible ?? '—'}</td>
-            <td className="px-3 py-2.5 text-gray-500">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
+          <tr key={a.id} className="hover:bg-[var(--color-bg-hover)]/50 transition-colors duration-75">
+            <td className="pl-6 pr-3 py-2.5 text-[var(--color-text-body)]">{a.name}</td>
+            <td className="px-3 py-2.5 text-right text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</td>
+            <td className="px-3 py-2.5 text-[var(--color-text-secondary)]">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
             <td className="px-3 py-2.5 text-right pr-4">
               {movingId === a.id ? (
-                <Loader size={12} className="animate-spin text-gray-400 ml-auto" />
+                <Loader size={12} className="animate-spin text-[var(--color-text-muted)] ml-auto" />
               ) : (
                 <select
                   value={currentGroupId}
                   onChange={e => onMove(a.id, e.target.value)}
-                  className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white text-gray-700"
+                  className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)] text-[var(--color-text-body)]"
                 >
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
@@ -622,8 +622,8 @@ function AssignmentList({ assignments, groups, currentGroupId, loading, movingId
 
 function EditRow({ index, form, onChange, onSave, onCancel, saving, isNew, colSpan }) {
   return (
-    <tr className={isNew ? 'bg-gray-50' : ''}>
-      <td className="px-3 py-2.5 text-xs text-gray-300" colSpan={2}>{isNew ? '' : index + 1}</td>
+    <tr className={isNew ? 'bg-[var(--color-bg-page)]' : ''}>
+      <td className="px-3 py-2.5 text-xs text-[var(--color-text-disabled)]" colSpan={2}>{isNew ? '' : index + 1}</td>
       <td className="px-3 py-2">
         <input
           type="text"
@@ -644,12 +644,12 @@ function EditRow({ index, form, onChange, onSave, onCancel, saving, isNew, colSp
             placeholder="0"
             className="input w-16 text-sm py-1.5"
           />
-          <span className="text-xs text-gray-400">%</span>
+          <span className="text-xs text-[var(--color-text-muted)]">%</span>
         </div>
       </td>
       <td className="px-3 py-2.5">
         <div className="flex items-center gap-1.5 justify-end">
-          <button className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={onCancel} title="Cancel">
+          <button className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75" onClick={onCancel} title="Cancel">
             <X size={13} />
           </button>
           <button

@@ -91,7 +91,7 @@ export default function TemplateLibrary({ templates, folders, onUse, onEdit, onN
       {/* Search + New button */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
           <input
             type="text"
             value={search}
@@ -100,7 +100,7 @@ export default function TemplateLibrary({ templates, folders, onUse, onEdit, onN
             className="input pl-9"
           />
           {search && (
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearch('')}>
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors duration-75" onClick={() => setSearch('')}>
               <X size={14} />
             </button>
           )}
@@ -112,9 +112,9 @@ export default function TemplateLibrary({ templates, folders, onUse, onEdit, onN
 
       {/* Flat search results */}
       {filtered && (
-        <div className="card divide-y divide-gray-100">
+        <div className="card divide-y divide-[var(--color-border)]">
           {filtered.length === 0 && (
-            <p className="p-4 text-sm text-gray-400 text-center">No templates match "{search}"</p>
+            <p className="p-4 text-sm text-[var(--color-text-muted)] text-center">No templates match "{search}"</p>
           )}
           {filtered.map(t => (
             <TemplateRow key={t.id} template={t} onUse={onUse} onEdit={onEdit}
@@ -165,7 +165,7 @@ export default function TemplateLibrary({ templates, folders, onUse, onEdit, onN
           <div className="pt-2">
             {addingFolder ? (
               <div className="flex items-center gap-2">
-                <FolderPlus size={15} className="text-gray-400 shrink-0" />
+                <FolderPlus size={15} className="text-[var(--color-text-muted)] shrink-0" />
                 <input
                   type="text"
                   value={newFolderName}
@@ -180,7 +180,7 @@ export default function TemplateLibrary({ templates, folders, onUse, onEdit, onN
               </div>
             ) : (
               <button
-                className="btn-ghost text-sm text-gray-500 flex items-center gap-1.5"
+                className="btn-ghost text-sm text-[var(--color-text-secondary)] flex items-center gap-1.5"
                 onClick={() => setAddingFolder(true)}
               >
                 <FolderPlus size={15} /> New Folder
@@ -193,7 +193,7 @@ export default function TemplateLibrary({ templates, folders, onUse, onEdit, onN
       {/* Empty state */}
       {!filtered && templates.length === 0 && (
         <div className="card p-12 text-center space-y-3">
-          <p className="text-gray-500 text-sm">No templates yet.</p>
+          <p className="text-[var(--color-text-secondary)] text-sm">No templates yet.</p>
           <button className="btn-primary" onClick={() => onNew(null)}>Create your first template</button>
         </div>
       )}
@@ -231,11 +231,11 @@ function FolderSection({
   return (
     <div className="card overflow-hidden">
       <div
-        className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 select-none"
+        className="flex items-center justify-between px-4 py-3 bg-[var(--color-bg-page)] cursor-pointer hover:bg-[var(--color-bg-hover)] transition-colors duration-75 select-none"
         onClick={onToggle}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {expanded ? <ChevronDown size={15} className="text-gray-400 shrink-0" /> : <ChevronRight size={15} className="text-gray-400 shrink-0" />}
+          {expanded ? <ChevronDown size={15} className="text-[var(--color-text-muted)] shrink-0" /> : <ChevronRight size={15} className="text-[var(--color-text-muted)] shrink-0" />}
           <Folder size={15} className="shrink-0" style={{ color: 'var(--cpt-color)' }} />
           {isRenaming ? (
             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
@@ -251,31 +251,31 @@ function FolderSection({
               <button className="btn-ghost text-xs" onClick={onRenameCancel}>Cancel</button>
             </div>
           ) : (
-            <span className="text-sm font-semibold text-gray-700 truncate">{folder.name}</span>
+            <span className="text-sm font-semibold text-[var(--color-text-body)] truncate">{folder.name}</span>
           )}
-          <span className="text-xs text-gray-400 shrink-0">({items.length})</span>
+          <span className="text-xs text-[var(--color-text-muted)] shrink-0">({items.length})</span>
         </div>
         {!isSystemFolder && !isRenaming && (
           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
             <button
-              className="btn-ghost text-xs px-2 py-1 text-gray-500 flex items-center gap-1"
+              className="btn-ghost text-xs px-2 py-1 text-[var(--color-text-secondary)] flex items-center gap-1"
               onClick={onNewInFolder}
             >
               <Plus size={13} /> New
             </button>
-            <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded" onClick={onRenameFolder} title="Rename folder">
+            <button className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] rounded transition-colors duration-75" onClick={onRenameFolder} title="Rename folder">
               <Pencil size={13} />
             </button>
-            <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded" onClick={onDeleteFolder} title="Delete folder">
+            <button className="p-1.5 text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-50 rounded transition-colors duration-75" onClick={onDeleteFolder} title="Delete folder">
               <Trash2 size={13} />
             </button>
           </div>
         )}
       </div>
       {expanded && (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-[var(--color-border)]">
           {items.length === 0 && (
-            <p className="px-4 py-3 text-sm text-gray-400">No templates in this folder.</p>
+            <p className="px-4 py-3 text-sm text-[var(--color-text-muted)]">No templates in this folder.</p>
           )}
           {items.map(t => (
             <TemplateRow key={t.id} template={t} onUse={onUse} onEdit={onEdit} onDelete={() => onDeleteTemplate(t)} />
@@ -292,10 +292,10 @@ function TemplateRow({ template, onUse, onEdit, onDelete }) {
     : 'Never used'
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 group">
+    <div className="flex items-center justify-between px-4 py-3 hover:bg-[var(--color-bg-hover)] transition-colors duration-75 group">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{template.name}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{lastUsedText}</p>
+        <p className="text-sm font-medium text-[var(--color-text-body)] truncate">{template.name}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{lastUsedText}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0 ml-4">
         <button
@@ -311,7 +311,7 @@ function TemplateRow({ template, onUse, onEdit, onDelete }) {
           <Pencil size={12} /> Edit
         </button>
         <button
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-75"
           onClick={() => onDelete(template)}
           title="Delete template"
         >
@@ -325,8 +325,8 @@ function TemplateRow({ template, onUse, onEdit, onDelete }) {
 function ConfirmDialog({ message, confirmLabel, onConfirm, onCancel, danger }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full space-y-4">
-        <p className="text-sm text-gray-700">{message}</p>
+      <div className="bg-[var(--color-surface)] rounded-lg shadow-[var(--shadow-lg)] p-6 max-w-sm w-full space-y-4">
+        <p className="text-sm text-[var(--color-text-body)]">{message}</p>
         <div className="flex justify-end gap-3">
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           <button className={danger ? 'btn-danger' : 'btn-primary'} onClick={onConfirm}>{confirmLabel}</button>
