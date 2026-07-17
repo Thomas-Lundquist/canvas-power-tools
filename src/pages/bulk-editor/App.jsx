@@ -278,14 +278,14 @@ export default function App() {
   const { showPanel, setShowPanel } = useKeyboardShortcuts(bulkEditorShortcuts)
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-[var(--color-bg-page)]">
       <SkipLink />
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="bg-[var(--color-bg-surface)] border-b border-[var(--color-border)] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <BrandLogo />
-            <div className="w-px h-5 bg-gray-200 hidden sm:block shrink-0" aria-hidden="true" />
+            <div className="w-px h-5 bg-[var(--color-border)] hidden sm:block shrink-0" aria-hidden="true" />
             <CourseSelector
               courses={courses}
               selectedId={selectedCourseId}
@@ -322,11 +322,11 @@ export default function App() {
 
         {/* Page heading + filter bar */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Bulk Assignment Editor</h1>
-          <p className="text-sm text-gray-500 mt-1 mb-4">Edit due dates, points, and publish status across all assignments at once.</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Bulk Assignment Editor</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1 mb-4">Edit due dates, points, and publish status across all assignments at once.</p>
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
               <input
                 ref={searchRef}
                 type="text"
@@ -336,7 +336,7 @@ export default function App() {
                 className="input pl-9"
               />
               {search && (
-                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearch('')}>
+                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-body)]" onClick={() => setSearch('')}>
                   <X size={14} />
                 </button>
               )}
@@ -389,7 +389,7 @@ export default function App() {
 
         {/* Loading courses spinner */}
         {loadingCourses && (
-          <div className="card p-16 flex flex-col items-center gap-3 text-gray-400">
+          <div className="card p-16 flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
             <Loader size={32} className="animate-spin" style={{ color: 'var(--cpt-color)' }} />
             <span className="text-sm">Loading courses...</span>
           </div>
@@ -398,7 +398,7 @@ export default function App() {
         {/* Assignment table */}
         {!loadingCourses && selectedCourseId && (
           <div className="card overflow-hidden flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-page)]">
               {!loadingAssignments && filtered.length > 0 ? (
                 <button
                   className="text-xs font-medium"
@@ -409,13 +409,13 @@ export default function App() {
                 </button>
               ) : <span />}
               {loadingAssignments ? (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-[var(--color-text-muted)]">
                   {loadingCount > 0
                     ? `Loading assignments… ${loadingCount}${loadingTotal != null ? ` of ~${loadingTotal}` : ''}`
                     : 'Loading assignments…'}
                 </span>
               ) : (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-[var(--color-text-muted)]">
                   Showing {filtered.length} of {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
                   {selectedIds.size > 0 && <span className="ml-2 font-medium" style={{ color: 'var(--cpt-color)' }}>{selectedIds.size} selected</span>}
                 </span>
@@ -423,14 +423,14 @@ export default function App() {
             </div>
             {!loadingAssignments && assignments.length === 0 ? (
               <div className="p-16 text-center">
-                <p className="text-sm font-medium text-gray-500">This course has no assignments yet.</p>
-                <p className="text-xs text-gray-400 mt-1">Create assignments in Canvas and they'll appear here.</p>
+                <p className="text-sm font-medium text-[var(--color-text-muted)]">This course has no assignments yet.</p>
+                <p className="text-xs text-[var(--color-text-disabled)] mt-1">Create assignments in Canvas and they'll appear here.</p>
               </div>
             ) : !loadingAssignments && filtered.length === 0 ? (
               <div className="p-12 text-center">
-                <p className="text-sm text-gray-500">No assignments match your filters.</p>
+                <p className="text-sm text-[var(--color-text-muted)]">No assignments match your filters.</p>
                 <button
-                  className="mt-2 text-xs underline text-gray-400 hover:text-gray-600"
+                  className="mt-2 text-xs underline text-[var(--color-text-muted)] hover:text-[var(--color-text-body)]"
                   onClick={() => { setSearch(''); setFilterGroups([]); setFilterStatus([]); setFilterDueDate(EMPTY_DATE_RANGE); setFilterUnlockAt(EMPTY_DATE_RANGE); setFilterLockAt(EMPTY_DATE_RANGE); setFilterPoints(EMPTY_POINTS_RANGE) }}
                 >
                   Clear filters
@@ -455,7 +455,7 @@ export default function App() {
 
         {/* No course selected */}
         {!loadingCourses && !selectedCourseId && (
-          <div className="card p-16 text-center text-gray-400">
+          <div className="card p-16 text-center text-[var(--color-text-muted)]">
             <p className="text-sm">Select a course above to get started.</p>
           </div>
         )}
@@ -463,17 +463,17 @@ export default function App() {
 
       {/* Apply progress bar — replaces action bar while saving */}
       {applying && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] shadow-lg">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-[var(--color-text-body)]">
                 Saving changes — {applyProgress.done} of {applyProgress.total} assignments
               </span>
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-[var(--color-text-muted)]">
                 {applyProgress.total > 0 ? Math.round((applyProgress.done / applyProgress.total) * 100) : 0}%
               </span>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-[var(--color-bg-hover)] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-200"
                 style={{
@@ -632,10 +632,10 @@ function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
         {label}{isActive ? ' ●' : ''}
       </button>
       {isOpen && (
-        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[14rem]">
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 p-3 min-w-[14rem]">
           <div className="space-y-2">
             <div>
-              <label htmlFor={fromId} className="block text-xs text-gray-500 mb-1">From</label>
+              <label htmlFor={fromId} className="block text-xs text-[var(--color-text-muted)] mb-1">From</label>
               <input
                 id={fromId}
                 type="date"
@@ -646,7 +646,7 @@ function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
               />
             </div>
             <div>
-              <label htmlFor={toId} className="block text-xs text-gray-500 mb-1">To</label>
+              <label htmlFor={toId} className="block text-xs text-[var(--color-text-muted)] mb-1">To</label>
               <input
                 id={toId}
                 type="date"
@@ -658,7 +658,7 @@ function DateRangeFilter({ label, value, onChange, isOpen, onToggle }) {
             </div>
             {isActive && (
               <button
-                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] underline"
                 onClick={() => { onChange(EMPTY_DATE_RANGE); onToggle() }}
               >
                 Clear
@@ -687,10 +687,10 @@ function PointsRangeFilter({ value, onChange, isOpen, onToggle }) {
         Points{isActive ? ' ●' : ''}
       </button>
       {isOpen && (
-        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[11rem]">
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 p-3 min-w-[11rem]">
           <div className="space-y-2">
             <div>
-              <label htmlFor="points-filter-min" className="block text-xs text-gray-500 mb-1">Min points</label>
+              <label htmlFor="points-filter-min" className="block text-xs text-[var(--color-text-muted)] mb-1">Min points</label>
               <input
                 id="points-filter-min"
                 type="number"
@@ -702,7 +702,7 @@ function PointsRangeFilter({ value, onChange, isOpen, onToggle }) {
               />
             </div>
             <div>
-              <label htmlFor="points-filter-max" className="block text-xs text-gray-500 mb-1">Max points</label>
+              <label htmlFor="points-filter-max" className="block text-xs text-[var(--color-text-muted)] mb-1">Max points</label>
               <input
                 id="points-filter-max"
                 type="number"
@@ -715,7 +715,7 @@ function PointsRangeFilter({ value, onChange, isOpen, onToggle }) {
             </div>
             {isActive && (
               <button
-                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] underline"
                 onClick={() => { onChange(EMPTY_POINTS_RANGE); onToggle() }}
               >
                 Clear
@@ -748,11 +748,11 @@ function GroupFilter({ groups, selected, onChange, isOpen, onToggle }) {
         Group{selected.length > 0 ? ` (${selected.length})` : ''}
       </button>
       {isOpen && (
-        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 min-w-[200px] py-1">
           {groups.map(g => (
             <div
               key={g.id}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+              className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--color-bg-hover)] cursor-pointer text-sm text-[var(--color-text-body)]"
               onClick={() => onChange(selected.includes(g.id) ? selected.filter(id => id !== g.id) : [...selected, g.id])}
             >
               <Checkbox
@@ -811,11 +811,11 @@ function StatusFilter({ selected, onChange, isOpen, onToggle }) {
         Status{selected.length > 0 ? ` (${selected.length})` : ''}
       </button>
       {isOpen && (
-        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
+        <div ref={panelRef} className="absolute top-full mt-1 left-0 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 min-w-[160px] py-1">
           {options.map(o => (
             <div
               key={o.value}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+              className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--color-bg-hover)] cursor-pointer text-sm text-[var(--color-text-body)]"
               onClick={() => onChange(selected.includes(o.value) ? selected.filter(v => v !== o.value) : [...selected, o.value])}
             >
               <Checkbox

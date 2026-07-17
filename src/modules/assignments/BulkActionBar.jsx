@@ -8,10 +8,11 @@ function ModePill({ label, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-        active ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+        active
+          ? 'bg-[rgba(var(--cpt-color-rgb),0.08)] text-[var(--cpt-color)] border-[var(--cpt-color)]'
+          : 'bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-body)]'
       }`}
-      style={active ? { backgroundColor: 'var(--cpt-color)' } : undefined}
     >
       {label}
     </button>
@@ -31,7 +32,7 @@ function DateControlRow({ label, spec, onChange, mirrorActive, defaultShiftDays 
 
   return (
     <div className="flex items-center gap-3 min-h-[36px]">
-      <span className="w-28 text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">{label}</span>
+      <span className="w-28 text-xs font-medium text-[var(--color-text-secondary)] shrink-0">{label}</span>
 
       <div className="flex items-center gap-1 shrink-0">
         <ModePill label="Set" active={mode === 'set'} onClick={() => setMode('set')} />
@@ -66,14 +67,14 @@ function DateControlRow({ label, spec, onChange, mirrorActive, defaultShiftDays 
               className="input w-20 text-sm py-1"
               disabled={mirrorActive}
             />
-            <span className="text-xs text-gray-400">days</span>
+            <span className="text-xs text-[var(--color-text-muted)]">days</span>
           </div>
         )}
         {mode === 'clear' && (
           <span className="text-xs text-red-500 italic">Removes this date from all selected assignments</span>
         )}
         {!mode && (
-          <span className="text-xs text-gray-300 italic">No change</span>
+          <span className="text-xs text-[var(--color-text-disabled)] italic">No change</span>
         )}
       </div>
     </div>
@@ -107,26 +108,28 @@ export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPre
   const mirrorActive = shiftAllTogether && !!(bulkSpec.dueAt?.mode === 'shift' || bulkSpec.dueAt?.mode === 'clear')
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 shadow-2xl border-t border-gray-200">
+    <div className="fixed bottom-0 left-0 right-0 z-40 shadow-2xl border-t border-[var(--color-border)]">
       {/* Header strip */}
-      <div className="text-white px-6 py-2 flex items-center justify-between" style={{ backgroundColor: 'var(--cpt-color)' }}>
+      <div className="bg-[var(--color-bg-surface)] border-b border-[var(--color-border)] px-6 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-bold">{selectedCount} assignment{selectedCount !== 1 ? 's' : ''} selected</span>
+          <span className="text-sm font-semibold text-[var(--color-text-body)]">
+            <span style={{ color: 'var(--cpt-color)' }}>{selectedCount}</span> assignment{selectedCount !== 1 ? 's' : ''} selected
+          </span>
           {hasAnyChange && (
-            <span className="bg-white/20 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(var(--cpt-color-rgb),0.1)', color: 'var(--cpt-color)' }}>
               {changeCount} field{changeCount !== 1 ? 's' : ''} to change
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {hasAnyChange && (
-            <button onClick={clearAll} className="text-white/70 hover:text-white text-xs flex items-center gap-1 transition-colors">
+            <button onClick={clearAll} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] text-xs flex items-center gap-1 transition-colors">
               <X size={13} /> Clear all
             </button>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-white/70 hover:text-white transition-colors ml-2"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors ml-2"
             title={collapsed ? 'Expand' : 'Collapse'}
           >
             {collapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -136,16 +139,16 @@ export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPre
 
       {/* Body */}
       {!collapsed && (
-        <div className="bg-white px-6 py-4">
+        <div className="bg-[var(--color-bg-surface)] px-6 py-4">
           <div className="max-w-7xl mx-auto flex items-start gap-8">
 
             {/* Dates column */}
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar size={13} style={{ color: 'var(--cpt-color)' }} />
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dates</span>
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Dates</span>
                 <div
-                  className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none"
+                  className="ml-auto flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] cursor-pointer select-none"
                   onClick={() => onShiftAllToggle(!shiftAllTogether)}
                 >
                   <Checkbox checked={shiftAllTogether} onChange={v => onShiftAllToggle(v)} />
@@ -176,14 +179,14 @@ export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPre
             </div>
 
             {/* Divider */}
-            <div className="w-px self-stretch bg-gray-100 shrink-0" />
+            <div className="w-px self-stretch bg-[var(--color-border-subtle)] shrink-0" />
 
             {/* Points + Status column */}
             <div className="w-64 space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Hash size={13} style={{ color: 'var(--cpt-color)' }} />
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Points</span>
+                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">Points</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -194,21 +197,21 @@ export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPre
                     placeholder="Set all to..."
                     className="input flex-1 text-sm py-1.5"
                   />
-                  <span className="text-sm text-gray-400 shrink-0">pts</span>
+                  <span className="text-sm text-[var(--color-text-muted)] shrink-0">pts</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Eye size={13} style={{ color: 'var(--cpt-color)' }} />
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
+                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">Status</span>
                 </div>
                 <div className="flex gap-2">
                   <button
                     className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg border transition-colors ${
                       bulkSpec.published?.value === true
                         ? 'bg-green-50 border-green-400 text-green-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                        : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-secondary)]'
                     }`}
                     onClick={() => onChange({ ...bulkSpec, published: bulkSpec.published?.value === true ? null : { value: true } })}
                   >
@@ -217,8 +220,8 @@ export default function BulkActionBar({ selectedCount, bulkSpec, onChange, onPre
                   <button
                     className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg border transition-colors ${
                       bulkSpec.published?.value === false
-                        ? 'bg-gray-100 border-gray-400 text-gray-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                        ? 'bg-[var(--color-bg-hover)] border-[var(--color-border)] text-[var(--color-text-body)]'
+                        : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-secondary)]'
                     }`}
                     onClick={() => onChange({ ...bulkSpec, published: bulkSpec.published?.value === false ? null : { value: false } })}
                   >

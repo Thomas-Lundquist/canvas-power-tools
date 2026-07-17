@@ -61,7 +61,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
         aria-rowcount={assignments.length}
         aria-multiselectable="true"
       >
-        <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
+        <thead className="sticky top-0 z-10 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
           <tr aria-rowindex={1}>
             <th className="w-10 px-3 py-3">
               {!loading && (
@@ -76,7 +76,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
             {COLUMNS.map(col => (
               <th
                 key={col.key}
-                className={`${col.width} px-3 py-3 text-left font-medium text-xs uppercase tracking-wide text-gray-500 select-none ${loading ? '' : 'cursor-pointer hover:text-gray-700'}`}
+                className={`${col.width} px-3 py-3 text-left font-medium text-xs text-[var(--color-text-secondary)] select-none ${loading ? '' : 'cursor-pointer hover:text-[var(--color-text-body)]'}`}
                 onClick={() => !loading && onSort(col.key)}
                 aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
@@ -96,7 +96,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
             : assignments.length === 0
               ? (
                 <tr>
-                  <td colSpan={COLUMNS.length + 1} className="py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={COLUMNS.length + 1} className="py-12 text-center text-[var(--color-text-muted)] text-sm">
                     No assignments match the current filters.
                   </td>
                 </tr>
@@ -136,7 +136,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
 
 function SkeletonRow({ widths }) {
   return (
-    <tr className="border-b border-gray-100">
+    <tr className="border-b border-[var(--color-border-subtle)]">
       <td className="px-3 py-3.5">
         <div className="h-4 w-4 rounded bg-gray-200 animate-pulse" />
       </td>
@@ -152,8 +152,12 @@ function SkeletonRow({ widths }) {
 function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
   return (
     <tr
-      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-      style={selected ? { backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : undefined}
+      className="border-b border-l-2 cursor-pointer transition-colors hover:bg-[var(--color-bg-hover)]"
+      style={{
+        borderBottomColor: 'var(--color-border-subtle)',
+        borderLeftColor: selected ? 'var(--cpt-color)' : 'transparent',
+        ...(selected ? { backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : {}),
+      }}
       onClick={onToggle}
       aria-rowindex={rowIndex + 2}
       aria-selected={selected}
@@ -161,12 +165,12 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <Checkbox checked={selected} onChange={onToggle} ariaLabel={`Select ${a.name}`} />
       </td>
-      <td className="px-3 py-3 font-medium text-gray-900 max-w-xs truncate">{a.name}</td>
-      <td className="px-3 py-3 text-gray-600">{a.assignmentGroupName ?? '—'}</td>
-      <td className="px-3 py-3 text-gray-600">{formatDate(a.dueAt)}</td>
-      <td className="px-3 py-3 text-gray-600">{formatDate(a.unlockAt)}</td>
-      <td className="px-3 py-3 text-gray-600">{formatDate(a.lockAt)}</td>
-      <td className="px-3 py-3 text-gray-600">{a.pointsPossible ?? '—'}</td>
+      <td className="px-3 py-3 font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>
+      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{a.assignmentGroupName ?? '—'}</td>
+      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.dueAt)}</td>
+      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.unlockAt)}</td>
+      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.lockAt)}</td>
+      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</td>
       <td className="px-3 py-3">
         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${a.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
           {a.published ? 'Published' : 'Unpublished'}
@@ -177,7 +181,7 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
 }
 
 function SortIcon({ columnKey, sortKey, sortDir }) {
-  if (sortKey !== columnKey) return <ChevronsUpDown size={12} className="text-gray-300" />
+  if (sortKey !== columnKey) return <ChevronsUpDown size={12} className="text-[var(--color-text-disabled)]" />
   return sortDir === 'asc'
     ? <ChevronUp size={12} style={{ color: 'var(--cpt-color)' }} />
     : <ChevronDown size={12} style={{ color: 'var(--cpt-color)' }} />
