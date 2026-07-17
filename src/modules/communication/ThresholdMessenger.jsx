@@ -366,23 +366,20 @@ export default function ThresholdMessenger() {
 
       {/* Mode toggle */}
       <div className="card p-4 mt-5 mb-5">
-        <p className="text-sm font-semibold text-gray-800 mb-3">Filter students by:</p>
-        <div className="flex gap-6">
+        <p className="section-label mb-3">Filter students by</p>
+        <div className="segmented-control" role="group" aria-label="Filter mode">
           {[
             { value: 'assignment', label: 'Score on an assignment' },
             { value: 'overall',    label: 'Overall course grade'   },
           ].map(opt => (
-            <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="radio"
-                name="outreach-mode"
-                value={opt.value}
-                checked={mode === opt.value}
-                onChange={() => handleModeChange(opt.value)}
-                className="accent-[var(--cpt-color)]"
-              />
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={mode === opt.value}
+              onClick={() => handleModeChange(opt.value)}
+            >
               {opt.label}
-            </label>
+            </button>
           ))}
         </div>
         {pendingMode && (
@@ -433,22 +430,19 @@ export default function ThresholdMessenger() {
         {mode === 'overall' && courseId && (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Score type</span>
-            <div className="flex gap-6">
+            <div className="segmented-control" role="group" aria-label="Score type">
               {[
-                { value: 'current', label: 'Current score'               },
-                { value: 'final',   label: 'Final score (missing = 0)'   },
+                { value: 'current', label: 'Current' },
+                { value: 'final',   label: 'Final (missing = 0)' },
               ].map(opt => (
-                <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="score-type"
-                    value={opt.value}
-                    checked={scoreType === opt.value}
-                    onChange={() => setScoreType(opt.value)}
-                    className="accent-[var(--cpt-color)]"
-                  />
+                <button
+                  key={opt.value}
+                  type="button"
+                  aria-pressed={scoreType === opt.value}
+                  onClick={() => setScoreType(opt.value)}
+                >
                   {opt.label}
-                </label>
+                </button>
               ))}
             </div>
           </div>
@@ -462,13 +456,17 @@ export default function ThresholdMessenger() {
             {mode === 'assignment' ? 'Send to students who scored:' : 'Send to students whose overall grade is:'}
           </p>
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex gap-4">
+            <div className="segmented-control" role="group" aria-label="Direction">
               {['below', 'above'].map(d => (
-                <label key={d} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer capitalize">
-                  <input type="radio" name="direction" value={d} checked={direction === d}
-                    onChange={() => setDirection(d)} className="accent-[var(--cpt-color)]" />
+                <button
+                  key={d}
+                  type="button"
+                  aria-pressed={direction === d}
+                  onClick={() => setDirection(d)}
+                  className="capitalize"
+                >
                   {d}
-                </label>
+                </button>
               ))}
             </div>
             <div className="flex items-center gap-2">
