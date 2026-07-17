@@ -1,3 +1,24 @@
+// Replaces personalization tokens for overall-course-grade mode.
+// student shape: { userName, currentScore, finalScore, currentGrade, finalGrade }
+export function resolveOverallTokens(template, { student, course, teacherName, scoreType }) {
+  const parts = (student.userName ?? '').trim().split(/\s+/)
+  const firstName = parts[0] ?? ''
+  const lastName  = parts.slice(1).join(' ')
+  const rawScore = scoreType === 'final' ? student.finalScore : student.currentScore
+  const rawGrade = scoreType === 'final' ? student.finalGrade : student.currentGrade
+  const overallScore = rawScore !== null && rawScore !== undefined
+    ? String(Math.round(rawScore))
+    : ''
+
+  return template
+    .replace(/\{first_name\}/g,    firstName)
+    .replace(/\{last_name\}/g,     lastName)
+    .replace(/\{teacher_name\}/g,  teacherName ?? '')
+    .replace(/\{course_name\}/g,   course?.name ?? '')
+    .replace(/\{overall_score\}/g, overallScore)
+    .replace(/\{overall_grade\}/g, rawGrade ?? '')
+}
+
 // Replaces personalization tokens in a message template.
 // context: { student, assignment, course, teacherName }
 export function resolveTokens(template, { student, assignment, course, teacherName }) {

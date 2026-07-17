@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Loader, AlertTriangle, Send, Clock } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
+import { Tabs, TabPanel } from '../../components/Tabs.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { getCourses } from '../../api/courses.js'
@@ -12,6 +13,8 @@ import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { resolveTokens } from './tokenHelpers.js'
 import SentLogPanel from './SentLogPanel.jsx'
+import ScheduleManager from './ScheduleManager.jsx'
+import ScheduleForm from './ScheduleForm.jsx'
 
 const DEFAULT_MESSAGE = `Hi {first_name},
 
@@ -108,6 +111,10 @@ export default function NudgeTool() {
   const [progress, setProgress]           = useState('')
   const [showSentLog, setShowSentLog]     = useState(false)
   const [sentLog, setSentLog]             = useState([])
+  const [activeTab, setActiveTab]         = useState('send-now')
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [editingSchedule, setEditingSchedule]   = useState(null)
+  const [scheduleFormType, setScheduleFormType] = useState('submission-reminder-specific')
 
   useEffect(() => {
     getAccount().then(a => setTeacherName(a?.userName ?? ''))
@@ -208,9 +215,14 @@ export default function NudgeTool() {
     })
   }
 
+  const TABS = [
+    { id: 'send-now', label: 'Send Now' },
+    { id: 'rules',    label: 'Rules' },
+  ]
+
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Submission Reminders</h1>
           <p className="text-sm text-gray-500 mt-1">Message students who have not submitted an assignment.</p>
@@ -220,8 +232,12 @@ export default function NudgeTool() {
         </button>
       </div>
 
+      <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+
+      <TabPanel tabId="send-now" activeTab={activeTab}>
+
       {/* Course + Assignment */}
-      <div className="card p-4 mb-5 space-y-3">
+      <div className="card p-4 mt-5 mb-5 space-y-3">
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
@@ -335,6 +351,48 @@ export default function NudgeTool() {
           progress={progress}
           onSend={handleSend}
           onCancel={() => !sending && setShowPreview(false)}
+        />
+      )}
+
+      </TabPanel>
+
+      <TabPanel tabId="rules" activeTab={activeTab}>
+        <div className="space-y-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mt-5 mb-2 px-0.5">Specific Assignment Rules</p>
+            <ScheduleManager
+              toolType="submission-reminder-specific"
+              courseId={courseId}
+              onCreateSchedule={() => { setScheduleFormType('submission-reminder-specific'); setShowScheduleForm(true) }}
+              onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2 px-0.5">Upcoming Assignment Rules</p>
+            <ScheduleManager
+              toolType="submission-reminder-upcoming"
+              courseId={courseId}
+              onCreateSchedule={() => { setScheduleFormType('submission-reminder-upcoming'); setShowScheduleForm(true) }}
+              onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
+            />
+          </div>
+        </div>
+      </TabPanel>
+
+      {showScheduleForm && (
+        <ScheduleForm
+          toolType={editingSchedule?.toolType ?? scheduleFormType}
+          existingSchedule={editingSchedule ?? undefined}
+          initialCourseId={courseId}
+          initialCourseName={course?.name}
+          initialAssignmentId={scheduleFormType === 'submission-reminder-specific' ? assignmentId : null}
+          initialAssignmentName={scheduleFormType === 'submission-reminder-specific' ? selectedAssignment?.name : null}
+          initialAssignmentPointsPossible={scheduleFormType === 'submission-reminder-specific' ? selectedAssignment?.pointsPossible : null}
+          initialAssignmentDueAt={scheduleFormType === 'submission-reminder-specific' ? selectedAssignment?.dueAt : null}
+          initialMessage={message}
+          initialTeacherName={teacherName}
+          onClose={() => { setShowScheduleForm(false); setEditingSchedule(null) }}
+          onSaved={() => { setShowScheduleForm(false); setEditingSchedule(null) }}
         />
       )}
 

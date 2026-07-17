@@ -35,7 +35,11 @@ export default function SentLogPanel({ entries, onClose }) {
             <div className="divide-y divide-gray-100">
               {entries.map(entry => {
                 const open = expanded.has(entry.id)
-                const typeLabel = entry.type === 'nudge' ? 'Submission Reminder' : entry.type === 'threshold' ? 'Grade Outreach' : 'Announcement'
+                const typeLabel =
+                  entry.type === 'nudge'         ? 'Submission Reminder'    :
+                  entry.type === 'threshold'     ? 'Grade Outreach'         :
+                  entry.type === 'overall-grade' ? 'Overall Grade Outreach' :
+                  'Announcement'
                 return (
                   <div key={entry.id}>
                     <button
@@ -48,6 +52,9 @@ export default function SentLogPanel({ entries, onClose }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{typeLabel}</span>
+                          {entry.source === 'scheduled' && (
+                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">Scheduled</span>
+                          )}
                           <span className="text-sm font-medium text-gray-900 truncate">{entry.assignmentName ?? entry.courseName ?? '—'}</span>
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -62,6 +69,16 @@ export default function SentLogPanel({ entries, onClose }) {
                           <div>
                             <p className="text-xs font-medium text-gray-500 mb-1">Recipients</p>
                             <p className="text-xs text-gray-700">{entry.recipients.map(r => r.name).join(', ')}</p>
+                          </div>
+                        )}
+                        {entry.meta && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Filter</p>
+                            <p className="text-xs text-gray-700">
+                              {entry.type === 'overall-grade'
+                                ? `Overall grade ${entry.meta.direction} ${entry.meta.thresholdPct}% · ${entry.meta.scoreType === 'final' ? 'final score' : 'current score'}`
+                                : `Score ${entry.meta.direction} ${entry.meta.thresholdPct}%`}
+                            </p>
                           </div>
                         )}
                         {entry.messageBody && (

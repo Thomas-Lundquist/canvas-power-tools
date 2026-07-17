@@ -420,3 +420,150 @@ The delayed_post_at field handles Canvas-side scheduling for announcements
 sent with a future date. This is more reliable than the chrome.alarms
 approach for scheduled sends, and should be used whenever the feature is
 available. Chrome alarms serve as the fallback for edge cases.
+
+---
+
+## Tool 2b — Overall Course Grade Mode (Grade Outreach)
+
+### The Problem
+
+Teachers need to proactively reach out to students who are falling behind
+overall — not just on one assignment — before a D or F becomes permanent.
+The "By Assignment" mode addresses per-assignment concerns; this mode
+addresses the student's full picture.
+
+### What It Does
+
+Fetches every active student's overall course grade via the Canvas
+Enrollments API (with `include[]=grades`), filters by a percentage
+threshold, and sends personalized messages in one operation. The messaging
+flow (preview, countdown, PIN, sent log) is identical to the By Assignment
+mode; only the data source and tokens differ.
+
+### Mode Toggle
+
+The Grade Outreach tool has a mode selector at the top of the form:
+- **Score on an assignment** — existing behavior
+- **Overall course grade** — this mode
+
+### Score Type
+
+Canvas provides two overall scores per enrollment:
+- `current_score` — grade on graded work only (ignores unsubmitted assignments)
+- `final_score` — treats unsubmitted as zero (more conservative)
+
+Teachers choose which to use via a "Score type" picker in the Course card.
+The default is `current_score`. For D/F outreach, `final_score` is usually
+more appropriate because it reflects the impact of missing work.
+
+Students whose score is `null` (grade not yet calculated) are silently
+excluded from matching. A disclosure note shows how many were excluded.
+
+### UI
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Grade Outreach                                    [Sent Log]   │
+├─────────────────────────────────────────────────────────────────┤
+│  Filter students by:                                            │
+│  ( ) Score on an assignment   (•) Overall course grade          │
+├─────────────────────────────────────────────────────────────────┤
+│  Course      [Biology 101 ▼]                                    │
+│  Score type  (•) Current score  ( ) Final score (missing = 0)  │
+├─────────────────────────────────────────────────────────────────┤
+│  Send to students whose overall grade is:                       │
+│  (•) below  ( ) above   [70]%                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Students matching (5 of 28 enrolled)                           │
+│  [x]  Jane Smith          58%  (F)                              │
+│  [x]  Marcus Johnson      61%  (D)                              │
+│  [x]  Priya Patel         63%  (D)                              │
+│  [ ]  Alex Kim            65%  (D)                              │
+│  [x]  Jordan Cruz         68%  (D)                              │
+│  2 students have no grade data and are excluded.                │
+├─────────────────────────────────────────────────────────────────┤
+│  Message                           Sending to: 4 students       │
+│  Hi {first_name},                                               │
+│  I'm reaching out because your current overall grade in         │
+│  {course_name} is {overall_score}% ({overall_grade})...         │
+│  Available tokens: {first_name}  {last_name}  {overall_score}   │
+│                    {overall_grade}  {teacher_name}  {course_name}│
+│                                          [Preview & Send →]     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Personalization Tokens (Overall Mode)
+
+| Token | Value |
+|---|---|
+| `{first_name}` | Student's first name |
+| `{last_name}` | Student's last name |
+| `{teacher_name}` | Teacher's Canvas display name |
+| `{course_name}` | Course name |
+| `{overall_score}` | Rounded percentage (e.g., "61") from current or final score |
+| `{overall_grade}` | Letter grade (e.g., "D") from current or final grade |
+
+### Default Message Template
+
+```
+Hi {first_name},
+
+I'm reaching out because your current overall grade in {course_name} is {overall_score}% ({overall_grade}). I would like to connect with you to discuss how we can support your success in this course. Please see me during office hours or reply to this message.
+
+{teacher_name}
+```
+
+### Canvas API
+
+| Action | Method | Endpoint |
+|---|---|---|
+| Fetch students with grades | GET | /api/v1/courses/:id/enrollments |
+| Send message | POST | /api/v1/conversations |
+
+Enrollment request params:
+```
+type[]=StudentEnrollment
+state[]=active
+include[]=grades
+```
+
+Response grades object per enrollment:
+```javascript
+{
+  grades: {
+    current_score: 61.4,
+    final_score:   55.2,
+    current_grade: "D",
+    final_grade:   "F"
+  }
+}
+```
+
+### Sent Log Schema (overall-grade type)
+
+```javascript
+{
+  id: "msg_...",
+  timestamp: "ISO",
+  type: "overall-grade",
+  assignmentId: null,
+  assignmentName: null,
+  courseId: "12345",
+  courseName: "Biology 101",
+  recipientCount: 4,
+  recipients: [{ id: "...", name: "Jane Smith" }],
+  messageBody: "template used",
+  meta: {
+    direction: "below",
+    thresholdPct: "70",
+    scoreType: "current"   // "current" | "final"
+  }
+}
+```
+
+### SentLogPanel Display
+
+`type: 'overall-grade'` renders as **"Overall Grade Outreach"** badge.
+Expanded view shows a Filter row:
+- `"Overall grade below 70% · current score"`
+- `"Overall grade above 80% · final score"`

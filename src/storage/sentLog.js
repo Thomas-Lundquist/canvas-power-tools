@@ -1,5 +1,5 @@
 const KEY = 'sentLog'
-const MAX_ENTRIES = 50
+const MAX_ENTRIES = 200
 
 export async function getSentLog() {
   const data = await chrome.storage.local.get(KEY)

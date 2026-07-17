@@ -49,6 +49,24 @@ Canvas Power Tools (Chrome MV3 Extension)
 
 ---
 
+## Context Mode — Hard Rules
+
+**`Read` is only legal immediately before an `Edit` of that exact file.** Every other file read — one file or many — uses `ctx_batch_execute` or `ctx_execute_file`. Raw bytes stay in the sandbox; only what your code prints enters conversation context.
+
+**`WebFetch` is never permitted.** Use `ctx_fetch_and_index` to fetch and index a URL, then `ctx_search` to query it. Raw page bytes never enter the conversation.
+
+| Need | Correct tool | Never use |
+|---|---|---|
+| Read 1+ files to analyze | `ctx_batch_execute` / `ctx_execute_file` | `Read`, `Bash cat` |
+| Fetch a URL for research | `ctx_fetch_and_index` + `ctx_search` | `WebFetch` |
+| Derive/filter/count from data | `ctx_execute` | Read → reason |
+| File you will immediately Edit | `Read` (only this case) | — |
+| State-mutating shell commands | `Bash` | — |
+
+These are **hard rules**, not guidelines. The PreToolUse hook fires on every violation — follow it immediately, do not proceed with the original tool call.
+
+---
+
 ## Terminology
 
 Never substitute page/screen/section/view for these terms.
@@ -185,16 +203,6 @@ Scopes: `assignments` `grading` `communication` `people` `content` `setup` `shel
 5. Canvas timestamps are ISO 8601 UTC. Convert to local time for display; back to UTC for writes.
 
 ---
-
-## Context Mode (Required)
-
-During research and planning phases, always use `ctx_batch_execute` for file reads and command output — not `Read`, `Bash cat`, or direct file tools. Raw bytes stay in the sandbox; only what you extract enters conversation context.
-
-**Rules:**
-- Use `ctx_batch_execute` for reading 2+ files or running multiple commands to gather information
-- Use `ctx_execute` to derive an answer from data (filter, count, parse) in one shot
-- Only use `Read` when about to immediately `Edit` the same file (Edit needs exact bytes in context)
-- Use `Bash` only for state-mutating commands (git, bd, mkdir, rm) or short fixed-output observations (git status, whoami)
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker

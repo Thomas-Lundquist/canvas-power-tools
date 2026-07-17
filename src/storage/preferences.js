@@ -111,6 +111,9 @@ export const DEFAULTS = {
   devShowStrategyInHealth: false,
   devSimulateSelectorFailure: null,     // null | selector key string
 
+  // Communication
+  scheduledCheckNotifications: false,   // opt-in: Chrome notification when a scheduled run sends messages
+
   // Internal
   lastUsedCourseId: null,
 }
