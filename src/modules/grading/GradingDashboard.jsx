@@ -34,10 +34,10 @@ const SKELETON_WIDTHS = [
 
 function SkeletonRow({ widths }) {
   return (
-    <tr className="border-b border-gray-100">
+    <tr className="border-b border-[var(--color-border-subtle)]">
       {widths.map((w, i) => (
         <td key={i} className="px-3 py-3.5">
-          <div className={`h-3.5 ${w} rounded bg-gray-200 animate-pulse`} />
+          <div className={`h-3.5 ${w} rounded bg-[var(--color-border)] animate-pulse`} />
         </td>
       ))}
     </tr>
@@ -127,12 +127,12 @@ export default function GradingDashboard({ initialCourseId }) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Grading Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Track submission and grading progress across all assignments.</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Grading Dashboard</h1>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">Track submission and grading progress across all assignments.</p>
       </div>
 
       <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
         <CourseSelector courses={courses} selectedId={courseId} onChange={loadData} loading={loadingCourses} />
       </div>
 
@@ -151,22 +151,27 @@ export default function GradingDashboard({ initialCourseId }) {
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+        <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden shrink-0">
           {FILTERS.map(f => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
-              className={`px-3 py-1.5 text-xs font-medium border-r border-gray-200 last:border-r-0 transition-colors ${
-                filter === f.id ? 'text-white' : 'text-gray-500 hover:bg-gray-50'
+              className={`px-3 py-1.5 text-xs font-medium border-r border-[var(--color-border)] last:border-r-0 transition-colors ${
+                filter === f.id
+                  ? ''
+                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'
               }`}
-              style={filter === f.id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
+              style={filter === f.id ? {
+                backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
+                color: 'var(--cpt-color)',
+              } : undefined}
             >
               {f.label}
             </button>
           ))}
         </div>
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)]" />
           <input
             type="text"
             value={search}
@@ -175,13 +180,13 @@ export default function GradingDashboard({ initialCourseId }) {
             className="input pl-9"
           />
           {search && (
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearch('')}>
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]" onClick={() => setSearch('')}>
               <X size={14} />
             </button>
           )}
         </div>
         {assignments.length > 0 && (
-          <span className="text-sm text-gray-400 shrink-0">
+          <span className="text-sm text-[var(--color-text-disabled)] shrink-0">
             {filtered.length === assignments.length
               ? `${assignments.length} assignments`
               : `${filtered.length} of ${assignments.length}`}
@@ -194,12 +199,12 @@ export default function GradingDashboard({ initialCourseId }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
                 {COLUMNS.map(col => (
                   <th
                     key={col.key}
-                    className={`${col.width} px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 ${
-                      col.sortable && !loading ? 'cursor-pointer select-none hover:text-gray-700' : 'select-none'
+                    className={`${col.width} px-3 py-3 text-left text-xs font-medium text-[var(--color-text-muted)] ${
+                      col.sortable && !loading ? 'cursor-pointer select-none hover:text-[var(--color-text-secondary)]' : 'select-none'
                     }`}
                     onClick={col.sortable && !loading ? () => handleSort(col.key) : undefined}
                   >
@@ -208,20 +213,20 @@ export default function GradingDashboard({ initialCourseId }) {
                       {col.sortable && !loading && (
                         sortKey === col.key
                           ? sortDir === 'asc' ? <ChevronUp size={12} style={{ color: 'var(--cpt-color)' }} /> : <ChevronDown size={12} style={{ color: 'var(--cpt-color)' }} />
-                          : <ChevronsUpDown size={11} className="text-gray-300" />
+                          : <ChevronsUpDown size={11} className="text-[var(--color-text-disabled)]" />
                       )}
                     </span>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--color-border-subtle)]">
               {loading
                 ? SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
                 : filtered.length === 0
                   ? (
                     <tr>
-                      <td colSpan={COLUMNS.length} className="py-12 text-center text-gray-400 text-sm">
+                      <td colSpan={COLUMNS.length} className="py-12 text-center text-[var(--color-text-muted)] text-sm">
                         {assignments.length === 0
                           ? 'No assignments found in this course.'
                           : 'No assignments match the current filter.'}
@@ -232,33 +237,33 @@ export default function GradingDashboard({ initialCourseId }) {
                     const s = a.submissionSummary
                     const total = s ? s.graded + s.ungraded + s.notSubmitted : 0
                     return (
-                      <tr key={a.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-3 font-medium text-gray-900 truncate max-w-[14rem]" title={a.name}>
+                      <tr key={a.id} className="hover:bg-[var(--color-bg-hover)]">
+                        <td className="px-3 py-3 font-medium text-[var(--color-text-body)] truncate max-w-[14rem]" title={a.name}>
                           {a.name}
                         </td>
-                        <td className="px-3 py-3 text-xs text-gray-500">{a.assignmentGroupName ?? '—'}</td>
-                        <td className="px-3 py-3 text-xs text-gray-500">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
+                        <td className="px-3 py-3 text-xs text-[var(--color-text-muted)]">{a.assignmentGroupName ?? '—'}</td>
+                        <td className="px-3 py-3 text-xs text-[var(--color-text-muted)]">{a.dueAt ? formatDate(a.dueAt) : '—'}</td>
                         <td className="px-3 py-3 text-sm">
-                          {s ? <span className="font-medium text-green-700">{s.graded}{total > 0 && <span className="font-normal text-gray-400">/{total}</span>}</span> : '—'}
+                          {s ? <span className="font-medium" style={{ color: 'var(--color-success)' }}>{s.graded}{total > 0 && <span className="font-normal text-[var(--color-text-disabled)]">/{total}</span>}</span> : '—'}
                         </td>
                         <td className="px-3 py-3 text-sm">
                           {s ? (
                             s.ungraded > 0
-                              ? <span className="font-medium text-yellow-600">{s.ungraded}</span>
-                              : <span className="text-gray-300">0</span>
+                              ? <span className="font-medium" style={{ color: 'var(--color-warning)' }}>{s.ungraded}</span>
+                              : <span className="text-[var(--color-text-disabled)]">0</span>
                           ) : '—'}
                         </td>
                         <td className="px-3 py-3 text-sm">
                           {s ? (
                             s.notSubmitted > 0
-                              ? <span className="font-medium text-red-500">{s.notSubmitted}</span>
-                              : <span className="text-gray-300">0</span>
+                              ? <span className="font-medium" style={{ color: 'var(--color-error)' }}>{s.notSubmitted}</span>
+                              : <span className="text-[var(--color-text-disabled)]">0</span>
                           ) : '—'}
                         </td>
                         <td className="px-3 py-3">
                           {s && total > 0
                             ? <ProgressBar graded={s.graded} ungraded={s.ungraded} notSubmitted={s.notSubmitted} />
-                            : <span className="text-xs text-gray-300">No data</span>}
+                            : <span className="text-xs text-[var(--color-text-disabled)]">No data</span>}
                         </td>
                       </tr>
                     )
@@ -270,10 +275,10 @@ export default function GradingDashboard({ initialCourseId }) {
       </div>
 
       {!loading && filtered.length > 0 && (
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+        <div className="flex items-center gap-4 text-xs text-[var(--color-text-disabled)]">
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-green-500 inline-block" /> Graded</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-yellow-400 inline-block" /> Submitted, not graded</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-gray-200 inline-block" /> Not submitted</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-border)] inline-block" /> Not submitted</span>
         </div>
       )}
     </div>
@@ -284,12 +289,12 @@ function StatCard({ label, value, accent }) {
   return (
     <div className="card p-4">
       <div
-        className={`text-2xl font-bold ${accent ? '' : 'text-gray-900'}`}
-        style={accent ? { color: 'var(--cpt-color)' } : undefined}
+        className="text-2xl font-bold"
+        style={{ color: accent ? 'var(--cpt-color)' : 'var(--color-text-body)' }}
       >
         {value}
       </div>
-      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+      <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
     </div>
   )
 }
