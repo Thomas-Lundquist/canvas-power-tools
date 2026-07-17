@@ -29,6 +29,13 @@
   --color-warning:        #9D5400;
   --color-error:          #C01C28;
   --color-info:           #1A5FB4;
+
+  /* ── Elevation shadows (layered ambient + key) ── */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.08), 0 10px 10px rgba(0,0,0,0.03);
 }
 
 /* Text size — set via data-text-size attribute by applyTextSize() and theme-init.js */
@@ -43,6 +50,8 @@
     color: var(--color-text-body);
     @apply antialiased;
     scrollbar-gutter: stable;
+    font-optical-sizing: auto;
+    font-feature-settings: 'cv02', 'cv03', 'cv04';
   }
   /* Checkboxes and radio buttons pick up the brand color automatically */
   input[type='checkbox'],
@@ -62,7 +71,7 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-75 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
     @apply btn text-white;
@@ -133,20 +142,20 @@
     color: var(--color-text-secondary);
   }
   .card {
-    @apply rounded-xl shadow-sm;
+    @apply rounded-md;
     background-color: var(--color-bg-surface);
     border: 1px solid var(--color-border);
   }
   /* section-title kept as alias for backwards compatibility; use section-label going forward */
   .section-title {
-    @apply text-xs font-semibold uppercase tracking-wider mb-3;
+    @apply text-xs font-medium uppercase tracking-widest mb-3;
     color: var(--color-text-muted);
   }
   .section-label {
-    @apply block font-medium mb-2;
-    font-size: 0.733rem;
-    letter-spacing: 0.02em;
-    color: var(--color-text-secondary);
+    @apply block font-medium mb-2 uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
   }
   .filter-active {
     border-color: var(--cpt-color);
@@ -274,6 +283,9 @@ html.dark .text-blue-700    { color: #93c5fd; }
 html.dark .text-blue-600    { color: #93c5fd; }
 
 /* ── AppNav trigger and dropdown ── */
+.cpt-nav-dropdown {
+  box-shadow: var(--shadow-md);
+}
 .cpt-nav-trigger {
   background-color: rgba(var(--cpt-color-rgb), 0.1);
   color: var(--cpt-color);
