@@ -894,6 +894,8 @@ The accent never applies to body text on backgrounds or to semantic
 colors. This keeps its usage contained and makes contrast management
 tractable.
 
+**Icon color rule:** Icons are `var(--color-text-muted)` at rest. Accent color appears on icons only on hover or active state — never simultaneously across all icons at rest. Implement with Tailwind's `group`/`group-hover:` pattern on the parent interactive element (see Design System — Components for the pattern).
+
 **Color pairs:** Each named accent has a light-mode variant and a
 dark-mode variant. The correct variant is applied automatically. The
 teacher never manages this.
@@ -929,6 +931,84 @@ updating only the root variable.
 
 All accent contrast ratios must be verified against both light and dark
 backgrounds at implementation time. The values above are targets.
+
+---
+
+### Design System — Elevation
+
+Elevation is communicated through **border only** at rest, not shadow. Shadows are reserved for floating layers (dropdowns, modals).
+
+| Layer | Value | Usage |
+|---|---|---|
+| Flat | `border: 1px solid var(--color-border)` | Cards, panels at rest |
+| Dropdown | `var(--shadow-md)` | Nav dropdowns, select menus, autocomplete |
+| Modal | `var(--shadow-lg)` | Modal dialogs |
+| Elevated | `var(--shadow-xl)` | Tooltips, toasts (when applicable) |
+
+Token definitions (defined in `src/styles/global.css`):
+
+```css
+--shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+--shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+--shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.05);
+--shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04);
+--shadow-xl: 0 20px 25px rgba(0,0,0,0.08), 0 10px 10px rgba(0,0,0,0.03);
+```
+
+**Rules:**
+- `.card` has no `box-shadow` at rest — 1px border only
+- Cards do not gain shadow on hover — use `hover:bg-[var(--color-bg-hover)]` instead
+- Layered (ambient + key) shadow values are intentional — do not simplify to a single `box-shadow`
+- Alpha-based shadows work correctly in both light and dark mode — no dark-mode override needed
+
+---
+
+### Design System — Components
+
+Standard component classes defined in `src/styles/global.css`. Use these; do not rebuild the same visual properties inline.
+
+#### `.card`
+
+Border-only surface container. No shadow at rest. `rounded-md` = 6px border-radius.
+
+```css
+.card {
+  @apply rounded-md;
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+}
+```
+
+Hover state for card buttons: add `hover:bg-[var(--color-bg-hover)]` to the button — never add shadow on hover.
+
+#### `.section-label` / `.section-title`
+
+Module section headers. Both classes render identically; `.section-label` is preferred for new code.
+
+Properties: `0.6875rem` (11px), `uppercase`, `letter-spacing: 0.08em`, `color: var(--color-text-muted)`, `font-weight: 500`. Use for all module group labels, never `text-gray-*` classes.
+
+#### `.btn` transitions
+
+All buttons inherit `transition-colors duration-75` from `.btn`. 75ms is intentional — instant feedback signals quality. Do not use Tailwind's default `duration-200` on interactive elements.
+
+#### Icon hover pattern
+
+```jsx
+<button className="group ...">
+  <Icon className="text-[var(--color-text-muted)] group-hover:text-[var(--cpt-color)] transition-colors duration-75" />
+</button>
+```
+
+Parent gets `group`; icon gets `group-hover:` color change. Icons are muted at rest; accent appears only on hover/active.
+
+#### Typography settings (body)
+
+```css
+font-optical-sizing: auto;
+font-feature-settings: 'cv02', 'cv03', 'cv04';
+```
+
+Applied globally on `body` in `src/styles/global.css`. `font-optical-sizing: auto` lets Inter adjust stroke contrast for its rendered size. Feature settings enable Inter's stylistic alternates (cv02/03/04) that improve readability at small UI sizes.
 
 ---
 
