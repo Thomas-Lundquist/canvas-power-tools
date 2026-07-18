@@ -2,15 +2,24 @@
 
 ---
 
+## UI Design Decisions (Locked)
+
+These decisions are locked. Do not re-litigate without a documented reason for changing them.
+
+| # | Decision | Rationale |
+|---|---|---|
+| 1 | **Course picker lives in AppNav** | Persistent across all tools. Teacher always knows which course they're working in. Same location on every tool page — never hunt for it. |
+| 2 | **Filters: top bar above table** | Table gets maximum vertical space. Top bar keeps the layout linear (no sidebar narrowing the table). Current button-style layout needs redesign — see Filter Bar section below. |
+| 3 | **Bulk action bar: floating card at bottom, context-only** | Appears only when rows are selected. Not sticky full-width. Floats above the table as a card with shadow elevation — visually distinct from the table surface so the teacher knows it's an action layer, not table chrome. |
+| 4 | **Column visibility: configured in Settings, not on this page** | Defaults are decided and locked. Teacher configures their column set once in Settings; those columns are always visible on the tool. No "Columns" menu cluttering the tool UI. |
+
+---
+
 ## What It Does
 
-The Bulk Assignment Editor is the first and flagship feature of Canvas Power
-Tools. It gives teachers a full-page interface to select multiple assignments
-across a course and edit their due dates, availability dates, point values, and
-publish status all at once — without clicking into each assignment individually.
+The Bulk Assignment Editor gives teachers a full-page interface to select multiple assignments across a course and edit their due dates, availability dates, point values, and publish status all at once — without clicking into each assignment individually.
 
-Canvas has no native bulk editing capability for assignments. This feature alone
-justifies the extension.
+Canvas has no native bulk editing capability for assignments. This is one of the core tools in the extension — not the whole product, but one of its most-used features.
 
 
 ---
@@ -32,19 +41,21 @@ extension itself.
 
 ## Page Structure
 
-The Bulk Edit Tool has four main sections:
+The Bulk Edit Tool has three layers:
 
-1. Top bar — logo, course selector, navigation links
-2. Filter bar — search and column filters
-3. Assignment table — the main data view
-4. Bulk action bar — appears when assignments are selected
+1. **AppNav** (shared header) — logo, course selector, module navigation, settings. Course picker lives here, not in the tool.
+2. **Filter bar** — above the table. Search + column filters. Design TBD (not the current button-row pattern).
+3. **Assignment table** — the main event. Gets maximum vertical space. Column set is determined by Settings.
+4. **Floating action card** — appears above the table bottom when ≥1 row is selected. Elevated with shadow. Dismissed when selection is cleared.
 
 ---
 
-## Top Bar
+## AppNav (Shared — not owned by this tool)
+
+The course selector is an AppNav concern. It appears in the header on every tool page. See `src/components/AppNav.jsx` and design doc 10 for the AppNav spec.
 
 ```
-[Logo] Canvas Power Tools     [Course: Fall 2025 Biology 101 ▼]     [Change Log]  [Settings]
+[Logo] Canvas Power Tools   [Course: Fall 2025 Biology 101 ▼]   [Assignments] [Grading] [Communication] [People]   [Settings]
 ```
 
 The course selector is a dropdown populated by getCourses(). Changing the
@@ -55,13 +66,27 @@ preferences.lastUsedCourseId in storage.
 
 ## Filter Bar
 
+Pattern: **chip-based add-filter hybrid**. Text search is always visible. Additional filters are added on demand — a "+ Add Filter" button opens a dropdown listing available filter types. Selecting a type prompts for a value; the applied filter renders as an editable, dismissible chip. The bar is clean by default and fills with chips as filters are applied.
+
 ```
-[Search assignments...        ]     [Clear All Filters]     [Select All]
-Active filters: Due Date: Oct 1–Oct 31  |  Status: Published  [x]
+[🔍 Search assignments...]   [+ Add Filter]
+
+Active: [Group: Homework ×]  [Module: Unit 3 ×]  [Clear all]
 ```
 
-Active filters are shown as removable chips. Clear All Filters removes every
-active filter at once. Each chip has an X to remove that filter individually.
+**Available filter types (6):**
+
+| Filter | Options |
+|---|---|
+| Assignment Group | Dynamic list from course groups |
+| Module | Dynamic list from course modules |
+| Published Status | Published / Unpublished / Scheduled |
+| Assignment Type | Assignment / Quiz / Discussion / Page |
+| Due Date | Has due date / No due date / Date range picker |
+
+Text search is always the first element and filters client-side by assignment name. Chips show their current value and are clickable to change it without removing and re-adding. "Clear all" only appears when ≥1 filter is active.
+
+**Note:** A smart search bar (type-to-filter with `group:homework` syntax) is deferred — could be enabled as a Settings toggle in a later version.
 
 ---
 
@@ -72,17 +97,27 @@ active filter at once. Each chip has an X to remove that filter individually.
 Every column is sortable (click header to sort ascending, click again for
 descending) and filterable (filter icon in header opens filter control).
 
-| Column | Filter Type | Notes |
-|---|---|---|
-| Checkbox | — | Select / deselect individual rows |
-| Assignment Name | Text search | Searches name field |
-| Group | Multi-select dropdown | Canvas assignment groups |
-| Module | Multi-select dropdown | Canvas modules |
-| Due Date | Date range picker | Filter to a date window |
-| Available From | Date range picker | Filter to a date window |
-| Available Until | Date range picker | Filter to a date window |
-| Points | Min / max number range | e.g. show only assignments worth 50+ points |
-| Status | Multi-select | Published, Unpublished, Draft |
+**Default columns (shown out of the box):**
+
+| Column | Notes |
+|---|---|
+| ☐ Checkbox | Always present — not configurable |
+| Assignment Name | Always present — cannot be hidden |
+| Assignment Group | High-value, short header |
+| Due Date | The #1 thing teachers bulk-edit |
+| Published | Toggle — quick visual status |
+
+**Optional columns (off by default, configurable in Settings):**
+
+| Column | Notes |
+|---|---|
+| Close Date | Available until date |
+| Unlock Date | Available from date |
+| Module | Canvas module the assignment belongs to |
+| Points Possible | Numeric |
+| Submission Type | Online / on paper / none / etc. |
+
+Teachers can toggle any optional column on or off in Settings at any time. The configuration persists between sessions.
 
 ### Table Behavior
 
@@ -102,113 +137,167 @@ descending) and filterable (filter icon in header opens filter control).
 
 ---
 
-## Bulk Action Bar
+## Floating Action Card
 
-The bulk action bar appears at the bottom of the page when one or more
-assignments are selected. It is hidden when nothing is selected.
+The floating action card appears above the bottom of the viewport when ≥1 assignment is selected. It is hidden when nothing is selected. It is **not** a full-width sticky bar — it is a centered card (~860px wide) with `--shadow-lg` elevation, visually floating above the table surface.
+
+### Card Layout
 
 ```
-3 assignments selected
-
-Due Date:         ○ Set date  [__________]     ○ Shift  [+/-]  [___]  days
-Available From:   ○ Set date  [__________]     ○ Shift  [+/-]  [___]  days
-Available Until:  ○ Set date  [__________]     ○ Shift  [+/-]  [___]  days
-
-[ ] Shift all date fields together     ← reflects Settings default, overridable here
-
-Points:    Set all to  [_____]  pts
-
-Status:    [Publish]    [Unpublish]
-
-                                        [Preview Changes]    [Apply to Canvas]
+┌──────────────────────────────────────────────────────────────────────┐
+│  3 selected · 15 fields to change                 [Clear]  [∧]       │
+├─────────────────────────────────────────────────┬────────────────────┤
+│  📅 Dates                                        │  # Points          │
+│  Due Date     [Set] [Shift] [Clear]  [input]     │  [Set all to...] pts│
+│  Avail. From  [Set] [Shift] [Clear]  [input]     ├────────────────────┤
+│  Avail. Until [Set] [Shift] [Clear]  [input]     │  👁 Status          │
+│  ☐ Apply same shift/clear to all dates           │  [Eye]  [EyeOff]   │
+│                                                  │ Publish  Unpublish │
+│                                                  │                    │
+│                                                  │ [Preview Changes →]│
+└─────────────────────────────────────────────────┴────────────────────┘
 ```
 
-### Date Controls
+### Header Strip
 
-Each date field has two modes selected by radio button:
+- Left: `N selected · N fields to change` — total = assignments × fields with values set. E.g., 3 assignments with 5 fields each = "15 fields to change". Tooltip on hover shows "5 fields × 3 assignments".
+- Right: `[Clear]` dismisses selection and hides the card. `[∧]` collapses to the header strip only.
+- Collapsed state: just the header strip (44px tall). Re-expands on click or on new field input.
 
-**Set date** — enter a specific date. All selected assignments get that exact
-date regardless of their current value.
+### Date Controls (three-mode segmented control per row)
 
-**Shift** — enter a positive or negative number of days. Each selected
-assignment's date is shifted by that amount relative to its current value.
-Example: shift +7 moves all due dates one week later.
+Each date row (Due Date, Avail. From, Avail. Until) has a three-button segmented control:
 
-### Shift All Date Fields Together Toggle
+**[Set]** — reveals a date input. Sets that date to an exact value on all selected assignments.
 
-When this toggle is ON, changing the shift value for Due Date automatically
-mirrors the same value to Available From and Available Until. The teacher can
-still override individual fields after the mirror. The toggle default reflects
-the preferences.shiftAllDatesTogether value from Settings, but can be changed
-here per session without affecting the global preference.
+**[Shift]** — reveals a +/− dropdown and a day-count input. Shifts each assignment's existing date by ±N days relative to its current value. E.g., Shift +7 moves all due dates one week later without changing their relationship to each other.
+
+**[Clear]** — no input shown. Displays red contextual text: *"Removes this date from all selected assignments."* Clears that date field entirely — useful when moving assignments between courses.
+
+Only one mode is active per row at a time. The segmented control makes the active mode visually unambiguous.
+
+**Apply same shift/clear to all dates** — checkbox below the three date rows. When checked, the shift value or clear action set on Due Date is mirrored to Avail. From and Avail. Until automatically. Individual rows can still be overridden after mirroring.
 
 ### Points
 
-Entering a value in the Points field sets all selected assignments to exactly
-that point value. Leaving it blank makes no change to points.
+A single text input: `[Set all to...]  pts`. Sets all selected assignments to that exact point value. Blank = no change to points.
 
 ### Status
 
-Publish sets all selected assignments to published state.
-Unpublish sets all selected assignments to unpublished state.
-These are mutually exclusive actions — clicking one does not affect the other
-control.
+Two icon-buttons side by side with label text below each:
+- `Eye` icon + "Publish" label — publishes all selected assignments
+- `EyeOff` icon + "Unpublish" label — unpublishes all selected assignments
 
-### Apply Button
+These are mutually exclusive. Icons from Lucide React (`Eye`, `EyeOff`).
 
-Apply to Canvas is disabled until at least one field has a value entered.
-Clicking it does not immediately write to Canvas — it opens the Preview Changes
-screen first.
+### Editable Fields (complete list — no others)
+
+Due Date · Avail. From · Avail. Until · Points · Published Status. This is the complete set. Assignment group changes are handled by the Assignment Groups tool. All other fields are too edge-case for bulk editing.
+
+### Preview Changes Button
+
+Primary action. Bottom-right of the card. Disabled until ≥1 field has an active value. Clicking opens the Preview Changes screen — no Canvas writes happen until after the teacher confirms there.
 
 ---
 
 ## Preview Changes Screen
 
-A modal that appears after clicking Apply to Canvas. The teacher must review
+A modal that appears after clicking Preview Changes. The teacher must review
 and confirm before any data is written.
+
+### Layout: grouped by assignment
+
+Changes are grouped into one block per assignment — not a flat table. Each block is headed by the assignment name, with its changed fields listed beneath. This keeps the unit of change (the assignment) scannable and avoids repeating the assignment name across multiple rows.
 
 ```
 Preview Changes                                              [Cancel]
 
-Assignment         Field             From              To
-──────────────────────────────────────────────────────────────────
-Quiz 1             Due Date          Oct 1, 2025       Oct 8, 2025
-Quiz 1             Points            20                25
-Homework 3         Due Date          Oct 5, 2025       Oct 12, 2025
-Homework 3         Available Until   Oct 6, 2025       Oct 13, 2025
+┌────────────────────────────────────────────────────────────┐
+│  Quiz 1                                                     │
+│    Due Date     Oct 1, 2025   →   Oct 8, 2025             │
+│    Points       20            →   25                       │
+├────────────────────────────────────────────────────────────┤
+│  Homework 3                                                │
+│    Due Date     Oct 5, 2025   →   Oct 12, 2025            │
+│    Avail. Until Oct 6, 2025   →   Oct 13, 2025            │
+└────────────────────────────────────────────────────────────┘
 
-4 changes across 2 assignments
+15 fields to change across 3 assignments
 
                                       [Cancel]    [Confirm & Apply]
 ```
 
-Only fields that are actually changing are shown. If the teacher set a due date
-but left points blank, only due date rows appear.
+### Diff emphasis (do not rely on layout alone)
 
-The teacher can click Cancel to go back and adjust their selections without
-losing anything.
+Each change renders as `old → new` with deliberate visual weight:
+- **Old value** — muted (`--color-text-muted`), lighter weight. It is the past.
+- **Arrow (→)** — accent color (`--cpt-color`). Draws the eye across the change.
+- **New value** — full-strength body color (`--color-text-body`), `font-medium`. It is what will happen.
 
-Confirm & Apply fires the Canvas API write operations and shows a progress
-indicator.
+Never distinguish old vs. new by position alone — the color and weight difference must carry the meaning (WCAG: not color as the sole indicator, but here weight + color + the arrow glyph all reinforce it).
+
+### Behavior
+
+- Only fields that are actually changing are shown. Set a due date but leave points blank → only due-date rows appear.
+- The footer count matches the floating card: `N fields to change across N assignments`.
+- **Cancel** returns to the table with all selections and field values intact — nothing is lost.
+- **Confirm & Apply** fires the Canvas API writes and shows per-assignment progress.
 
 ---
 
 ## After Apply — Result Screen
 
+The Result screen adapts to the outcome. Successes are reassurance; failures are action items and get the visual weight.
+
+### All succeeded (calm, minimal)
+
 ```
-Changes Applied
+✓  15 fields updated across 3 assignments
 
-Successfully updated: 2 assignments
-  Quiz 1         — due date, points updated
-  Homework 3     — due date, availability updated
-
-Failed: 0
-
-                                                        [Done]
+                        [View Report]        [Done]
 ```
 
-If any assignments fail to update, they are listed with the error reason. The
-teacher is never left wondering what happened.
+### Partial failure (failures carry the weight)
+
+```
+⚠  13 updated · 2 failed
+
+   Failed
+   Quiz 4      You don't have permission to edit this assignment,
+               or your Canvas token needs reconnecting.        (401)
+   Homework 7  Canvas had a temporary problem. Usually works
+               on retry.                                        (503)
+
+   ▸ 13 succeeded  (collapsed, expandable)
+
+        [View Report]   [Retry all failed]        [Done]
+```
+
+- The success list collapses behind a disclosure so the eye lands on failures first.
+- **Retry all failed** re-fires only the failed writes and updates the result in place.
+- Both states offer **View Report** — a read-only view identical in layout to the Preview screen (grouped by assignment, same diff emphasis), showing what actually succeeded plus any failures.
+
+### Error translation (status-code driven)
+
+Canvas does not reliably document error *bodies* for the assignment-update endpoint, so we translate on the stable contract — the **HTTP status code** — never by string-matching message text.
+
+| Status | Bucket | Teacher-facing message |
+|---|---|---|
+| 401 / 403 | Permission / auth | "You don't have permission to edit this assignment, or your Canvas token needs reconnecting." |
+| 404 | Not found | "This assignment no longer exists in Canvas (it may have been deleted)." |
+| 422 | Validation | **Pass through Canvas's own field message** — 422 bodies are usually already readable. |
+| 429 | Rate limited | Handled automatically by the request queue; should rarely surface. |
+| 5xx | Server error | "Canvas had a temporary problem. This usually works on retry." |
+
+Blueprint-locked assignments typically surface as 401/403 and land in the permission bucket — acceptable, since Canvas gives no documented, stable way to detect the blueprint case specifically.
+
+### Report storage (unified with Change Log)
+
+There is **one** storage model, reached from two places:
+
+- The **Change Log already stores every success** — it powers revert. A "success report" is just a *view* of that existing change-log entry; no new storage is added for successes.
+- **Failures** are attached to the same change-log entry as a lightweight array — they are **not** revertable entries (they never happened), just record: `failures: [{ assignmentName, status, reason }]`. Small, no PII (assignment names are already logged).
+- Therefore **View Report (Result screen) === opening that operation's Change Log entry.** History of recent reports comes for free from the Change Log.
 
 ---
 
@@ -246,9 +335,23 @@ permanent record of what was changed and the ability to revert any operation.
       previousValue: 20,
       newValue: 25
     }
+  ],
+  // Attached when an operation had partial failures. NOT revertable —
+  // these writes never landed. Powers the Result screen's failure view.
+  failures: [
+    {
+      assignmentId: "24680",
+      assignmentName: "Homework 7",
+      status: 503,          // HTTP status — drives error translation
+      reason: "server"      // bucket: permission | notfound | validation | server
+    }
   ]
 }
 ```
+
+`failures` is omitted or empty when every write succeeded. Because assignment
+names are already stored in `changes`, adding them here introduces no new
+PII category.
 
 ### Retention
 
