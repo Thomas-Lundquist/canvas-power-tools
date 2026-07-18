@@ -189,6 +189,24 @@ except where it *is* a component's defining behavior (noted under States).
   screens the whole action set collapses to icon-only + tooltip). Bulk Editor →
   per-row action + the AppNav Settings gear.
 
+#### `Button`
+
+- **Promotes:** the `.btn` / `.btn-primary` / `.btn-secondary` / `.btn-danger` /
+  `.btn-ghost` CSS classes (used bare in JSX today) → one React component, so the
+  text-button primitive matches `IconButton`'s API shape. (Folded into the atom
+  set 2026-07-18 — the only Tier-1-shaped primitive that existed as a bare class.)
+- **Job:** a labeled text button, optionally with a leading icon.
+- **API:** `<Button variant="primary | secondary | danger | ghost" size="sm | md" icon?={LucideIcon} onClick disabled? type?>label</Button>`
+- **Tokens:** reuses the `.btn` base (padding, `rounded-lg`, gap, `:focus-visible`,
+  `disabled:opacity-50`). `primary` → `--cpt-color` bg / white, hover
+  `--cpt-color-dark`; `secondary` → surface bg / `--color-border` / body text;
+  `danger` → `--color-error`; `ghost` → transparent → `--color-bg-hover`.
+- **States:** default / hover / active / focus-visible / disabled. Leading icon is
+  `aria-hidden`; the label always carries meaning.
+- **Stress test:** Templates → `New template` (primary) + `Cancel` (ghost). Bulk
+  Editor → `Apply changes` (primary, PIN-gated) + `Preview` (secondary). Also the
+  action slot inside `EmptyState`.
+
 #### `SearchInput`
 
 - **Promotes:** the 7 hand-rolled search inputs the bead flags.
