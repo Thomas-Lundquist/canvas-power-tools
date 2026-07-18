@@ -14,6 +14,309 @@ reason and a decision recorded in the relevant design document.
 
 ---
 
+## Design Language — Locked (1yr.1)
+
+These four decisions are the visual foundation. Locked during the design-system
+pass (bead `canvas-power-tools-1yr.1`). Every component and tool checks against
+them. Do not re-litigate without a documented reason.
+
+**Personality statement:** *Professional but warm, precise but approachable —
+flat surfaces, warm neutrals, quick and quiet motion, one confident accent.*
+
+Extracted from choices already in the code (`tm1`): 6px radius (not `rounded-xl`),
+border-only cards (no rest shadow), `duration-75` motion, warm off-white page
+background. The design language ratifies and systematizes these.
+
+### 1. Typography
+
+- **One family: Inter** everywhere (headings + body), differentiated by
+  size/weight only. Stylistic sets `cv02/cv03/cv04` on body. A display face for
+  headings is a deferred, additive option — not now.
+- **Type scale (5 sizes, rem):**
+
+  | Role | Size | Line-height | Weight |
+  |---|---|---|---|
+  | Page title | `1.5rem` | 1.25 | **600** |
+  | Section title | `1.125rem` | 1.3 | 600 |
+  | Body | `1rem` | 1.5 | 400 |
+  | Secondary | `0.875rem` | 1.45 | 400 |
+  | Micro / label | `0.75rem` | 1.4 | 500 (uppercase for `.section-label`) |
+
+- Page titles are **semibold 600, not bold 700** — 700 everywhere reads
+  aggressive; "warm/approachable" leads without shouting.
+
+### 2. Spacing
+
+- **rem-based** so spacing scales with the `data-text-size` accessibility
+  setting — the whole layout breathes proportionally when text size changes.
+- **Constrained scale (steps deliberately skipped to kill decision fatigue):**
+
+  | Token | Value | Role |
+  |---|---|---|
+  | `--space-1` | `0.25rem` | icon ↔ label; tightest |
+  | `--space-2` | `0.5rem` | tightly-related inline controls |
+  | `--space-3` | `0.75rem` | **default** gap between controls |
+  | `--space-4` | `1rem` | list-row padding, form field gap |
+  | `--space-5` | `1.5rem` | card padding, gap between groups |
+  | `--space-6` | `2rem` | gap between page sections |
+  | `--space-8` | `3rem` | major page divisions, page top margin |
+
+- Mental model: **tight (`-2`) / default (`-3`,`-4`) / roomy (`-5`+)**.
+- **Seam reserved (not built):** a future `data-density` attribute can remap
+  `--space-*` for a compact/comfortable/spacious control (doc 10 "Spacing Modes
+  (Future / Stretch)"). Cheap later *because* everything consumes the tokens.
+
+### 3. Color — ramps (HSL-derived, contrast-verified)
+
+Semantic tokens become **aliases onto these ramps** (e.g. `--color-bg-page` →
+grey-50, `--color-border` → grey-300, `--color-text-secondary` → grey-600,
+`--color-text-body` → grey-900). No more stray `text-gray-*`.
+
+**Warm grey — hue 35° (warmth carried through all nine):**
+
+| Step | Hex | Role |
+|---|---|---|
+| 50 | `#F9F8F6` | page bg / lightest surface |
+| 100 | `#F2F0EE` | hover / subtle fill |
+| 200 | `#E6E3E0` | subtle border |
+| 300 | `#D8D4D0` | default border |
+| 400 | `#AAA49D` | disabled text / placeholder |
+| 500 | `#80796F` | muted text — **nudge darker to ≥4.5:1 (l≈45); l47 is only 4.30** |
+| 600 | `#5E5850` | secondary text (7.03) |
+| 700 | `#433E38` | strong text (10.58) |
+| 900 | `#221F1C` | body text (16.40) |
+
+**Primary blue — hue 225° (warm blue), `#2B54D4` at step 500:**
+
+| Step | Hex | Role |
+|---|---|---|
+| 50 | `#EEF1FC` | focus-tint bg / selected row |
+| 100 | `#D4DDF7` | light tint |
+| 200 | `#A9BBEF` | tint border |
+| 300 | `#7892E3` | disabled accent |
+| 400 | `#5677DC` | (AA-large only) |
+| **500** | **`#2B54D4`** | **accent fill (`--cpt-color`), white-on-fill 6.26** |
+| 600 | `#2348B8` | hover (white-on-fill 7.81) |
+| 700 | `#1C3C9C` | active |
+| 900 | `#132A72` | accent text on light bg |
+
+Default accent changed from indigo (hue 243, violet) to **warm blue hue 225**.
+
+### 4. Theming — user accent generates a full ramp
+
+The accent stays runtime-configurable in Settings. `applyTheme()` must
+**generate**, not just swap:
+
+1. Read the user's color hue + saturation; apply the **same lightness curve**
+   (l96 → l26) to emit `--primary-50…900`. Their hue/sat preserved.
+2. **Greys stay fixed and warm** — only the primary ramp regenerates.
+3. **A11y guard:** set `--primary-contrast` to white **or** dark grey based on
+   the *measured* contrast against the fill step. Components use
+   `--primary-contrast` for label text on accent fills, so no user color can
+   break AA (e.g. a light-yellow accent auto-gets dark labels).
+
+This upgrades theming from "set a variable" to "derive a system."
+
+---
+
+## Shared Component Ledger (1yr.5)
+
+The anti-drift layer. Doc standards + tokens (1yr.1) describe *what* good looks
+like; this ledger names the *canonical React components* that make obeying the
+standard the default path. Every component is **extracted, not invented** —
+pulled out of Bulk Editor (data-dense) and Templates (browse) so each is
+stress-tested by real content. The per-tool rebuilds (1yr.4.1 / 1yr.4.2) become
+pure assembly of this set.
+
+### Organizing principle — three locked decisions
+
+1. **Small shared bricks, not a specialized set.** Composition over
+   configuration throughout. When two screens look alike but have different
+   *mechanics*, they stay separate shapes built from the same atoms — never one
+   over-configured god-component.
+2. **List ≠ Table.** `ListRow` + `ListGroup` serve *browse* screens (Templates,
+   Change Log, Sent Log). The Bulk Editor's `AssignmentTable` stays a **separate
+   virtualized component** (column config, inline edit, `@tanstack/react-virtual`)
+   but is **required to consume the shared atoms** (Badge, IconButton, checkbox
+   tokens). No exemptions — it just isn't a `ListRow`.
+3. **Share the brain, keep two faces.** Sorting logic lives in one `useSort`
+   hook (extracted from `AssignmentTable`); the table renders clickable column
+   headers, browse screens render the `SortControl` dropdown. `Toolbar` is a
+   layout shell you arrange bricks on — never a props-configured vending machine.
+
+### Entry format
+
+Each component is specified in six parts: **Promotes** (existing code it
+canonicalizes) · **Job** (one sentence) · **API** · **Tokens** (the design-language
+binding) · **States** · **Stress test** (how each of the two Tools uses it).
+Keyboard behavior is deferred — layered in at build time, not respecified here,
+except where it *is* a component's defining behavior (noted under States).
+
+---
+
+### Tier 1 — Atoms (serve every screen)
+
+#### `Badge`
+
+- **Promotes:** the `📝/📄` type tags in Templates and the "Published/Unpublished"
+  pill in `AssignmentTable` → one component.
+- **Job:** render a small, non-interactive status/label pill.
+- **API:** `<Badge tone="neutral | success | warning | danger | muted | accent" icon?={LucideIcon}>label</Badge>`
+- **Tokens:** `success` → `--color-success-*`; `warning` → `--color-warning-*`
+  (amber); `danger` → `--color-danger-*`; `muted` → grey-100 bg / grey-600
+  text; `accent` → `--primary-50` bg / `--primary-900` text with label on
+  `--primary-contrast` (a11y guard); padding `--space-1`/`--space-2`; text =
+  micro scale (`0.75rem` / 500). (`warning`/`danger` added as headroom — no
+  current row-status uses them yet.)
+- **States:** static — no hover/focus (not interactive). Icon is `aria-hidden`;
+  text always carries meaning (never color alone).
+- **Stress test:** Templates → `tone="muted" icon={FileText}` type tag. Bulk
+  Editor → `tone="success">Published` inline in a virtualized row (must stay
+  cheap ×100).
+
+#### `IconButton`
+
+- **Promotes:** the `SettingsButton` / `icon-btn` pattern and every hand-rolled
+  ghost-icon action (⋯ menu trigger, edit/trash in Templates, row actions).
+- **Job:** a single clickable icon with an accessible label.
+- **API:** `<IconButton icon={LucideIcon} label="Edit template" onClick variant="ghost | danger" size="sm | md" disabled? />`
+- **Tokens:** ghost = transparent → `--color-bg-hover` on hover, `--color-text-secondary`
+  icon; danger = `--color-danger-*`; hit area ≥ `--space-6` (2rem) for touch;
+  reuses global `:focus-visible` (3px outline).
+- **States:** default / hover / active / focus-visible / disabled. **`label` is
+  required** — renders as `aria-label`; icon is `aria-hidden`.
+- **Stress test:** Templates → edit/trash/⋯ trailing a `ListRow` (on small
+  screens the whole action set collapses to icon-only + tooltip). Bulk Editor →
+  per-row action + the AppNav Settings gear.
+
+#### `SearchInput`
+
+- **Promotes:** the 7 hand-rolled search inputs the bead flags.
+- **Job:** a labeled text field for filtering the current screen, with a clear
+  affordance.
+- **API:** `<SearchInput value onChange placeholder ariaLabel onClear? />`
+- **Tokens:** extends the existing `.input` class (border grey-300, focus ring
+  `--primary-*`); leading search icon `--color-text-secondary`; height/padding
+  from `--space-*`.
+- **States:** empty (placeholder, grey-400) / typing (clear-`✕` appears) /
+  focus / disabled. Clearing restores the full list. Debounce is the consumer's
+  concern, not baked in — apply a ~200ms debounce only where the filtered set is
+  large (the Bulk Editor table); browse lists filter live.
+- **Stress test:** Templates → filters across folders, matching name + folder.
+  Bulk Editor → filters the virtualized table; result count lives in the
+  `Toolbar`, not here.
+
+#### `EmptyState`
+
+- **Promotes:** the 25 divergent empty-state strings → one component fed the
+  copy already written in doc 14's "Empty States" block.
+- **Job:** center an icon + headline + guidance + optional action(s) where a
+  list would otherwise be blank.
+- **API:** `<EmptyState icon={LucideIcon} title body actions?={ReactNode} />`
+- **Tokens:** icon grey-400; title = section-title scale (`1.125rem` / 600); body
+  = secondary (`0.875rem`, grey-600); vertical rhythm `--space-4`/`--space-5`;
+  actions are `btn-primary` / `btn-secondary`.
+- **States:** one static layout; 0, 1, or 2 actions supported. Each *situation*
+  supplies its own copy (no generic "No data").
+- **Stress test:** Templates → "Your template library is empty" (2 actions) and
+  "No templates match your search" (Clear Search). Bulk Editor → "No assignments
+  in course" (→ Template Library) and "No assignments match your filters"
+  (Clear Filters).
+
+#### `SegmentedToggle`
+
+- **Promotes:** the Grade Outreach segmented control that replaced radio groups.
+- **Job:** pick exactly one option from 2–4 mutually exclusive choices.
+- **API:** `<SegmentedToggle options=[{value,label,icon?}] value onChange ariaLabel />`
+- **Tokens:** track = grey-100; selected segment = `--color-surface` on
+  `--primary-500` accent border/fill with label on `--primary-contrast`; text =
+  secondary scale.
+- **States:** per-segment default / selected / hover / focus / disabled.
+  **Defining keyboard behavior:** `role="radiogroup"`; arrow keys move selection
+  (roving tabindex) — this one *is* respecified because it defines the control.
+- **Stress test:** Templates → List / Cards view toggle. Grade Outreach →
+  message-mode selector (the origin). Never used for >4 options (that's a select).
+
+---
+
+### Tier 2 — Composition
+
+#### `PageHeader`
+
+- **Promotes:** the 3 divergent page-title styles into one title + action row.
+- **Job:** render the screen's title (and optional back link / subtitle) plus a
+  right-aligned primary action slot.
+- **API:** `<PageHeader title back?={{label,to}} actions?={ReactNode}>subtitle?</PageHeader>`
+- **Tokens:** title = page-title scale (`1.5rem` / 600, **not** 700); subtitle =
+  secondary grey-600; bottom margin `--space-6`; actions typically a
+  `btn-primary`.
+- **States:** with/without back link; 0–2 actions. Renders a single `<h1>` per
+  page (a11y heading order).
+- **Stress test:** Templates Library → "Assignment Templates" + `[+ New Template]`.
+  Template Editor → back link "← Back to Library" + "New Template / Edit
+  Template — {name}". Bulk Editor → title + course context.
+
+#### `Toolbar`
+
+- **Job:** a responsive layout shell that arranges controls in `start` / `end`
+  regions and stacks gracefully on narrow widths. Holds nothing itself.
+- **API:** `<Toolbar><Toolbar.Start>…</Toolbar.Start><Toolbar.End>…</Toolbar.End></Toolbar>`
+- **Tokens:** gap `--space-3`; bottom margin `--space-4`; no background of its
+  own (sits above `.card` / table).
+- **States:** purely layout — wraps to multiple rows below a breakpoint. Adds no
+  props when a screen needs a new control (that's the point).
+- **Stress test:** Templates → `Start:` SearchInput · `End:` SortControl +
+  SegmentedToggle(List/Cards). Bulk Editor → `Start:` SearchInput + Filter ·
+  `End:` "Showing 12 of 18" count.
+
+#### `ListRow` + `ListGroup`
+
+- **Promotes:** the Templates grouped-list markup → two reusable browse bricks.
+  (Explicitly **not** the AssignmentTable — Decision 2.)
+- **Job:** `ListGroup` = a labeled, collapsible section header with a count and
+  optional trailing action. `ListRow` = one browse line: lead (badge) · title ·
+  meta · trailing actions.
+- **API:**
+  `<ListGroup label count action?={ReactNode} defaultOpen>…rows</ListGroup>`
+  `<ListRow lead?={ReactNode} title meta?={ReactNode} primaryAction?={ReactNode} overflow?={ReactNode} onActivate? />`
+- **Tokens:** group label = `.section-label` (micro, 500, uppercase, grey-600);
+  row padding `--space-4`; hover `--color-bg-hover`; selected/active row
+  `--primary-50`; meta text secondary grey-600.
+- **States:** ListGroup open / collapsed (defining keyboard: header is a
+  `button`, Enter/Space toggles, `aria-expanded`). ListRow default / hover /
+  focus / disabled; `primaryAction` always visible (`btn-secondary`), `overflow`
+  low-weight (ghost `IconButton`).
+- **Stress test:** Templates → `📝 Weekly Quiz · 100pt · Last used Oct 1 · [Use]
+  ⋯` under a `QUIZZES (3)` group with a `+ New` action. Long template/folder
+  names must truncate, not wrap the row. Reused later by Change Log & Sent Log.
+
+#### `SortControl`
+
+- **Promotes:** browse-screen sort UI; pairs with the shared `useSort` brain.
+- **Job:** a dropdown that picks a sort field + direction for browse screens (the
+  "face" the table renders as clickable headers instead).
+- **API:** `<SortControl options=[{key,label}] value={{key,dir}} onChange />`
+- **Tokens:** trigger reuses `.input` / `btn-secondary` sizing; active field
+  checked; direction caret `--color-text-secondary`; menu on `.card` elevation.
+- **States:** closed (shows current sort) / open (menu) / per-option selected.
+  Defining keyboard: standard menu semantics.
+- **Stress test:** Templates → Name / Points / Last used / Type, asc·desc. Bulk
+  Editor → does **not** use this UI; it feeds the *same* `useSort` state through
+  clickable `<th>` carets (Decision 2, two faces).
+
+#### `useSort` (shared hook — the "brain")
+
+- **Promotes:** the sort/comparator logic currently inside `AssignmentTable`.
+- **Job:** hold `{key, dir}` state and return sorted items via a stable
+  comparator (dates, numbers, strings; blanks sort last consistently). Renders
+  nothing.
+- **API:** `const { sorted, sort, setSort } = useSort(items, { key, dir }, comparators?)`
+- **Consumed by:** `AssignmentTable` (→ clickable headers) and `SortControl`
+  (→ dropdown) — one implementation, two faces. This is the seam that keeps the
+  locked "control not headers for browse" decision from duplicating logic.
+
+---
+
 ## Page Layout Patterns
 
 Two layout strategies exist. The right one depends on whether the table is
