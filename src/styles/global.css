@@ -4,25 +4,72 @@
 
 /* Default theme values — overridden at runtime by applyTheme() */
 :root {
-  --cpt-color: #4f46e5;
-  --cpt-color-dark: #4338ca;
-  --cpt-color-rgb: 79, 70, 229;
+  /* ──────────────────────────────────────────────────────────────
+     PRIMITIVE RAMPS (1yr.1) — raw scale. Semantic tokens below alias
+     onto these. Components consume the SEMANTIC layer, never these.
+     ────────────────────────────────────────────────────────────── */
 
-  /* ── Semantic surface tokens (light mode) ── */
-  --color-bg-page:        #F6F5F4;
+  /* Warm grey — hue 35°, contrast-verified against white. Fixed (theme
+     changes regenerate only the primary ramp, never the greys). */
+  --grey-50:  #F9F8F6;   /* page bg / lightest surface */
+  --grey-100: #F2F0EE;   /* hover / subtle fill */
+  --grey-200: #E6E3E0;   /* subtle border */
+  --grey-300: #D8D4D0;   /* default border */
+  --grey-400: #AAA49D;   /* disabled text / placeholder */
+  --grey-500: #7B7060;   /* muted text — AA on white (4.85) and grey-50 (4.57) */
+  --grey-600: #5E5850;   /* secondary text (7.03) */
+  --grey-700: #433E38;   /* strong text (10.58) */
+  --grey-900: #221F1C;   /* body text (16.40) */
+
+  /* Primary blue — hue 225° (warm blue). DEFAULT ramp; applyTheme()
+     regenerates 50…900 from the user's seed hue/sat at runtime. */
+  --primary-50:  #EEF1FC;   /* focus-tint bg / selected row */
+  --primary-100: #D4DDF7;   /* light tint */
+  --primary-200: #A9BBEF;   /* tint border */
+  --primary-300: #7892E3;   /* disabled accent */
+  --primary-400: #5677DC;   /* AA-large only */
+  --primary-500: #2B54D4;   /* accent fill, white-on-fill 6.32 */
+  --primary-600: #2348B8;   /* hover, white-on-fill 7.81 */
+  --primary-700: #1C3C9C;   /* active */
+  --primary-900: #132A72;   /* accent text on light bg */
+
+  /* Label text on accent fills — auto-flipped white/dark by applyTheme()
+     so no user accent can break AA. White for the default blue. */
+  --primary-contrast: #FFFFFF;
+
+  /* Brand accent — default single-sourced from the primary ramp;
+     applyTheme() overrides these with explicit hex for custom themes. */
+  --cpt-color:      var(--primary-500);
+  --cpt-color-dark: var(--primary-600);
+  --cpt-color-rgb:  43, 84, 212;
+
+  /* ──────────────────────────────────────────────────────────────
+     SPACING SCALE (1yr.1) — rem-based so it scales with data-text-size.
+     Constrained on purpose (steps skipped to kill decision fatigue).
+     ────────────────────────────────────────────────────────────── */
+  --space-1: 0.25rem;   /* icon ↔ label; tightest */
+  --space-2: 0.5rem;    /* tightly-related inline controls */
+  --space-3: 0.75rem;   /* default gap between controls */
+  --space-4: 1rem;      /* list-row padding, form field gap */
+  --space-5: 1.5rem;    /* card padding, gap between groups */
+  --space-6: 2rem;      /* gap between page sections */
+  --space-8: 3rem;      /* major page divisions, page top margin */
+
+  /* ── Semantic surface tokens (light mode) → grey ramp ── */
+  --color-bg-page:        var(--grey-50);
   --color-bg-surface:     #FFFFFF;
-  --color-bg-sidebar:     #F0EFED;
-  --color-bg-hover:       #F0EFED;
+  --color-bg-sidebar:     var(--grey-100);
+  --color-bg-hover:       var(--grey-100);
 
-  /* ── Text tokens (light mode) ── */
-  --color-text-body:      #1E1E1E;
-  --color-text-secondary: #505050;
-  --color-text-muted:     #767676;
-  --color-text-disabled:  #9E9E9E;
+  /* ── Text tokens (light mode) → grey ramp ── */
+  --color-text-body:      var(--grey-900);
+  --color-text-secondary: var(--grey-600);
+  --color-text-muted:     var(--grey-500);
+  --color-text-disabled:  var(--grey-400);
 
-  /* ── Border tokens (light mode) ── */
-  --color-border:         #DEDDDA;
-  --color-border-subtle:  #EEEDEB;
+  /* ── Border tokens (light mode) → grey ramp ── */
+  --color-border:         var(--grey-300);
+  --color-border-subtle:  var(--grey-200);
 
   /* ── Semantic status tokens (light mode) ── */
   --color-success:        #1B6B30;
