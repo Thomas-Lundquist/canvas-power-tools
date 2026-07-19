@@ -477,6 +477,208 @@ backdrop despite `Modal`). czg builds the canonical set; the rebuild wires it in
 
 ---
 
+## Interaction Grammar & Archetypes (1yr.2)
+
+The cross-tool consistency layer. Doc standards + tokens (1yr.1) fix *what good
+looks like*; the Component Ledger (1yr.5) names the *canonical bricks*; this
+section fixes *how a tool behaves and which shape it takes*. Together they let
+per-tool rebuilds (1yr.4) inherit consistency **by construction** — a screen
+assembled from the shared atoms is grammar-compliant by default, because the
+rules below are already encoded in those atoms. This section names the contract
+so deviations are visible, not so behavior is re-implemented per tool.
+
+> **Enforcement, not aspiration.** If a screen needs to break a rule here, that
+> is a signal the atom is wrong or the archetype is misclassified — fix the
+> shared brick, don't fork the behavior into one tool.
+
+---
+
+### Part A — Interaction Grammar (behavioral contract)
+
+Five rules. Every one is carried by an atom, so "obey the grammar" reduces to
+"compose the right atoms."
+
+#### A1. Color = meaning
+
+Color is a semantic channel, never decoration. Each screen has exactly **one**
+confident forward action.
+
+| Intent | Token / variant | Used for |
+|---|---|---|
+| Primary | `--cpt-color` accent (`Button variant="primary"`) | The single forward action of the screen/step (Save, Apply, Send, Next). One per view. |
+| Danger | `--color-danger` (`Button variant="danger"`) | Destructive or irreversible actions only (Delete, Clear all, Remove override). |
+| Ghost / neutral | border-only / text (`Button variant="ghost"`) | Secondary and cancel actions, back navigation, dismiss. |
+
+- **Never two competing primaries** in one view — if two actions look equally
+  weighted, one is misclassified.
+- **Never color as the sole signal** (WCAG 2.1 AA). Danger carries an icon +
+  verb; status uses `Badge` text, not a bare dot. Accent conveys emphasis, not
+  the only cue.
+- Semantic tokens only (`--color-danger`, `--cpt-color`), never raw Tailwind
+  color classes — see *Design System — Color*.
+
+#### A2. Action placement
+
+Reading order is a promise. Actions live where the eye ends.
+
+- **Primary bottom-right** of its container (page footer, `Card`, `Modal`,
+  floating action card). This is the last thing read → the natural commit point.
+- **Cancel / secondary to the left** of the primary, same row.
+- **Destructive actions separated** — never adjacent to the primary where a
+  mis-click is costly; left-aligned or set apart, and confirmed for
+  irreversible cases (see PIN gate for Canvas writes).
+- `Actions` is the enforcing atom: it lays out a right-aligned action row with
+  the destructive/secondary/primary ordering baked in. Toolbars put the search
+  and filters left, primary tool action right.
+
+#### A3. Standard interactions
+
+One gesture means one thing across all 26 tools. Never overload.
+
+| Gesture | Meaning |
+|---|---|
+| Chevron (`›`/`⌄`) | Expand / collapse a disclosure |
+| Row click (body) | Open / navigate to the item |
+| Checkbox click | Select for a bulk action — **never** opens the item |
+| `Esc` | Close modal · cancel the current edit · dismiss overlay |
+| `Enter` | Confirm the focused form / submit the primary action |
+| Click outside a modal | Dismiss — **only** when non-destructive; a dirty form confirms first |
+
+Row-click-opens and checkbox-selects are deliberately distinct targets on the
+same row (`ListRow` wires both): the checkbox stops propagation so selecting
+never navigates.
+
+#### A4. Keyboard & focus
+
+- Every interactive element is Tab-reachable and activates on Enter/Space.
+- Modals trap focus and **restore** it to the trigger on close (`Modal`).
+- Focus is always visible via `:focus-visible` (3px outline) — see *Focus
+  Indicators*.
+- Per-tool shortcuts are documented in *Keyboard Shortcuts* and surfaced in the
+  `ShortcutsPanel`; global shortcuts (e.g. `?` for help, `Esc`) are universal.
+
+#### A5. State feedback
+
+No action is silent; no wait is unexplained. One feedback vehicle per situation.
+
+| Situation | Vehicle |
+|---|---|
+| Loading the assignment table | `Skeleton` (matches final row shape) |
+| Loading anything else | `Spinner` |
+| Transient success / failure of an action | `Toast` (auto-dismiss, `aria-live`) |
+| Persistent inline status / warning tied to a region | `Callout` |
+| No data yet / empty result | `EmptyState` (with the next action in its slot) |
+| Long or async write | Progress via `ProgressBar`; button enters loading + disabled state |
+
+Every async action must show feedback before it completes and a terminal state
+after — see *Loading States* and *Empty States* for the specific rules.
+
+---
+
+### Part B — The Six Archetypes
+
+Every tool is **one** of six page shapes. Classifying a tool picks its layout,
+its enforcing components, and its default grammar posture — so "designing" a
+tool becomes "assembling its archetype." Archetypes are *semantic* (what kind of
+page); the mechanical layout (`h-screen` vs `min-h-screen`, virtualizer height)
+is a separate downstream choice covered in *Page Layout Patterns*.
+
+#### B1. Table-Primary
+
+- **What:** a data-dense, virtualized table *is* the page. Filter/act in place;
+  the table is the whole main content after the toolbar.
+- **Tools:** Bulk Assignment Editor, Copy Assignments (source step).
+- **Enforced by:** `AssignmentTable` + `useSort` (clickable column headers),
+  `Toolbar` (search left, actions right), chip filter bar, floating action card,
+  `Badge` for status. Uses `Skeleton` while loading.
+- **Layout mechanics:** table-primary → `h-screen`, `fillHeight`. See
+  *Page Layout Patterns → Table-Primary Tools*.
+- **Grammar notes:** primary action lives in the floating action card
+  (bottom-right); checkbox column = select, never open.
+
+#### B2. Browse / Library
+
+- **What:** a scannable list of items you search, sort, and pick from. Read-
+  first; the item opens for detail or use.
+- **Tools:** Templates, Change Log, Sent Log, Rubrics library.
+- **Enforced by:** `ListRow` + `ListGroup` (the browse face — *not* a table),
+  `SortControl` (dropdown, sharing `useSort`'s brain), `SearchInput`, `Card`,
+  `EmptyState`. `Badge` for type/status tags.
+- **Layout mechanics:** mixed-content → `min-h-screen`.
+- **Grammar notes:** row-click opens; chevron expands inline detail; the
+  per-item primary action sits at the row's right edge.
+
+#### B3. Dashboard
+
+- **What:** an at-a-glance overview — key metrics and status, an entry point
+  that drills into other tools. Low interaction density, high signal.
+- **Tools:** module overview / summary screens (e.g. a Grading or People
+  landing summary), the homepage tool picker's status surfaces.
+- **Enforced by:** `StatCard` (metric tiles in the consumer's own grid), `Card`,
+  `Badge`. Drill-in actions are ghost/link-weighted, not competing primaries.
+- **Layout mechanics:** mixed-content → `min-h-screen`.
+- **Grammar notes:** usually **no** single forward action — navigation-first;
+  stats are plain text (no color-only meaning).
+
+#### B4. Config / Form-Flow
+
+- **What:** a sequential form, settings surface, or multi-step wizard. The user
+  supplies structured input; the tool validates and commits.
+- **Tools:** Settings, Onboarding, Grade Adjustments, Copy Assignments (target
+  step).
+- **Enforced by:** `FieldLabel` + `TextField` / `Select` / `RadioGroup` /
+  `NumberField` / `SegmentedToggle`, `Actions` (Cancel · Next/Save, right-
+  aligned), `Callout` for validation and guidance.
+- **Layout mechanics:** mixed-content → `min-h-screen`.
+- **Grammar notes:** one primary per step (Next/Save) bottom-right; Enter
+  submits; inline validation via `Callout`, not silent failure.
+
+#### B5. Resource-Manager
+
+- **What:** CRUD over a set of entities — create, edit, duplicate, delete items
+  in a managed collection. Browse-like, but *authoring* the list is the point.
+- **Tools:** Accommodations, Rubrics (management), Templates (management side).
+- **Enforced by:** `ListRow` (with per-row `IconButton` actions), `Modal` for
+  create/edit, `Actions`, `Button` (primary "New …" top-right of the region).
+  Deletes use `danger` + confirmation.
+- **Layout mechanics:** mixed-content → `min-h-screen`.
+- **Grammar notes:** destructive row actions separated from open/edit; edits
+  happen in a focus-trapped `Modal` that restores focus on close.
+
+#### B6. Compose / Messaging
+
+- **What:** author content and send it — a message, announcement, or bulk
+  communication. The composition surface is the focus; sending is the commit.
+- **Tools:** Communication module tools.
+- **Enforced by:** `TextField` (textarea mode), recipient selectors
+  (`Select` / chips), `Callout` for scope/consequence warnings, `Actions` with a
+  primary Send. Honors the send-delay pattern (see *Time Limits Exception*).
+- **Layout mechanics:** mixed-content → `min-h-screen`.
+- **Grammar notes:** Send is the single primary (bottom-right); scope warnings
+  are persistent `Callout`s, not toasts; the send-delay gives an undo window
+  rather than a blocking confirm.
+
+---
+
+### Classifying a Tool into an Archetype
+
+Ask in order; stop at the first **yes**:
+
+1. Is a virtualized, data-dense table the whole page? → **Table-Primary**.
+2. Is the job authoring/managing a collection (create/edit/delete items)? →
+   **Resource-Manager**.
+3. Is the job writing a message and sending it? → **Compose/Messaging**.
+4. Is the job supplying structured input through fields/steps? → **Config/
+   Form-Flow**.
+5. Is the page mostly metrics/status that link elsewhere? → **Dashboard**.
+6. Otherwise — a list you search and pick from → **Browse/Library**.
+
+A tool may host more than one archetype across its screens (Copy Assignments is
+Table-Primary on its source step, Config/Form-Flow on its target step). Classify
+**per screen**, not per tool.
+
+---
+
 ## Page Layout Patterns
 
 Two layout strategies exist. The right one depends on whether the table is
