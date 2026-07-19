@@ -543,7 +543,7 @@ function resolveDate(currentValue, change) {
 
 ## Complete Canvas API Endpoint Reference
 
-All endpoints used across V1 features.
+All endpoints used across the extension's features.
 
 | Feature | Action | Method | Endpoint |
 |---|---|---|---|

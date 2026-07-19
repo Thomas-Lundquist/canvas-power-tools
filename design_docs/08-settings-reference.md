@@ -60,7 +60,7 @@ undated assignments could accidentally publish or date assignments the teacher
 did not intend to change. The setting must carry a clear warning in the UI.
 
 ### Settings Phasing
-Not all settings need to be built for V1. See the phasing plan at the end of
+Not all settings need to be built at once. See the phasing plan at the end of
 this document.
 
 ---
@@ -398,10 +398,10 @@ Import conflict options:
 
 ## Settings Phasing Plan
 
-Not all settings should be built for V1. This phasing prevents over-engineering
+Not all settings should be built at once. This phasing prevents over-engineering
 before real user feedback reveals which settings teachers actually need.
 
-### V1.0 — Essential Settings Only
+### Essential — Build First
 
 ```
 Account
@@ -425,14 +425,14 @@ About
   Version, GitHub link, privacy policy, help link
 ```
 
-### V1.5 — Templates Ship
+### Template Settings
 
 ```
 Templates
   Sort order, default folder, after deploy behavior, active courses only
 ```
 
-### V1.5 Advanced — Add as Features Stabilize
+### Advanced — Add as Features Stabilize
 
 ```
 General advanced settings
@@ -443,7 +443,7 @@ Settings search bar
 Per-section reset to defaults
 ```
 
-### V2 and Beyond
+### Later
 
 ```
 Popup settings (once popup is more fully designed)

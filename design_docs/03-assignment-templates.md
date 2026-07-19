@@ -22,7 +22,7 @@ changing them. Locked during the feature-first redesign pass (see
 | 1 | **Deployment is split by cardinality.** The PowerTools dashboard owns the Library and the **Bulk Deployment Engine** (many courses at once). **Canvas injection** owns two lightweight buttons — *Save to Templates* and *Create from Template* — for single, in-context actions. | Multi-course batch deploy is the headline value and is the one thing Canvas cannot do — it belongs in the dashboard. Single, precise deploy wants the **module context** that only exists inside Canvas. Each path lives where it is strongest. |
 | 2 | **Injected buttons trigger only; the extension does all API work.** | Hard architectural rule: content scripts inject trigger UI, never call the Canvas API. Keeps the injected DOM footprint tiny (the brief's stated constraint) and API access centralized in `request.js`. |
 | 3 | **"Create from Template" opens a small popover (not one-click, not a full page).** Deploys in **2 clicks minimum** (pick template → deploy); **date(s) and publish are optional** in-context fields. | The single-target path is exactly where a teacher is setting up one specific thing, so collecting the due date where they are already thinking about that module's schedule is worth one small surface. Optional fields keep the "fast" promise for those who want it. |
-| 4 | **Templates store two types: `assignment` and `page` (V1).** Quizzes (Classic + New Quizzes) are deferred. | Assignments cover most of what teachers reuse; Pages are the next-simplest shape (title + body only). Both ship in V1. New Quizzes is a separate API surface and is V2. |
+| 4 | **Templates store two types: `assignment` and `page`.** Quizzes (Classic + New Quizzes) are deferred. | Assignments cover most of what teachers reuse; Pages are the next-simplest shape (title + body only). New Quizzes is a separate API surface and is deferred. |
 | 5 | **Instructions are stored as verbatim Canvas HTML and rendered sanitized, read-only.** No WYSIWYG editor in PowerTools. | "Save once, redeploy faithfully" requires lossless capture — a minimal editor would flatten rich Canvas formatting on the capture path. Rendering saved HTML needs a sanitizer + styled container, not a full editor. |
 | 6 | **Editing model: structured fields are editable forms; the instructions *body* is edited via a raw-HTML source view (light edits) or by re-capturing from the Canvas RCE (heavy edits).** | Matching the RCE means re-implementing Canvas's media/embed pickers against course-scoped resources we do not have. "Light edits here, heavy edits in Canvas" is honest and avoids shipping a large, worse editor. |
 | 7 | **Rendering always sanitizes** (bundled **DOMPurify**, allow-list). Storing verbatim HTML is *not* the same as it being safe. | Canvas sanitizes on *its* input/render. The captured string is untrusted the moment *we* inject it into our DOM — XSS risk unless we sanitize at render. Both storage-lossless and render-sanitized are required. |
@@ -30,9 +30,9 @@ changing them. Locked during the feature-first redesign pass (see
 | 9 | **Deploy resolves groups by name, and creates the group if it does not exist** — shown as a per-course mappable field the teacher can redirect. | Assignment groups carry grade weight; a silent fallback could wreck a gradebook. The mapping is always visible so the teacher controls which grade bucket each course's assignment lands in. |
 | 10 | **Publish state defaults to Auto: publish if a due date is set, otherwise leave as a draft.** Editor holds a default preference; deploy offers Auto / Published / Unpublished. | Publish is a semester-context truth like dates, not a stored fact. "Has a due date" is a good proxy for "ready to publish." |
 | 11 | **Library offers a grouped list (default) and a card view** where each card is a scaled, sanitized HTML thumbnail of the instructions. | The list is dense and clearest for scanning; the card thumbnails reuse HTML we already store to give a real document preview. List ships first; cards are the toggle. |
-| 12 | **Variables and New Quizzes are V2 — but their seams are reserved now.** Instructions are stored as an *unresolved* template string; the schema reserves `engine`. | "Table the feature, reserve the seam." Storing pre-rendered/escaped instructions or hardcoding the assignment API would block variables and New Quizzes permanently. |
+| 12 | **Variables and New Quizzes are deferred — but their seams are reserved now.** Instructions are stored as an *unresolved* template string; the schema reserves `engine`. | "Table the feature, reserve the seam." Storing pre-rendered/escaped instructions or hardcoding the assignment API would block variables and New Quizzes permanently. |
 
-**Deferred with seams reserved (V2):**
+**Deferred with seams reserved:**
 
 - **Dynamic variables**, in two tiers. **Auto-resolved** tokens (`[Course Name]`,
   `[Due Date]`, `[Term]`) are cheap — the data already exists at deploy time, so
@@ -80,7 +80,7 @@ one (see Decision 10).
 
 ## Template Types
 
-A template is one of two types in V1:
+A template is one of two types:
 
 | Type | Captures | Deploys to |
 |---|---|---|
@@ -91,7 +91,7 @@ The editor form is **conditional on type** — a `page` template shows only Name
 Instructions + Folder + publish preference; the entire "Assignment Fields" section
 is hidden. The Library shows a **small type badge/icon** per template. This badge
 is the same indicator pattern that will distinguish Assignments from New Quizzes
-in V2 — we establish it now with two types rather than retrofit it later.
+when added — we establish it now with two types rather than retrofit it later.
 
 `engine: "assignment" | "new_quiz"` is reserved on assignment-type templates so
 New Quizzes can be added without a migration.
@@ -526,14 +526,14 @@ Canvas course by course.
 
 ---
 
-## Known V1 Limitation — Course-Scoped Media
+## Known Limitation — Course-Scoped Media
 
 Canvas inline images and file links use course-scoped URLs
 (e.g., `/courses/123/files/456`). Saved verbatim and deployed to a different
-course, those links point back at the origin course. V1 stores instructions HTML
-as-is and accepts this; card thumbnails show a placeholder for images that cannot
-load. **Media rehoming** (rewriting/uploading media into the target course on
-deploy) is a future concern, not a V1 blocker.
+course, those links point back at the origin course. The extension stores
+instructions HTML as-is and accepts this; card thumbnails show a placeholder for
+images that cannot load. **Media rehoming** (rewriting/uploading media into the
+target course on deploy) is a future concern, not a blocker.
 
 ---
 
@@ -546,7 +546,7 @@ template string so both tiers remain possible.
 **New Quizzes** — `engine: "new_quiz"`; separate `/quiz-lti` API surface. The
 `engine` field is reserved now.
 
-**Rubric attachment** — `rubricId` reserved; separate Canvas rubrics API. V2.
+**Rubric attachment** — `rubricId` reserved; separate Canvas rubrics API. Deferred.
 
 **Template export and sharing** — export templates as a file to share with
 colleagues; requires an import/export format and conflict handling on import.

@@ -908,10 +908,10 @@ section covers only what is specific to this application.
 
 ### Internationalization
 
-Canvas Power Tools ships in English only for V1. The application will not
+Canvas Power Tools ships in English only at launch. The application will not
 support multiple languages at launch. All strings are written in English.
 
-This decision is revisited after V1 has real users. If a significant
+This decision is revisited once the extension has real users. If a significant
 portion of the user base works in a non-English language, localization
 becomes a priority.
 

@@ -4,7 +4,7 @@
 
 ## Overview
 
-Communication Tools is a V2 feature providing two focused messaging
+Communication Tools provides two focused messaging
 workflows: a Nudge Tool for students who have not submitted an assignment,
 and a Grade Threshold Messenger for students above or below a grade cutoff.
 

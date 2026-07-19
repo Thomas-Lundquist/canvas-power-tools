@@ -1,8 +1,8 @@
 ## Context
 
 The PIN and Security System is not a Module or Tool — it is infrastructure
-that runs beneath every Module. It ships in V1.0 because retrofitting
-security onto V2 features that touch student data would be significantly
+that runs beneath every Module. It ships early because retrofitting
+security onto features that touch student data would be significantly
 harder than building it first. Every subsequent feature that writes to Canvas
 uses the PIN gate Component without any additional security design work.
 
@@ -14,8 +14,8 @@ uses the PIN gate Component without any additional security design work.
 
 ## Overview
 
-The PIN system is a V1.0 feature that ships before any high-stakes write
-operations exist. Building it into the foundation means every V2 and V3
+The PIN system ships before any high-stakes write
+operations exist. Building it into the foundation means every
 feature that affects student data — grades, overrides, messages — can
 enforce it immediately rather than retrofitting security later.
 
@@ -236,7 +236,7 @@ Retention: last 50 entries. Cannot be disabled.
 
 ## High-Stakes Operations — Extra Confirmation
 
-Certain V2 operations are flagged as high-stakes and receive an additional
+Certain operations are flagged as high-stakes and receive an additional
 confirmation layer on top of the standard preview screen, regardless of PIN
 settings.
 
@@ -290,14 +290,12 @@ Total logged actions: 47
 
 ## Operations Requiring PIN — Complete List
 
-This list grows as V2 and V3 features ship. Every new feature that writes
+This list grows as new features ship. Every new feature that writes
 to Canvas must declare whether it is PIN-gated.
 
-### V1.0
+### Built
 - Apply bulk assignment changes
 - Revert change log entry
-
-### V2 (when shipped)
 - Apply grade changes (curving, scaling, missing zeros)
 - Send student messages or nudges
 - Apply accommodation date overrides
@@ -305,7 +303,7 @@ to Canvas must declare whether it is PIN-gated.
 - Deploy template to courses
 - Apply rubric to assignment
 
-### V3 (when shipped)
+### Planned
 - Fire conditional assignment rules manually
 - Execute semester rollover
 - Import QTI quiz content

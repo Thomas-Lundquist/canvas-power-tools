@@ -44,7 +44,7 @@ entirely.
 
 ## Why This Supersedes the "QTI Import" Roadmap Item
 
-The V3 roadmap (doc 05) lists *QTI Import: convert a structured spreadsheet
+The roadmap (doc 05) lists *QTI Import: convert a structured spreadsheet
 into valid QTI XML and import it as a Canvas quiz.* That design predates the
 public **New Quizzes REST API**, which writes quizzes and questions directly:
 

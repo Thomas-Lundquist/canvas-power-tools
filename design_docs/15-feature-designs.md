@@ -1,15 +1,13 @@
-# Canvas Power Tools — 15: V2 Feature Designs
+# Canvas Power Tools — 15: Feature Designs
 
 ---
 
 ## Overview
 
-This document covers V2 Tools not yet given their own dedicated design
+This document covers Tools not yet given their own dedicated design
 document. Each section defines the Tool's Module context, scope, UI concept,
 and Canvas API requirements. A full dedicated design document will be written
 before development begins on each Tool.
-
-All Tools in this document are V2 features unless noted otherwise.
 
 ---
 
@@ -365,7 +363,7 @@ library, and cross-course rubric deployment.
 **Out of scope:**
 - Editing rubrics already used in grading — Canvas locks these to preserve
   grade integrity. This is a Canvas restriction the extension cannot override
-- Rubric outcome alignment (V3 scope)
+- Rubric outcome alignment (planned)
 
 ### Canvas API Note
 
@@ -422,7 +420,7 @@ Teachers configure via Settings > Popup:
 - Maximum number of courses shown
 - Sort order of courses
 
-No new Canvas API calls required — uses getCourses() already built in V1.
+No new Canvas API calls required — uses getCourses(), already built.
 
 ---
 

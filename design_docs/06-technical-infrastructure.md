@@ -388,33 +388,33 @@ function resolveDate(currentValue, change) {
 
 ### Complete API Endpoint Reference
 
-| Version | Action | Method | Endpoint |
-|---|---|---|---|
-| V1.0 | Verify token | GET | /api/v1/users/self |
-| V1.0 | List courses | GET | /api/v1/courses |
-| V1.0 | List assignments | GET | /api/v1/courses/:id/assignments |
-| V1.0 | Update assignment | PUT | /api/v1/courses/:id/assignments/:id |
-| V1.0 | Bulk update dates | PUT | /api/v1/courses/:id/assignments/bulk_update |
-| V1.0 | List assignment groups | GET | /api/v1/courses/:id/assignment_groups |
-| V1.0 | List modules | GET | /api/v1/courses/:id/modules |
-| V1.5 | Create assignment | POST | /api/v1/courses/:id/assignments |
-| V1.5 | Duplicate assignment | POST | /api/v1/courses/:id/assignments/:id/duplicate |
-| V2 | List students | GET | /api/v1/courses/:id/students |
-| V2 | List sections | GET | /api/v1/courses/:id/sections |
-| V2 | List submissions | GET | /api/v1/courses/:id/submissions |
-| V2 | Update submission | PUT | /api/v1/courses/:id/assignments/:id/submissions/:id |
-| V2 | List groups | GET | /api/v1/courses/:id/groups |
-| V2 | Create group | POST | /api/v1/courses/:id/groups |
-| V2 | Create assignment override | POST | /api/v1/courses/:id/assignments/:id/overrides |
-| V2 | List rubrics | GET | /api/v1/courses/:id/rubrics |
-| V2 | Create rubric | POST | /api/v1/courses/:id/rubrics |
-| V2 | Send conversation | POST | /api/v1/conversations |
-| V2 | Create announcement | POST | /api/v1/courses/:id/discussion_topics |
-| V3 | List outcomes | GET | /api/v1/courses/:id/outcome_group_links |
-| V3 | Import QTI content | POST | /api/v1/courses/:id/content_migrations |
-| V3 | List discussions | GET | /api/v1/courses/:id/discussion_topics |
-| V3 | Update module | PUT | /api/v1/courses/:id/modules/:id |
-| V3 | List pages | GET | /api/v1/courses/:id/pages |
+| Action | Method | Endpoint |
+|---|---|---|
+| Verify token | GET | /api/v1/users/self |
+| List courses | GET | /api/v1/courses |
+| List assignments | GET | /api/v1/courses/:id/assignments |
+| Update assignment | PUT | /api/v1/courses/:id/assignments/:id |
+| Bulk update dates | PUT | /api/v1/courses/:id/assignments/bulk_update |
+| List assignment groups | GET | /api/v1/courses/:id/assignment_groups |
+| List modules | GET | /api/v1/courses/:id/modules |
+| Create assignment | POST | /api/v1/courses/:id/assignments |
+| Duplicate assignment | POST | /api/v1/courses/:id/assignments/:id/duplicate |
+| List students | GET | /api/v1/courses/:id/students |
+| List sections | GET | /api/v1/courses/:id/sections |
+| List submissions | GET | /api/v1/courses/:id/submissions |
+| Update submission | PUT | /api/v1/courses/:id/assignments/:id/submissions/:id |
+| List groups | GET | /api/v1/courses/:id/groups |
+| Create group | POST | /api/v1/courses/:id/groups |
+| Create assignment override | POST | /api/v1/courses/:id/assignments/:id/overrides |
+| List rubrics | GET | /api/v1/courses/:id/rubrics |
+| Create rubric | POST | /api/v1/courses/:id/rubrics |
+| Send conversation | POST | /api/v1/conversations |
+| Create announcement | POST | /api/v1/courses/:id/discussion_topics |
+| List outcomes | GET | /api/v1/courses/:id/outcome_group_links |
+| Import QTI content | POST | /api/v1/courses/:id/content_migrations |
+| List discussions | GET | /api/v1/courses/:id/discussion_topics |
+| Update module | PUT | /api/v1/courses/:id/modules/:id |
+| List pages | GET | /api/v1/courses/:id/pages |
 
 **Canvas API notes:**
 - Dates use ISO 8601 UTC format: "2025-10-01T23:59:00Z"
@@ -877,7 +877,7 @@ function waitForElement(selectorKey, callback, timeout = 5000) {
 }
 ```
 
-### V2 — Opt-In Telemetry
+### Opt-In Telemetry
 
 When teachers enable anonymous reporting in Settings, selector failures
 send a minimal payload to a lightweight backend. This feeds the developer

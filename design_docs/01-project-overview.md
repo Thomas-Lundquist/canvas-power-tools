@@ -90,15 +90,15 @@ Canvas Power Tools
 │   ├── Rubrics            (Tool)
 │   ├── Assignment Groups  (Tool)
 │   ├── Duplicate          (Tool)
-│   ├── QTI Import         (Tool)  ← V3
-│   └── Peer Review        (Tool)  ← V3
+│   ├── QTI Import         (Tool)
+│   └── Peer Review        (Tool)
 │
 ├── Grading  (Module)
 │   ├── Overview           (Tool)
 │   ├── Missing Work       (Tool)
 │   ├── Adjustments        (Tool)
 │   ├── Late Policy        (Tool)
-│   └── At-Risk            (Tool)  ← V3
+│   └── At-Risk            (Tool)
 │
 ├── Communication  (Module)
 │   ├── Nudges             (Tool)
@@ -109,14 +109,14 @@ Canvas Power Tools
 │   ├── Groups             (Tool)
 │   ├── Sections           (Tool)
 │   ├── Accommodations     (Tool)
-│   └── Roster             (Tool)  ← V3
+│   └── Roster             (Tool)
 │
-├── Content  (Module)  ← V3
+├── Content  (Module)
 │   ├── Modules            (Tool)
 │   ├── Pages              (Tool)
 │   └── Discussions        (Tool)
 │
-└── Setup  (Module)  ← V3
+└── Setup  (Module)
     ├── Rollover           (Tool)
     ├── Course Settings    (Tool)
     ├── Blueprints         (Tool)
@@ -198,9 +198,9 @@ directly into Canvas's SpeedGrader page because SpeedGrader's workflow
 requires operating inside Canvas's own UI. They are configured in Settings
 but deployed via content script injection.
 
-**No backend is required for V1 or V2.** All Canvas API calls are made
+**No backend is required.** All Canvas API calls are made
 directly from the extension to Canvas using the teacher's API token. A
-lightweight backend is introduced in V2 only for optional anonymous
+lightweight backend is introduced only for optional anonymous
 telemetry.
 
 ---
@@ -377,8 +377,8 @@ canvas-power-tools/
 │   │   ├── grading/
 │   │   ├── communication/
 │   │   ├── people/
-│   │   ├── content/               (V3)
-│   │   └── setup/                 (V3)
+│   │   ├── content/               (planned)
+│   │   └── setup/                 (planned)
 │   │
 │   ├── components/                Shared reusable Components
 │   │   ├── AppNav.jsx             Shared header (back button, logo, course selector, settings)
@@ -463,7 +463,8 @@ canvas-power-tools/
 
 ## Canvas API Coverage
 
-### V1.0
+Endpoints for built Tools, plus those reserved for planned Tools.
+
 | Action | Endpoint |
 |---|---|
 | Verify token | GET /api/v1/users/self |
@@ -473,16 +474,8 @@ canvas-power-tools/
 | Bulk update dates | PUT /api/v1/courses/:id/assignments/bulk_update |
 | List assignment groups | GET /api/v1/courses/:id/assignment_groups |
 | List modules | GET /api/v1/courses/:id/modules |
-
-### V1.5
-| Action | Endpoint |
-|---|---|
 | Create assignment | POST /api/v1/courses/:id/assignments |
 | Duplicate assignment | POST /api/v1/courses/:id/assignments/:id/duplicate |
-
-### V2 (additional)
-| Action | Endpoint |
-|---|---|
 | List students | GET /api/v1/courses/:id/students |
 | List sections | GET /api/v1/courses/:id/sections |
 | List submissions | GET /api/v1/courses/:id/submissions |
@@ -494,10 +487,6 @@ canvas-power-tools/
 | Create rubric | POST /api/v1/courses/:id/rubrics |
 | Send conversation | POST /api/v1/conversations |
 | Create announcement | POST /api/v1/courses/:id/discussion_topics |
-
-### V3 (additional)
-| Action | Endpoint |
-|---|---|
 | List outcomes | GET /api/v1/courses/:id/outcome_group_links |
 | Create outcome alignment | POST /api/v1/courses/:id/outcome_alignments |
 | Import QTI content | POST /api/v1/courses/:id/content_migrations |
@@ -524,10 +513,10 @@ teachers who want to inspect the source before installing.
 
 ## Monetization
 
-**V1.0 and V1.5:** Fully free. A donation link (Ko-fi or similar) appears
+**Initially:** Fully free. A donation link (Ko-fi or similar) appears
 in Settings. The goal at this stage is adoption and feedback, not revenue.
 
-**V2+:** Freemium with a one-time payment for the full feature set.
+**Eventually:** Freemium with a one-time payment for the full feature set.
 
 The free tier includes the complete Bulk Edit Tool and full change log. These
 are core features and safety infrastructure — restricting them would make the
@@ -536,9 +525,9 @@ free experience feel deliberately broken, which damages trust and adoption.
 | Tier | Includes |
 |---|---|
 | Free | Bulk Edit (complete), Templates (up to 5), Onboarding, Settings |
-| Paid — one time | Unlimited templates, all Modules and Tools from V2 onward |
+| Paid — one time | Unlimited templates, all Modules and Tools |
 
-Exact pricing is deferred until V1 has real users and feedback.
+Exact pricing is deferred until the extension has real users and feedback.
 
 ---
 

@@ -1,4 +1,4 @@
-# Canvas Power Tools — 16: Product Backlog
+# Canvas Power Tools — 17: Product Backlog
 
 ---
 
@@ -12,7 +12,7 @@ preserving — but are not ready to be added to the roadmap.
 Items graduate from the backlog to the roadmap when:
 - The feature is fully designed
 - Its dependencies are in place or on the near-term roadmap
-- A version target is appropriate given current priorities
+- It is appropriately prioritized given current work
 
 Items are never deleted from the backlog. If something is explicitly ruled
 out, it is marked Out of Scope with a reason rather than removed.
@@ -27,7 +27,7 @@ Each item records:
 - **Why it is here** — why it was not added to the roadmap yet
 - **API feasibility** — what the Canvas API supports
 - **Complexity** — Low / Medium / High
-- **Suggested promotion** — which roadmap version it would likely enter
+- **Suggested promotion** — when it would likely enter the roadmap
 
 ---
 
@@ -58,8 +58,8 @@ body per recipient. One API call per student for send.
 **Complexity:** Low — extends existing Nudge Tool infrastructure. No new
 API patterns required.
 
-**Suggested promotion:** V2 alongside Nudges, or as an immediate follow-up
-patch once Nudges ships.
+**Suggested promotion:** Alongside Nudges, or as an immediate follow-up
+once Nudges ships.
 
 ---
 
@@ -84,7 +84,7 @@ scores per student. Threshold comparison runs client-side.
 all assignments per student. Different data shape from the per-assignment
 threshold flow.
 
-**Suggested promotion:** V2 as an addition to the Threshold Tool, likely
+**Suggested promotion:** An addition to the Threshold Tool, likely
 implemented as a toggle between Assignment and Course Grade modes.
 
 ---
@@ -112,7 +112,7 @@ the People Module. Communication Tools would consume the same data.
 selection UI. The filtering logic is client-side on the already-fetched
 student list.
 
-**Suggested promotion:** V2, added alongside or immediately after the
+**Suggested promotion:** Added alongside or immediately after the
 People → Sections Tool ships.
 
 ---
@@ -139,7 +139,7 @@ architecture.
 infrastructure already built for Assignment Templates and Announcement
 Templates. UI addition only.
 
-**Suggested promotion:** V2, low effort, can be bundled with the initial
+**Suggested promotion:** Low effort; can be bundled with the initial
 Nudges and Threshold release.
 
 ---
@@ -170,8 +170,8 @@ at send time.
 (schema change to Sent Log entries), polling or fetching conversation
 threads on Sent Log open, and a UI indicator per entry.
 
-**Suggested promotion:** V2 as a Sent Log enhancement, lower priority than
-the other Communication additions. Could ship as a V2 patch.
+**Suggested promotion:** A Sent Log enhancement, lower priority than
+the other Communication additions.
 
 ---
 
@@ -200,7 +200,7 @@ observer role filter.
 **Complexity:** High — new Tool, new security design, FERPA review needed,
 separate UI from student messaging.
 
-**Suggested promotion:** V3. Requires a full design document before
+**Suggested promotion:** Needs design. Requires a full design document before
 development begins.
 
 ---
@@ -258,7 +258,7 @@ API write.
 **Complexity:** Low — a calculation variant in the existing date shift
 logic. UI addition of a toggle between flat shift and relative shift.
 
-**Suggested promotion:** V1.5 or as a V1.0 patch after initial release.
+**Suggested promotion:** A follow-up after initial release.
 
 ---
 
@@ -281,7 +281,7 @@ assignment API call.
 
 **Complexity:** Low — date offset field added to the Duplicate Tool UI.
 
-**Suggested promotion:** V2 alongside the Duplicate Tool.
+**Suggested promotion:** Alongside the Duplicate Tool.
 
 ---
 
@@ -305,7 +305,7 @@ requests per assignment.
 **Complexity:** Medium — drag-and-drop UI interaction, position
 recalculation, multiple sequential API writes.
 
-**Suggested promotion:** V2 as an addition to the Bulk Edit Tool or as
+**Suggested promotion:** An addition to the Bulk Edit Tool or
 a standalone Assignments Module Tool.
 
 ---
@@ -333,7 +333,7 @@ submissions API and formats it client-side before download.
 **Complexity:** Medium — data aggregation, column mapping UI, CSV
 generation with configurable formatting.
 
-**Suggested promotion:** V2 as a Grading Overview enhancement, lower
+**Suggested promotion:** A Grading Overview enhancement, lower
 priority than core grading tools.
 
 ---
@@ -346,7 +346,7 @@ direction — not just currently below a threshold but declining over
 multiple recent assessments. Surfaces in the Grading Overview as a warning
 indicator per student.
 
-Distinct from the V3 At-Risk Dashboard which is a standalone analytical
+Distinct from the At-Risk Dashboard which is a standalone analytical
 view. This is a lighter real-time indicator embedded in the existing
 Grading Overview.
 
@@ -354,7 +354,7 @@ Grading Overview.
 
 **Why it is here:** Requires grade trend calculation across multiple
 assignments which is more complex than point-in-time threshold checks.
-The At-Risk Dashboard in V3 covers the deeper version of this concept.
+The At-Risk Dashboard covers the deeper version of this concept.
 
 **API feasibility:** Fully feasible. Requires reading submission history
 per student across multiple assignments and calculating trend direction.
@@ -362,7 +362,7 @@ per student across multiple assignments and calculating trend direction.
 **Complexity:** Medium — trend calculation algorithm, indicator UI,
 performance consideration for large classes.
 
-**Suggested promotion:** V3 alongside or as part of the At-Risk Dashboard.
+**Suggested promotion:** Alongside or as part of the At-Risk Dashboard.
 
 ---
 
@@ -391,7 +391,7 @@ deactivating enrollments. Permissions depend on institution configuration.
 validation requirements, high-stakes data changes requiring careful
 confirmation design.
 
-**Suggested promotion:** V3, with clear documentation that this requires
+**Suggested promotion:** Needs design, with clear documentation that this requires
 appropriate Canvas permissions and may not be available at all institutions.
 
 ---
@@ -415,7 +415,7 @@ submissions, overrides, and conversations APIs.
 **Complexity:** Medium — data aggregation from multiple endpoints, panel
 UI Component that works across Modules.
 
-**Suggested promotion:** V3 as a shared Component.
+**Suggested promotion:** A shared Component.
 
 ---
 
@@ -510,7 +510,7 @@ portability. Import from backup on any device.
 
 **Why it is here:** Only makes sense once teachers have accumulated
 meaningful content across multiple Tools. An empty Library Module is
-purposeless. Build after V2 Tools are mature and in active use.
+purposeless. Build after the core Tools are mature and in active use.
 
 **API feasibility:** No Canvas API involvement. Reads from chrome.storage.local
 and chrome.storage.sync.
@@ -558,23 +558,21 @@ backlog items.
 
 | ID | Item | Module | Complexity | Status |
 |---|---|---|---|---|
-| COM-001 | Missing Work Summary Message | Communication | Low | Ready for V2 |
-| COM-002 | Course Grade Threshold Messenger | Communication | Medium | Ready for V2 |
-| COM-003 | Section Targeting for Communication | Communication | Low | Ready for V2 |
-| COM-004 | Message Templates for Nudges and Threshold | Communication | Low | Ready for V2 |
-| COM-005 | Reply Visibility in Sent Log | Communication | Medium | V2 patch |
-| COM-006 | Observer and Parent Messaging | Communication | High | Needs design — V3 |
+| COM-001 | Missing Work Summary Message | Communication | Low | Ready |
+| COM-002 | Course Grade Threshold Messenger | Communication | Medium | Ready |
+| COM-003 | Section Targeting for Communication | Communication | Low | Ready |
+| COM-004 | Message Templates for Nudges and Threshold | Communication | Low | Ready |
+| COM-005 | Reply Visibility in Sent Log | Communication | Medium | Ready |
+| COM-006 | Observer and Parent Messaging | Communication | High | Needs design |
 | COM-007 | Scheduled Pre-Deadline Reminders | Communication | High | Future / Stretch |
-| ASN-001 | Bulk Availability Window Offset | Assignments | Low | Ready for V1.5 |
-| ASN-002 | Assignment Duplication With Date Offset | Assignments | Low | Ready for V2 |
-| ASN-003 | Assignment Reordering | Assignments | Medium | V2 |
-| GRD-001 | Grade Export With Custom Formatting | Grading | Medium | V2 |
-| GRD-002 | Grade Trend Alerts | Grading | Medium | V3 |
-| PPL-001 | Bulk Enrollment Management | People | High | V3 — permission dependent |
-| PPL-002 | Student Profile Quick View | People | Medium | V3 |
+| ASN-001 | Bulk Availability Window Offset | Assignments | Low | Ready |
+| ASN-002 | Assignment Duplication With Date Offset | Assignments | Low | Ready |
+| ASN-003 | Assignment Reordering | Assignments | Medium | Ready |
+| GRD-001 | Grade Export With Custom Formatting | Grading | Medium | Ready |
+| GRD-002 | Grade Trend Alerts | Grading | Medium | Needs design |
+| PPL-001 | Bulk Enrollment Management | People | High | Needs design — permission dependent |
+| PPL-002 | Student Profile Quick View | People | Medium | Needs design |
 | INF-001 | Settings Sync Conflict Resolution UI | Settings | Medium | Future |
 | INF-002 | Extension Usage Analytics (Local Only) | Settings | Low | Future |
 | UI-001 | Compact / Cozy / Relaxed Spacing Modes | UI | Low | Future |
 | UI-002 | Library Module | New Module | Medium | Future |
-ENDOFFILE
-echo "Doc 16 created"

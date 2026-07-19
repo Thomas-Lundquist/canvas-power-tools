@@ -27,7 +27,7 @@ Read the relevant doc before writing any feature code. Never guess at a document
 | 12-speedgrader-suite.md | SpeedGrader injected components |
 | 13-accommodation-override-manager.md | People → Accommodations Tool |
 | 14-communication-tools.md | Communication Module |
-| 15-v2-feature-designs.md | V2 feature sketches |
+| 15-feature-designs.md | Feature designs: Grading, People, and other tools |
 | 16-popup-window-delivery.md | Deferred: popup window delivery |
 
 ---
@@ -157,14 +157,14 @@ Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `chore` `a11y` `sec`
 
 Scopes: `assignments` `grading` `communication` `people` `content` `setup` `shell` `api` `storage` `dom` `security` `settings` `speedgrader`
 
-**Branch naming:** `feature/<scope>/<description>`, `fix/<scope>/<description>`, `refactor/<scope>/<description>`, `docs/<description>`, `chore/<description>`
+**Branch naming:** `feat/<scope>/<description>`, `fix/<scope>/<description>`, `refactor/<scope>/<description>`, `docs/<description>`, `chore/<description>`
 
-**Branch strategy:**
-- `main` — production only; never commit directly
-- `develop` — integration branch; all features merge here via PR
-- Feature branches cut from `develop`, merged back via PR
+**Branch strategy (solo, trunk-based):**
+- `main` is the trunk and single source of truth. There is no `develop` branch.
+- Each unit of work gets a **short-lived branch** cut from `main`, merged back to `main` the same day, and deleted. This keeps `main` linear and avoids long-lived divergence.
+- No mandatory PRs (solo project). Commit at each completed unit with a clear message.
 
-**PRs:** Every merge to `develop` requires a PR. Include: what changed, why, how to test, any design doc updated.
+**Pushing:** `main` is pushed to `origin` at the **end of each work session** — offered once the work is done and verified, as the GitHub backup. Nothing is pushed without explicit approval.
 
 **Task & issue tracking — Beads (`bd`) only:**
 - Create a Beads issue **before** starting any work: `bd create --title="..." --description="..." --type=task|bug|feature --priority=2`
