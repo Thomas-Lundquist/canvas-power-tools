@@ -335,6 +335,125 @@ except where it *is* a component's defining behavior (noted under States).
 
 ---
 
+### czg — Atom-Completion Pass (all-26-tools mining · 2026-07-19)
+
+The 1yr.5 ledger above was mined from **2** reference tools (Bulk Editor +
+Templates). Bead `czg` re-mined **all 26 built tools** for hand-rolled patterns
+recurring in **≥2 tools** and promoted each — so the visual layer stops being
+bespoke before the per-tool rebuild (`1yr.4`) begins. Where the entries above
+cite a 2-tool *stress test*, these cite the **tool count** the pattern was found
+in (the promotion evidence).
+
+**Method (why this set is trustworthy):** a hypothesis-driven probe found the
+obvious primitives; a **data-driven `className`-signature clustering** pass then
+surfaced composites the probe missed (FieldLabel, Actions, StatCard, Callout);
+finally **structural verification** rejected three phantom candidates that looked
+real only at the icon level — `OverflowMenu` (0 real menus; the hits were
+`ChevronDown` sort chrome), `Switch` (0 `role="switch"` markup; the hits were the
+word "toggle"), and `Tooltip` (0 custom; all 11 are native `title=`, already
+accessible). `NumberField` folded into `TextField` (`type="number"`), and
+`Alert/Banner` folded into `Callout` tones.
+
+**Not in scope (defers to `1yr.4`):** the *adoption gap* — existing visual atoms
+are barely wired in (0 tools render `<Button>` despite 194 raw `<button>`;
+`EmptyState` used by 1 of ~8 tools that need it; 8 tools hand-roll a modal
+backdrop despite `Modal`). czg builds the canonical set; the rebuild wires it in.
+
+#### `Spinner`  — *16 tools*
+
+- **Promotes:** the 16 hand-rolled `<Loader … className="animate-spin" />` busy
+  indicators → one component. Implements the existing "**Spinner for Everything
+  Else**" rule (see *Loading States* below).
+- **API:** `<Spinner size="sm | md | lg" label showLabel? inline? />`
+- **Tokens:** glyph `--cpt-color`; label text = secondary scale (rem). Glyph is
+  `Loader2` (smooth arc), a deliberate standardization off the segmented `Loader`.
+- **A11y:** wrapper `role="status"` (implicit polite live region) — `label`
+  required and announced; glyph `aria-hidden`.
+
+#### `Skeleton`  — *4 tools*
+
+- **Promotes:** the identical `bg-[var(--color-border)] animate-pulse` placeholder
+  blocks in 4 tools (the only *already* token-compliant hand-rolls) → one atom.
+  Implements the "**Skeleton for the Assignment Table**" rule (see *Loading States*).
+- **API:** `<Skeleton width height circle? className? />`
+- **Tokens:** `--color-border` fill; rem dimensions so it tracks text size.
+- **A11y:** `aria-hidden` (decorative shimmer); the *container* owns `aria-busy`.
+
+#### `TextField`  — *18 tools (+11 number)*
+
+- **Promotes:** ~18 hand-rolled `<input className="input">` fields, plus the 11
+  `type="number"` variants (this atom with `type="number"` — no NumberField).
+- **API:** `<TextField value onChange type? placeholder? disabled? id? …rest />`
+  — `onChange` receives the next **value** (matches `SearchInput`); `min/max/step`
+  via `…rest`.
+- **Tokens:** wraps the shared `.input` class (border, focus ring, surface).
+- **A11y:** label-less by design — pair with `<FieldLabel htmlFor={id}>` (composition).
+
+#### `Select`  — *12 tools*
+
+- **Promotes:** ~12 hand-rolled `<select className="input">` dropdowns.
+- **API:** `<Select value onChange options=[{value,label,disabled?}] placeholder? id? />`
+  (or `<option>` children for optgroups).
+- **Tokens:** wraps `.input` **and** the existing `select.input` custom-chevron
+  rule — inherits the branded arrow for free.
+- **A11y:** native `<select>` — full keyboard/SR/mobile support out of the box.
+
+#### `RadioGroup`  — *4 tools*
+
+- **Promotes:** the hand-rolled `<input type="radio">` sets in 4 tools.
+- **API:** `<RadioGroup name value onChange options=[{value,label,disabled?}] ariaLabel />`
+- **Tokens:** `accent-[var(--cpt-color)]` native radios.
+- **A11y:** wrapper `role="radiogroup"` + `aria-label`; native `name` gives
+  arrow-key nav + roving tabindex for free.
+
+#### `FieldLabel`  — *11 tools*
+
+- **Promotes:** ~11 hand-rolled `uppercase tracking-wide` form labels → one
+  `<label>` reusing the existing `.section-label` class.
+- **API:** `<FieldLabel htmlFor required?>text</FieldLabel>`
+- **Tokens:** `.section-label` (micro `0.6875rem`, muted, uppercase); required
+  asterisk in `--color-error`.
+- **A11y:** real `<label htmlFor>` → click-to-focus; asterisk is `aria-hidden`
+  (the control carries `required`/`aria-required`).
+
+#### `Card`  — *18 tools*
+
+- **Promotes:** the 18 tools hand-rolling `className="card p-4" / "card p-5"`.
+- **API:** `<Card padding="none | sm | md | lg" className? …rest>children</Card>`
+- **Tokens:** wraps `.card` (surface/border/radius); padding driven by
+  `--space-3/4/5` so a future `data-density` remap reflows every card at once.
+- **A11y:** neutral container — passes `role`/`aria-*` through.
+
+#### `Actions`  — *16 tools*
+
+- **Promotes:** the 16 tools hand-rolling `flex gap-3 justify-end` action rows.
+- **Job:** layout shell for a button cluster — owns gap + alignment only, takes
+  `Button`/`IconButton` children (composition, not a configured button set).
+- **API:** `<Actions align="start | center | end | between">…buttons</Actions>`
+- **Tokens:** gap `--space-3`; `flex-wrap` for graceful narrow-width degrade.
+
+#### `Callout`  — *10 tools*  (Tier 1 — feedback)
+
+- **Promotes:** the 10 tools hand-rolling colored notice boxes (`bg-red-50
+  border-red-200 …`) — also a **token violation** (raw palette colors) this fixes.
+  Absorbs the `Alert/Banner` pattern as tones.
+- **API:** `<Callout tone="info | success | warning | error" icon? title?>body</Callout>`
+- **Tokens:** `color-mix` tint of `--color-info/success/warning/error` (same idiom
+  as `Badge`); per-tone Lucide icon in the solid token color.
+- **A11y:** `error`/`warning` → `role="alert"` (assertive); `info`/`success` →
+  `role="status"` (polite). Icon `aria-hidden`; color never the sole signal.
+
+#### `StatCard`  — *6 tools*  (Tier 2 — composition on `Card`)
+
+- **Promotes:** the metric tiles tools lay out in `grid grid-cols-3 gap-4` blocks.
+  Renders **one** tile; the grid stays the consumer's layout (works 2/3/4-up).
+- **API:** `<StatCard label value icon? hint? />`
+- **Tokens:** built on `Card`; label = `.section-label`; value = `1.5rem`/600 (rem);
+  optional icon in a `--cpt-color` tinted chip.
+- **A11y:** inherits Card; label + value are plain text (no color-only meaning).
+
+---
+
 ## Page Layout Patterns
 
 Two layout strategies exist. The right one depends on whether the table is
