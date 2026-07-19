@@ -351,8 +351,10 @@ finally **structural verification** rejected three phantom candidates that looke
 real only at the icon level — `OverflowMenu` (0 real menus; the hits were
 `ChevronDown` sort chrome), `Switch` (0 `role="switch"` markup; the hits were the
 word "toggle"), and `Tooltip` (0 custom; all 11 are native `title=`, already
-accessible). `NumberField` folded into `TextField` (`type="number"`), and
-`Alert/Banner` folded into `Callout` tones.
+accessible). `Alert/Banner` folded into `Callout` tones. `NumberField` was
+initially folded into `TextField` but **un-folded on review** (2026-07-19): the
+native spin buttons are unstyleable and paint as light OS widgets on dark
+surfaces, so numeric entry earns its own atom with custom steppers.
 
 **Not in scope (defers to `1yr.4`):** the *adoption gap* — existing visual atoms
 are barely wired in (0 tools render `<Button>` despite 194 raw `<button>`;
@@ -379,10 +381,11 @@ backdrop despite `Modal`). czg builds the canonical set; the rebuild wires it in
 - **Tokens:** `--color-border` fill; rem dimensions so it tracks text size.
 - **A11y:** `aria-hidden` (decorative shimmer); the *container* owns `aria-busy`.
 
-#### `TextField`  — *18 tools (+11 number)*
+#### `TextField`  — *18 tools*
 
-- **Promotes:** ~18 hand-rolled `<input className="input">` fields, plus the 11
-  `type="number"` variants (this atom with `type="number"` — no NumberField).
+- **Promotes:** ~18 hand-rolled `<input className="input">` fields. Numeric entry
+  lives in the sibling `NumberField`; `type="number"` here is only for a bare
+  numeric field with no stepper UI.
 - **API:** `<TextField value onChange type? placeholder? disabled? id? …rest />`
   — `onChange` receives the next **value** (matches `SearchInput`); `min/max/step`
   via `…rest`.
@@ -402,9 +405,29 @@ backdrop despite `Modal`). czg builds the canonical set; the rebuild wires it in
 
 - **Promotes:** the hand-rolled `<input type="radio">` sets in 4 tools.
 - **API:** `<RadioGroup name value onChange options=[{value,label,disabled?}] ariaLabel />`
-- **Tokens:** `accent-[var(--cpt-color)]` native radios.
-- **A11y:** wrapper `role="radiogroup"` + `aria-label`; native `name` gives
-  arrow-key nav + roving tabindex for free.
+- **Tokens:** **custom-drawn** to match the `Checkbox` atom — 1rem circle, 2px
+  border, `--cpt-color` fill + center dot when selected; focus ring `--cpt-color`.
+- **A11y:** a visually-hidden real `<input type="radio">` stays in the DOM, so
+  native `name`-group arrow-key nav, roving tabindex, and SR semantics are kept
+  for free; the visible circle is a decorative sibling. Wrapper `role="radiogroup"`
+  + `aria-label`. (Custom-draw chosen on review 2026-07-19 for visual consistency
+  with the hand-drawn Checkbox — native accent-color radios looked out of place.)
+
+#### `NumberField`  — *11 tools*
+
+- **Promotes:** the 11 `type="number"` inputs. Split from `TextField` because the
+  native spin buttons are unstyleable and paint as light OS widgets on dark
+  surfaces (review 2026-07-19).
+- **Job:** numeric entry with custom, theme-styled increment controls.
+- **API:** `<NumberField value onChange min? max? step? disabled? id? …rest />`
+  — `onChange` receives the next value string (matches TextField).
+- **Tokens:** composes `TextField` (`.input`); native spinners hidden
+  (`::-webkit-*-spin-button { appearance: none }`, Chromium-only); a stacked
+  `ChevronUp`/`ChevronDown` pair hugs the right edge, `--color-text-secondary` →
+  `--color-bg-hover` on hover, mirroring the native spinner layout.
+- **States:** value clamps to `min`/`max`; the up/down chevron disables at the
+  ceiling/floor. Chevrons are `tabIndex=-1` (pointer affordance) — keyboard users
+  keep native ↑/↓ increment on the focused input, so no duplicate tab stops.
 
 #### `FieldLabel`  — *11 tools*
 
