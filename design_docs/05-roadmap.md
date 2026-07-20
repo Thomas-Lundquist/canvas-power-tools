@@ -16,6 +16,8 @@ Tool that first fetches it — not by arbitrary release phases.
 The extension is organized into Modules containing Tools. The roadmap is
 presented in this structure so the relationship between features is clear.
 
+> **Module TBD:** Blueprints and Standards are planned tools whose module placement is not yet decided — they are not Setup tools. See the dedicated section below the Setup Module.
+
 **Status legend**
 
 | Status | Meaning |
@@ -33,10 +35,10 @@ presented in this structure so the relationship between features is clear.
 
 Modules are no longer flat lists of separate pages. A **Module is one page**; its
 **Tools are routed views** switched by a persistent rail (Module = workspace,
-Tool = task). Each Tool's screen is one of the **six archetypes defined in
+Tool = task). Each Tool's screen is one of the **seven archetypes defined in
 doc 10** — Table-Primary · Browse/Library · Resource-Manager · Dashboard ·
-Config/Form-Flow · Compose/Messaging — reusable templates built from the doc-10
-atoms + tokens and classified **per screen**. See doc 10 §"Interaction Grammar &
+Config/Form-Flow · Compose/Messaging · Log/Audit Trail — reusable templates
+built from the doc-10 atoms + tokens and classified **per screen**. See doc 10 §"Interaction Grammar &
 Archetypes" for the shapes and doc 19 for the tool→archetype mapping.
 
 **Consolidation direction** (detail + status in doc 19): some Tools below merge
@@ -137,6 +139,15 @@ be a Module because they operate inside Canvas's own UI.
 |---|---|---|
 | Rollover | Planned | Guided semester copy wizard. Selects what to copy, shifts all dates by semester offset, and presents a post-copy checklist of items requiring manual review. |
 | Course Settings | Planned | Save preferred course configuration as a template. Apply to new courses in one step. |
+
+---
+
+## Module TBD
+
+These tools are planned but their module placement is not yet decided. Do not assign them to a module until the job-to-be-done for each has been locked and the module home confirmed.
+
+| Tool | Status | Description |
+|---|---|---|
 | Blueprints | Planned | Save a full course structure — assignments, modules, rubrics, pages — as a reusable blueprint for new course creation. |
 | Standards | Planned | Bulk-tag assignments to Canvas Outcomes or external standards frameworks. Coverage map showing which standards have been addressed. Particularly relevant for CTE programs. |
 

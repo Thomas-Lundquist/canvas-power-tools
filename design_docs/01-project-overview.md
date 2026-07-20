@@ -118,9 +118,11 @@ Canvas Power Tools
 │
 └── Setup  (Module)
     ├── Rollover           (Tool)
-    ├── Course Settings    (Tool)
-    ├── Blueprints         (Tool)
-    └── Standards          (Tool)
+    └── Course Settings    (Tool)
+
+TBD Module  (module placement not yet decided)
+    ├── Blueprints         (Tool — module TBD)
+    └── Standards          (Tool — module TBD)
 
 SpeedGrader  (Injected — not a Module)
   Configured via Settings. Injects Tools directly into Canvas's

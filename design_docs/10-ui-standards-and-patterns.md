@@ -658,6 +658,23 @@ is a separate downstream choice covered in *Page Layout Patterns*.
   are persistent `Callout`s, not toasts; the send-delay gives an undo window
   rather than a blocking confirm.
 
+#### B7. Log / Audit Trail
+
+- **What:** a read-only, time-ordered record of past events — bulk edit
+  history, sent messages, PIN/security audit. Browse and filter; no item
+  action beyond expanding inline detail.
+- **Tools / screens:** Change Log (Assignments), Sent Log (Communication),
+  Audit Log (security/settings). May appear as a standalone Tool or as a
+  named screen inside a multi-screen Tool.
+- **Enforced by:** `ListRow` + `ListGroup` (read-only — no trailing
+  `IconButton` actions), `SearchInput`, `SortControl`, `EmptyState`.
+  `Badge` for event-type tags. Export is the only tool-level action if
+  present (ghost `Button`, top-right of `Toolbar`).
+- **Layout mechanics:** mixed-content → `min-h-screen`.
+- **Grammar notes:** no forward action, no primary button. Row-click expands
+  inline detail only (chevron). Color encodes event type, never outcome (A1).
+  No destructive actions of any kind.
+
 ---
 
 ### Classifying a Tool into an Archetype
@@ -671,7 +688,9 @@ Ask in order; stop at the first **yes**:
 4. Is the job supplying structured input through fields/steps? → **Config/
    Form-Flow**.
 5. Is the page mostly metrics/status that link elsewhere? → **Dashboard**.
-6. Otherwise — a list you search and pick from → **Browse/Library**.
+6. Is this a read-only log or audit trail with no pick or forward action? →
+   **Log / Audit Trail**.
+7. Otherwise — a list you search and pick from → **Browse/Library**.
 
 A tool may host more than one archetype across its screens (Copy Assignments is
 Table-Primary on its source step, Config/Form-Flow on its target step). Classify

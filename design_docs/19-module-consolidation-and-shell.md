@@ -99,6 +99,7 @@ The spike's five were an expedient simplification — the mapping:
 | **B3 Dashboard** | metrics + drill-in | "Dashboard" |
 | **B4 Config/Form-Flow** | fields · steps · wizard | "Wizard" |
 | **B6 Compose/Messaging** | author + send | "Composer" |
+| **B7 Log / Audit Trail** | read-only time-ordered record | *(no spike stand-in — new)* |
 
 **Classify per screen, not per tool.** Copy is Table-Primary on its source step
 and Config/Form-Flow on its target step; the shell routes between a tool's
@@ -108,30 +109,40 @@ screens exactly as it routes between tools.
 
 | Module | Tool | Archetype(s) |
 |---|---|---|
-| Assignments | Bulk Editor | Table-Primary |
-| | Templates · Rubrics | Browse/Library + Resource-Manager |
-| | Assignment Groups | Resource-Manager |
-| | Copy | Table-Primary (source) → Config/Form-Flow (target) |
-| | QTI Import | Config/Form-Flow |
-| | Peer Review | Dashboard + Config/Form-Flow |
-| Grading | Dashboard · At-Risk | Dashboard |
-| | Missing Work | Table-Primary |
-| | Adjustments · Late Policy | Config/Form-Flow |
-| Communication | Message Students · Announcements | Compose/Messaging |
-| People | Student Groups | Resource-Manager |
-| | Sections | Table-Primary |
-| | Accommodations | Resource-Manager |
-| | Roster | Dashboard |
-| Content | Modules · Pages · Discussions | Table-Primary |
-| Setup | Rollover | Config/Form-Flow |
-| | Course Settings · Blueprints | Browse/Library + Resource-Manager |
-| | Standards | Table-Primary |
+| **Assignments** | Bulk Editor | B1 Table-Primary |
+| | Templates · Rubrics | B2 Browse/Library + B5 Resource-Manager |
+| | Assignment Groups | B5 Resource-Manager |
+| | Copy | B1 Table-Primary (source) → B4 Config/Form-Flow (target) |
+| | QTI Import | B4 Config/Form-Flow |
+| | Change Log | B7 Log / Audit Trail |
+| | Peer Review | **TBD** — no design doc yet |
+| **Grading** | Dashboard · At-Risk | B3 Dashboard |
+| | Missing Work | B1 Table-Primary |
+| | Adjustments · Late Policy | B4 Config/Form-Flow |
+| **Communication** | Grade Outreach | B6 Compose/Messaging |
+| | Submission Reminders | B6 Compose/Messaging |
+| | Announcements | B6 Compose/Messaging |
+| | Sent Log | B7 Log / Audit Trail |
+| **People** | Student Groups | B5 Resource-Manager |
+| | Sections | B1 Table-Primary |
+| | Accommodations | B5 Resource-Manager |
+| | Roster | **TBD** — likely B2, purpose unclear |
+| **Content** | Modules | **TBD** — scope (reorder-only vs. full management) unclear |
+| | Pages | **TBD** — purpose unclear |
+| | Discussions | **TBD** — purpose unclear |
+| **Setup** | Rollover | B4 Config/Form-Flow |
+| | Course Settings | B2 Browse/Library + B5 Resource-Manager |
+| | Audit Log | B7 Log / Audit Trail |
+| **TBD module** | Blueprints | B2 Browse/Library + B5 Resource-Manager *(module TBD)* |
+| | Standards | B1 Table-Primary *(module TBD)* |
+
+> **Tabled tools (8):** Peer Review, Roster, Modules, Pages, Discussions, Blueprints (module placement), Standards (module placement). Each needs a locked job-to-be-done before its archetype or module can be finalised. Do not implement these until that discussion happens.
 
 **Divergence rule — siblings, not clones.** Converge the *frame, grammar, and
 enforcing atoms*; diverge the *content and domain controls*. Same job / different
-resource → near-identical (Content's three views). Same archetype / different
-domain → diverge (Bulk Editor's editable date cells + change log vs Standards'
-outcome chips + coverage map; both Table-Primary).
+resource → near-identical (Communication's three Compose tools). Same archetype /
+different domain → diverge (Bulk Editor's editable date cells + change log vs
+Standards' outcome chips + coverage map; both Table-Primary).
 
 ---
 

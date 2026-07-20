@@ -95,7 +95,7 @@ Text search is always the first element and filters client-side by assignment na
 ### Columns
 
 Every column is sortable (click header to sort ascending, click again for
-descending) and filterable (filter icon in header opens filter control).
+descending). Filtering is done via the chip filter bar above the table — there are no per-column filter controls.
 
 **Default columns (shown out of the box):**
 
@@ -145,7 +145,7 @@ The floating action card appears above the bottom of the viewport when ≥1 assi
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  3 selected · 15 fields to change                 [Clear]  [∧]       │
+│  3 selected · 15 fields to change            [Clear All]  [∧]         │
 ├─────────────────────────────────────────────────┬────────────────────┤
 │  📅 Dates                                        │  # Points          │
 │  Due Date     [Set] [Shift] [Clear]  [input]     │  [Set all to...] pts│
@@ -161,7 +161,7 @@ The floating action card appears above the bottom of the viewport when ≥1 assi
 ### Header Strip
 
 - Left: `N selected · N fields to change` — total = assignments × fields with values set. E.g., 3 assignments with 5 fields each = "15 fields to change". Tooltip on hover shows "5 fields × 3 assignments".
-- Right: `[Clear]` dismisses selection and hides the card. `[∧]` collapses to the header strip only.
+- Right: `[Clear All]` deselects all rows and hides the card. `[∧]` collapses to the header strip only.
 - Collapsed state: just the header strip (44px tall). Re-expands on click or on new field input.
 
 ### Date Controls (three-mode segmented control per row)
@@ -184,11 +184,11 @@ A single text input: `[Set all to...]  pts`. Sets all selected assignments to th
 
 ### Status
 
-Two icon-buttons side by side with label text below each:
+Two `IconButton` atoms (ghost variant) side by side with label text below each:
 - `Eye` icon + "Publish" label — publishes all selected assignments
 - `EyeOff` icon + "Unpublish" label — unpublishes all selected assignments
 
-These are mutually exclusive. Icons from Lucide React (`Eye`, `EyeOff`).
+These are independent action buttons, not toggles — clicking either fires the intent immediately. Selected assignments may have mixed publish status so neither button has a persistent "active" state. Icons from Lucide React (`Eye`, `EyeOff`).
 
 ### Editable Fields (complete list — no others)
 
@@ -457,24 +457,19 @@ bulk_update only covers dates.
 
 ---
 
-## Reusable Components Built by This Feature
+## Components Built by This Feature
 
-These components are built for the bulk editor but designed to be reused by
-every subsequent feature:
+The shared Tier 1 + Tier 2 atom set (`Badge`, `Button`, `IconButton`, `Card`, `Skeleton`, `EmptyState`, `Callout`, `Actions`, `Toolbar`, `SearchInput`, `SegmentedToggle`, `NumberField`, `SortControl` + `useSort`) are already built in `src/components/`. The API functions (`getCourses`, `getAssignments`) and `CourseSelector` (AppNav) are also pre-existing.
 
-| Component | Reused By |
-|---|---|
-| getCourses() | Templates, Groups, Grading |
-| getAssignments() | Templates, Grading |
-| Course dropdown selector | Every feature page |
-| Checkbox multi-select table | Groups, student lists, any bulk operation |
-| Column filter system | Any table view |
-| Date range filter | Any date-related feature |
-| Date picker input | Any form with dates |
-| Preview diff modal | Any write operation |
-| Result summary screen | Any write operation |
-| Change log system | Grading, Groups when added |
-| Bulk action bar pattern | Any bulk operation feature |
+This feature builds the following additional components, which other tools can reuse:
+
+| Component | Owned By | Reused By |
+|---|---|---|
+| `AssignmentTable` | Bulk Editor | Copy Assignments (source step) |
+| `BulkActionBar` (floating card) | Bulk Editor | Copy Assignments |
+| `PreviewDiff` | Bulk Editor | Any tool with a write + confirm step |
+| Result screen (success / partial-fail layout) | Bulk Editor | Any write operation |
+| Chip filter bar (`FilterBar`) | Bulk Editor | Any table-primary tool that needs add-on filters |
 
 ---
 
@@ -533,3 +528,16 @@ Loading assignments... 47 of 200
 All other loading states in the extension (dropdowns, apply progress, deploy
 progress) use the standard spinner component. The skeleton is specific to the
 assignment table.
+
+## Table State Matrix (Grammar Rule A5)
+
+All four non-data states use shared atoms. No bespoke empty or error UI is permitted.
+
+| State | Trigger | Atom | Label / Action |
+|---|---|---|---|
+| Loading | `getAssignments()` in flight | `Skeleton` (8 placeholder rows) | — |
+| Empty — no assignments | Course has zero assignments | `EmptyState` | "No assignments in this course" · no action button |
+| Empty — filtered | Active filters match nothing | `EmptyState` | "No assignments match your filters" · `Button` "Clear filters" |
+| Error | API call fails | `Callout` (variant="error") | Plain-language error + `Button` "Try again" |
+
+The "Clear filters" button in the filtered-empty state fires the same action as clicking the filter bar's own "Clear all" link — they are the same operation, two entry points. Implement as one shared `clearFilters()` function called by both. Do not duplicate the state-clearing logic.
