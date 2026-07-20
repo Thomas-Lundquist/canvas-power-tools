@@ -591,6 +591,8 @@ is a separate downstream choice covered in *Page Layout Patterns*.
 - **Enforced by:** `AssignmentTable` + `useSort` (clickable column headers),
   `Toolbar` (search left, actions right), chip filter bar, floating action card,
   `Badge` for status. Uses `Skeleton` while loading.
+- **Container:** table surface in `<Card padding="none">` + `overflow-hidden` + `mx-6 mb-4`. Border + rounded, no shadow. `overflow-hidden` clips virtual rows at the card's rounded corners. The filter bar sits *above* the card, not inside it.
+- **Filter chips:** inline in the Add Filter button row (`flex-wrap` sub-container, `flex-1 min-w-0`). No separate conditional chip row — no layout jump when the first chip appears. Chips animate in via `.chip-enter` (0.1s scale+fade, defined in `global.css`).
 - **Layout mechanics:** table-primary → `h-screen`, `fillHeight`. See
   *Page Layout Patterns → Table-Primary Tools*.
 - **Grammar notes:** primary action lives in the floating action card

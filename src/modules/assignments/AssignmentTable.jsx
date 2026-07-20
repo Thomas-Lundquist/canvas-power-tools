@@ -1,4 +1,4 @@
-import { useRef, useState, useLayoutEffect } from 'react'
+import { useRef, useState, useLayoutEffect, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { formatDate } from '../../components/DateInput.jsx'
@@ -42,9 +42,16 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
   const rowVirtualizer = useVirtualizer({
     count: loading ? 0 : assignments.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 48, // px — @tanstack/react-virtual's API contract, matches design_docs/06 row estimate
+    estimateSize: () => parseFloat(getComputedStyle(document.documentElement).fontSize) * 3, // 3rem in px — adapts to user's text size setting
     overscan: 5,
   })
+  // DEBUG: log scroll-container dimensions on every selection change — remove before ship
+  useEffect(() => {
+    if (!parentRef.current) return
+    const { clientHeight, scrollHeight } = parentRef.current
+    console.log('[DEBUG table] selectedIds.size=', selectedIds.size, '→ clientH=', clientHeight, 'scrollH=', scrollHeight)
+  }, [selectedIds])
+
   // NOTE: only handles the design doc's "100-500 rows" virtual-scrolling tier.
   // The >500-row "virtual scrolling + group-based pagination" tier is not implemented.
   const virtualItems = rowVirtualizer.getVirtualItems()
@@ -53,7 +60,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
   const paddingBottom = virtualItems.length > 0 ? totalSize - virtualItems[virtualItems.length - 1].end : 0
 
   return (
-    <div ref={parentRef} className={`overflow-auto ${fillHeight ? 'flex-1 min-h-0' : 'max-h-[34rem]'} ${actionBarVisible ? 'pb-48' : ''}`}>
+    <div ref={parentRef} className={`overflow-auto ${fillHeight ? 'flex-1 min-h-0' : 'max-h-[34rem]'}`}>
       <table
         className="w-full min-w-[61.5rem] text-sm border-collapse table-fixed"
         role="grid"
@@ -62,8 +69,8 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
         aria-multiselectable="true"
       >
         <thead className="sticky top-0 z-10 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
-          <tr aria-rowindex={1}>
-            <th className="w-10 px-3 py-3">
+          <tr aria-rowindex={1} style={{ height: '3rem' }}>
+            <th className="w-10 px-3 flex items-center" style={{ height: '3rem' }}>
               {!loading && (
                 <Checkbox
                   checked={allSelected}
@@ -125,6 +132,11 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
                       <td colSpan={COLUMNS.length + 1} style={{ height: paddingBottom }} />
                     </tr>
                   )}
+                  {actionBarVisible && (
+                    <tr aria-hidden="true">
+                      <td colSpan={COLUMNS.length + 1} style={{ height: '14rem' }} />
+                    </tr>
+                  )}
                 </>
               )
           }
@@ -150,19 +162,40 @@ function SkeletonRow({ widths }) {
 }
 
 function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
+  const trRef = useRef(null)
+  const checkboxTdRef = useRef(null)
+  const prevSel = useRef(selected)
+  // DEBUG: log row and checkbox-cell positions on selection change — remove before ship
+  useEffect(() => {
+    if (prevSel.current !== selected) {
+      const trRect = trRef.current?.getBoundingClientRect()
+      const cbRect = checkboxTdRef.current?.getBoundingClientRect()
+      console.log(
+        `[DEBUG row ${rowIndex}] ${prevSel.current}→${selected}`,
+        `| tr: h=${trRef.current?.offsetHeight} y=${trRect?.y.toFixed(2)}`,
+        `| cb-td: x=${cbRect?.x.toFixed(2)} y=${cbRect?.y.toFixed(2)} w=${cbRect?.width.toFixed(2)} h=${cbRect?.height.toFixed(2)}`,
+      )
+      prevSel.current = selected
+    }
+  })
+
   return (
     <tr
+      ref={trRef}
       className="border-b cursor-pointer transition-colors hover:bg-[var(--color-bg-hover)]"
       style={{
+        height: '3rem',
         borderBottomColor: 'var(--color-border-subtle)',
-        boxShadow: selected ? 'inset 2px 0 0 var(--cpt-color)' : 'none',
-        ...(selected ? { backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : {}),
+        ...(selected ? {
+          backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
+          backgroundImage: 'linear-gradient(to right, var(--cpt-color) 2px, transparent 2px)',
+        } : {}),
       }}
       onClick={onToggle}
       aria-rowindex={rowIndex + 2}
       aria-selected={selected}
     >
-      <td className="px-3 py-3 align-middle" onClick={e => e.stopPropagation()}>
+      <td ref={checkboxTdRef} className="px-3 flex items-center" style={{ height: '3rem' }} onClick={e => e.stopPropagation()}>
         <Checkbox checked={selected} onChange={onToggle} ariaLabel={`Select ${a.name}`} />
       </td>
       <td className="px-3 py-3 align-middle font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>

@@ -53,8 +53,6 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
     if (fieldCount > 0 && collapsed) setCollapsed(false)
   }, [fieldCount])
 
-  if (selectedCount === 0) return null
-
   function handleDateChange(key, field) {
     let updated = { ...actions, [key]: field }
     if (actions.applyToAllDates && key === 'dueAt' &&
@@ -80,7 +78,10 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
     <div
       role="region"
       aria-label="Bulk actions"
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[53.75rem] z-20 px-4"
+      aria-hidden={selectedCount === 0 ? 'true' : undefined}
+      className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[53.75rem] z-20 px-4 transition-transform duration-300 ease-out ${
+        selectedCount === 0 ? 'translate-y-full pointer-events-none' : 'translate-y-0'
+      }`}
     >
       <div className="bg-[var(--color-bg-page)] border border-b-0 border-[var(--color-border)] rounded-t-xl shadow-xl">
 
@@ -114,7 +115,9 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
           </div>
         </div>
 
-        {!collapsed && (
+        <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
+          collapsed ? 'max-h-0 opacity-0' : 'max-h-[20rem] opacity-100'
+        }`}>
           <div className="flex border-t border-[var(--color-border)]">
 
             {/* Dates column */}
@@ -200,7 +203,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
             </div>
 
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -212,7 +215,7 @@ function DateRow({ label, field, onChange }) {
   }
 
   return (
-    <div className="flex items-center gap-2 min-h-[2rem]">
+    <div className="flex items-center gap-2 h-9">
       <span className="w-24 shrink-0 text-sm text-[var(--color-text-secondary)]">{label}</span>
       <SegmentedToggle
         options={DATE_MODES}
@@ -266,7 +269,7 @@ function StatusButton({ icon: Icon, label, active, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+      className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
         ${active
           ? 'bg-[rgba(var(--cpt-color-rgb),0.1)] text-[var(--cpt-color)]'
           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-body)]'

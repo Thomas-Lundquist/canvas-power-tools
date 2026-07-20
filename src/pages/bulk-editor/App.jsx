@@ -8,12 +8,14 @@ import Skeleton from '../../components/Skeleton.jsx'
 import EmptyState from '../../components/EmptyState.jsx'
 import Callout from '../../components/Callout.jsx'
 import Button from '../../components/Button.jsx'
+import Card from '../../components/Card.jsx'
 import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 import FilterBar from '../../modules/assignments/FilterBar.jsx'
 import AssignmentTable from '../../modules/assignments/AssignmentTable.jsx'
 import ChangeLog from '../../modules/assignments/ChangeLog.jsx'
 import useSort from '../../utils/useSort.js'
 import BulkActionBar, { INITIAL_ACTIONS } from '../../modules/assignments/BulkActionBar.jsx'
+import PreviewDiff from '../../modules/assignments/PreviewDiff.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
@@ -99,6 +101,7 @@ export default function App() {
 
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [actions, setActions] = useState(INITIAL_ACTIONS)
+  const [showPreview, setShowPreview] = useState(false)
 
   const filteredAssignments = useMemo(
     () => applyFilters(assignments, search, filters),
@@ -166,6 +169,29 @@ export default function App() {
     }
   }
 
+  const selectedAssignments = useMemo(
+    () => assignments.filter(a => selectedIds.has(a.id)),
+    [assignments, selectedIds],
+  )
+
+  function clearSelection() {
+    setSelectedIds(new Set())
+    setActions(INITIAL_ACTIONS)
+  }
+
+  function handlePreviewDone() {
+    setShowPreview(false)
+    clearSelection()
+    selectCourse(selectedCourseId)
+  }
+
+  function handleViewReport() {
+    setShowPreview(false)
+    clearSelection()
+    selectCourse(selectedCourseId)
+    setShowChangeLog(true)
+  }
+
   function clearFilters() {
     setSearch('')
     setFilters([])
@@ -196,7 +222,13 @@ export default function App() {
   }
 
   function renderContent() {
-    if (loadingCourses || loadingAssignments) return <TableSkeleton />
+    if (loadingCourses || loadingAssignments) {
+      return (
+        <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mb-4">
+          <TableSkeleton />
+        </Card>
+      )
+    }
 
     if (error) {
       return (
@@ -232,7 +264,7 @@ export default function App() {
     }
 
     return (
-      <>
+      <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mb-4">
         <FilterBar
           search={search}
           onSearchChange={setSearch}
@@ -269,7 +301,7 @@ export default function App() {
             />
           )}
         </div>
-      </>
+      </Card>
     )
   }
 
@@ -304,9 +336,20 @@ export default function App() {
         selectedCount={selectedIds.size}
         actions={actions}
         onActionsChange={setActions}
-        onPreview={() => {}}
-        onClearAll={() => { setSelectedIds(new Set()); setActions(INITIAL_ACTIONS) }}
+        onPreview={() => setShowPreview(true)}
+        onClearAll={clearSelection}
       />
+      {showPreview && (
+        <PreviewDiff
+          selectedAssignments={selectedAssignments}
+          actions={actions}
+          courseId={selectedCourseId}
+          courseName={selectedCourseName}
+          onCancel={() => setShowPreview(false)}
+          onDone={handlePreviewDone}
+          onViewReport={handleViewReport}
+        />
+      )}
       {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} context="bulk-editor" />}
       {showChangeLog && (
         <ChangeLog

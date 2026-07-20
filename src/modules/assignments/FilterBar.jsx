@@ -233,87 +233,72 @@ export default function FilterBar({
   }
 
   return (
-    <div className="px-6 border-b border-[var(--color-border)]">
-      {/* Line 1: Search + Add Filter + Change Log */}
-      <div className="flex items-center gap-3 py-3">
-        <SearchInput
-          value={search}
-          onChange={onSearchChange}
-          placeholder="Search assignments…"
-          ariaLabel="Search assignments by name"
-        />
-
-        <div ref={wrapperRef} className="relative">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openAdd}
-            aria-haspopup="true"
-            aria-expanded={popoverOpen && !editingId}
-          >
-            <Plus size={14} aria-hidden="true" />
-            Add Filter
-          </Button>
-
-          {popoverOpen && (
-            <div
-              className="absolute top-full left-0 mt-1.5 w-60 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 overflow-hidden"
-              role="dialog"
-              aria-label={step === 'type' ? 'Choose a filter type' : `Set ${pendingType?.label ?? ''} filter`}
-            >
-              {step === 'type' && (
-                <div className="py-1">
-                  {availableTypes.length === 0 ? (
-                    <p className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
-                      All filter types applied.
-                    </p>
-                  ) : availableTypes.map(type => (
-                    <button
-                      key={type.id}
-                      className="w-full text-left px-4 py-2.5 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-                      onClick={() => { setPendingType(type); setStep('value') }}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {step === 'value' && pendingType && (
-                <ValuePicker
-                  type={pendingType}
-                  initialValue={editingFilter?.value ?? null}
-                  groups={groups}
-                  modules={modules}
-                  onConfirm={confirmValue}
-                  onBack={() => { setStep('type'); setPendingType(null) }}
-                />
-              )}
-            </div>
-          )}
+    <div className="px-3 border-b border-[var(--color-border)]">
+      {/* Search + Add Filter + chips inline — chips wrap within the middle section, no layout jump */}
+      <div className="flex items-start gap-3 py-3">
+        <div className="shrink-0">
+          <SearchInput
+            value={search}
+            onChange={onSearchChange}
+            placeholder="Search assignments…"
+            ariaLabel="Search assignments by name"
+          />
         </div>
 
-        <div className="flex-1" />
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+          <div ref={wrapperRef} className="relative shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openAdd}
+              aria-haspopup="true"
+              aria-expanded={popoverOpen && !editingId}
+            >
+              <Plus size={14} aria-hidden="true" />
+              Add Filter
+            </Button>
 
-        {showChangeLog && (
-          <Button variant="ghost" size="sm" onClick={onChangeLogClick}>
-            <History size={14} aria-hidden="true" />
-            Change Log
-          </Button>
-        )}
-      </div>
+            {popoverOpen && (
+              <div
+                className="absolute top-full left-0 mt-1.5 w-60 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 overflow-hidden"
+                role="dialog"
+                aria-label={step === 'type' ? 'Choose a filter type' : `Set ${pendingType?.label ?? ''} filter`}
+              >
+                {step === 'type' && (
+                  <div className="py-1">
+                    {availableTypes.length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
+                        All filter types applied.
+                      </p>
+                    ) : availableTypes.map(type => (
+                      <button
+                        key={type.id}
+                        className="w-full text-left px-4 py-2.5 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
+                        onClick={() => { setPendingType(type); setStep('value') }}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {step === 'value' && pendingType && (
+                  <ValuePicker
+                    type={pendingType}
+                    initialValue={editingFilter?.value ?? null}
+                    groups={groups}
+                    modules={modules}
+                    onConfirm={confirmValue}
+                    onBack={() => { setStep('type'); setPendingType(null) }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
 
-      {/* Line 2: Active filter chips — only rendered when filters are active */}
-      {filters.length > 0 && (
-        <div
-          className="flex flex-wrap items-center gap-2 pb-3"
-          role="list"
-          aria-label="Active filters"
-        >
           {filters.map(filter => (
             <div
               key={filter.id}
-              role="listitem"
-              className="inline-flex items-center rounded-full border border-[var(--color-border)] text-sm overflow-hidden"
+              className="chip-enter inline-flex items-center rounded-full border border-[var(--color-border)] text-sm overflow-hidden"
               style={{ background: 'color-mix(in srgb, var(--cpt-color) 8%, transparent)' }}
             >
               <button
@@ -333,14 +318,26 @@ export default function FilterBar({
               </button>
             </div>
           ))}
-          <button
-            className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors duration-75"
-            onClick={onClearAll}
-          >
-            Clear all
-          </button>
+
+          {filters.length > 0 && (
+            <button
+              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors duration-75"
+              onClick={onClearAll}
+            >
+              Clear all
+            </button>
+          )}
         </div>
-      )}
+
+        {showChangeLog && (
+          <div className="shrink-0">
+            <Button variant="ghost" size="sm" onClick={onChangeLogClick}>
+              <History size={14} aria-hidden="true" />
+              Change Log
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
