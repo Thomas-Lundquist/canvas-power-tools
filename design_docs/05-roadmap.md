@@ -27,6 +27,27 @@ presented in this structure so the relationship between features is clear.
 
 ---
 
+## Architecture — Modules, Tools, Archetypes
+
+> Full plan: **doc 19 — Module Consolidation & Shell Architecture.**
+
+Modules are no longer flat lists of separate pages. A **Module is one page**; its
+**Tools are routed views** switched by a persistent rail (Module = workspace,
+Tool = task). Each Tool's screen is one of the **six archetypes defined in
+doc 10** — Table-Primary · Browse/Library · Resource-Manager · Dashboard ·
+Config/Form-Flow · Compose/Messaging — reusable templates built from the doc-10
+atoms + tokens and classified **per screen**. See doc 10 §"Interaction Grammar &
+Archetypes" for the shapes and doc 19 for the tool→archetype mapping.
+
+**Consolidation direction** (detail + status in doc 19): some Tools below merge
+onto one axis (**Message Students** = Nudges + Threshold; **Content** =
+Modules + Pages + Discussions), some share an engine but keep separate doors
+(Sections + Accommodations → one Override Engine), and a few become context
+actions rather than tools (Copy → a row action; Comment Bank → inside the
+Composer). Tool rows below are annotated `[archetype]` where decided.
+
+---
+
 ## Core (Setup & Security)
 
 | Tool | Status | Description |

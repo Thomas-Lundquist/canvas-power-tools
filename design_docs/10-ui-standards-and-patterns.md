@@ -679,6 +679,27 @@ Table-Primary on its source step, Config/Form-Flow on its target step). Classify
 
 ---
 
+### The Module Shell — where archetypes live
+
+The six archetypes describe the shape of a *screen*. The **Module shell** is the
+*frame* every screen renders inside — the navigation layer added by the module
+consolidation (see **doc 19**).
+
+- **Module = one page; Tool = a routed view** inside it. `AppNav` (brand +
+  module switcher + settings) sits above; a **persistent left rail** switches
+  Tools; the **content pane** holds the current screen's archetype.
+- Full-page transition happens only **Home ↔ Module**. Tool ↔ Tool — and
+  screen ↔ screen *within* a tool — is an instant content-pane swap, so archetype
+  classification stays **per screen** (§ above) and the shell simply routes.
+- The rail and pane are **derived from the tool registry** (`archetype` field);
+  adding a tool is one config row, not a new page.
+
+The shell owns navigation and chrome; the archetype owns the content. A screen is
+grammar-compliant by construction because it is assembled from the shared atoms
+*and* placed in the shell's standard regions.
+
+---
+
 ## Page Layout Patterns
 
 Two layout strategies exist. The right one depends on whether the table is
