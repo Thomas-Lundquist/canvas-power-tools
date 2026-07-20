@@ -10,7 +10,10 @@ import Callout from '../../components/Callout.jsx'
 import Button from '../../components/Button.jsx'
 import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 import FilterBar from '../../modules/assignments/FilterBar.jsx'
+import AssignmentTable from '../../modules/assignments/AssignmentTable.jsx'
 import ChangeLog from '../../modules/assignments/ChangeLog.jsx'
+import useSort from '../../utils/useSort.js'
+import BulkActionBar, { INITIAL_ACTIONS } from '../../modules/assignments/BulkActionBar.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
@@ -94,10 +97,15 @@ export default function App() {
   const [filters, setFilters] = useState([])
   const [showChangeLog, setShowChangeLog] = useState(false)
 
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [actions, setActions] = useState(INITIAL_ACTIONS)
+
   const filteredAssignments = useMemo(
     () => applyFilters(assignments, search, filters),
     [assignments, search, filters],
   )
+
+  const sort = useSort(filteredAssignments, { key: 'name', dir: 'asc' })
 
   const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
@@ -130,6 +138,8 @@ export default function App() {
     setAssignments([])
     setGroups([])
     setModules([])
+    setSelectedIds(new Set())
+    setActions(INITIAL_ACTIONS)
     setError(null)
     setSearch('')
     setFilters([])
@@ -141,7 +151,12 @@ export default function App() {
         getAssignmentGroups(courseId),
         getModules(courseId),
       ])
-      setAssignments(fetchedAssignments)
+      const groupNameById = new Map(fetchedGroups.map(g => [g.id, g.name]))
+      const assignmentsWithGroups = fetchedAssignments.map(a => ({
+        ...a,
+        assignmentGroupName: a.assignmentGroupName ?? groupNameById.get(a.assignmentGroupId) ?? null,
+      }))
+      setAssignments(assignmentsWithGroups)
       setGroups(fetchedGroups)
       setModules(fetchedModules)
     } catch (err) {
@@ -166,6 +181,18 @@ export default function App() {
 
   function removeFilter(id) {
     setFilters(prev => prev.filter(f => f.id !== id))
+  }
+
+  function toggleSelection(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAllSelection(selectAll) {
+    setSelectedIds(selectAll ? new Set(filteredAssignments.map(a => a.id)) : new Set())
   }
 
   function renderContent() {
@@ -219,7 +246,7 @@ export default function App() {
           onChangeLogClick={() => setShowChangeLog(true)}
           showChangeLog
         />
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {filteredAssignments.length === 0 ? (
             <EmptyState
               icon={SlidersHorizontal}
@@ -228,8 +255,18 @@ export default function App() {
               actions={<Button variant="ghost" onClick={clearFilters}>Clear filters</Button>}
             />
           ) : (
-            // AssignmentTable slots in here — slice 3
-            <div className="flex-1 flex flex-col min-h-0" />
+            <AssignmentTable
+              assignments={sort.sorted}
+              selectedIds={selectedIds}
+              onToggle={toggleSelection}
+              onToggleAll={toggleAllSelection}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              onSort={sort.onSort}
+              loading={false}
+              fillHeight
+              actionBarVisible={selectedIds.size > 0}
+            />
           )}
         </div>
       </>
@@ -263,6 +300,13 @@ export default function App() {
           {renderContent()}
         </div>
       </ToolShell>
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        actions={actions}
+        onActionsChange={setActions}
+        onPreview={() => {}}
+        onClearAll={() => { setSelectedIds(new Set()); setActions(INITIAL_ACTIONS) }}
+      />
       {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} context="bulk-editor" />}
       {showChangeLog && (
         <ChangeLog

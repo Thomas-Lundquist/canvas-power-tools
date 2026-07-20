@@ -152,26 +152,26 @@ function SkeletonRow({ widths }) {
 function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
   return (
     <tr
-      className="border-b border-l-2 cursor-pointer transition-colors hover:bg-[var(--color-bg-hover)]"
+      className="border-b cursor-pointer transition-colors hover:bg-[var(--color-bg-hover)]"
       style={{
         borderBottomColor: 'var(--color-border-subtle)',
-        borderLeftColor: selected ? 'var(--cpt-color)' : 'transparent',
+        boxShadow: selected ? 'inset 2px 0 0 var(--cpt-color)' : 'none',
         ...(selected ? { backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : {}),
       }}
       onClick={onToggle}
       aria-rowindex={rowIndex + 2}
       aria-selected={selected}
     >
-      <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+      <td className="px-3 py-3 align-middle" onClick={e => e.stopPropagation()}>
         <Checkbox checked={selected} onChange={onToggle} ariaLabel={`Select ${a.name}`} />
       </td>
-      <td className="px-3 py-3 font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>
-      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{a.assignmentGroupName ?? '—'}</td>
-      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.dueAt)}</td>
-      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.unlockAt)}</td>
-      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{formatDate(a.lockAt)}</td>
-      <td className="px-3 py-3 text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</td>
-      <td className="px-3 py-3">
+      <td className="px-3 py-3 align-middle font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.assignmentGroupName ?? '—'}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.dueAt)}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.unlockAt)}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.lockAt)}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</td>
+      <td className="px-3 py-3 align-middle">
         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${a.published ? 'bg-green-100 text-green-800' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'}`}>
           {a.published ? 'Published' : 'Unpublished'}
         </span>
