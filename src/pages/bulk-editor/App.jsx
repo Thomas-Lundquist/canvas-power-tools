@@ -224,7 +224,7 @@ export default function App() {
   function renderContent() {
     if (loadingCourses || loadingAssignments) {
       return (
-        <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mb-4">
+        <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4">
           <TableSkeleton />
         </Card>
       )
@@ -264,7 +264,7 @@ export default function App() {
     }
 
     return (
-      <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mb-4">
+      <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4">
         <FilterBar
           search={search}
           onSearchChange={setSearch}

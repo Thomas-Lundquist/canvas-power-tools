@@ -197,6 +197,7 @@ except where it *is* a component's defining behavior (noted under States).
   set 2026-07-18 — the only Tier-1-shaped primitive that existed as a bare class.)
 - **Job:** a labeled text button, optionally with a leading icon.
 - **API:** `<Button variant="primary | secondary | danger | ghost" size="sm | md" icon?={LucideIcon} onClick disabled? type?>label</Button>`
+- **Size rule:** `md` (default) — `py-2 text-sm` — matches `.input` height exactly. Use `md` whenever a button sits in the same row as a `SearchInput` or any `.input` field (filter bar, toolbar). `sm` — `py-1.5 text-xs` — is for compact contexts only: buttons inside panels, action card header strips, badge-adjacent rows, or chip-adjacent controls.
 - **Tokens:** reuses the `.btn` base (padding, `rounded-lg`, gap, `:focus-visible`,
   `disabled:opacity-50`). `primary` → `--cpt-color` bg / white, hover
   `--cpt-color-dark`; `secondary` → surface bg / `--color-border` / body text;
@@ -591,7 +592,7 @@ is a separate downstream choice covered in *Page Layout Patterns*.
 - **Enforced by:** `AssignmentTable` + `useSort` (clickable column headers),
   `Toolbar` (search left, actions right), chip filter bar, floating action card,
   `Badge` for status. Uses `Skeleton` while loading.
-- **Container:** table surface in `<Card padding="none">` + `overflow-hidden` + `mx-6 mb-4`. Border + rounded, no shadow. `overflow-hidden` clips virtual rows at the card's rounded corners. The filter bar sits *above* the card, not inside it.
+- **Container:** table surface in `<Card padding="none">` + `overflow-hidden` + `mx-6 mt-4 mb-4`. Border + rounded, no shadow. `overflow-hidden` clips virtual rows at the card's rounded corners. The `mt-4` matches the side and bottom gutter so spacing is uniform on all four sides. The filter bar lives *inside* the card (top, above the table), separated by a bottom border.
 - **Filter chips:** inline in the Add Filter button row (`flex-wrap` sub-container, `flex-1 min-w-0`). No separate conditional chip row — no layout jump when the first chip appears. Chips animate in via `.chip-enter` (0.1s scale+fade, defined in `global.css`).
 - **Layout mechanics:** table-primary → `h-screen`, `fillHeight`. See
   *Page Layout Patterns → Table-Primary Tools*.

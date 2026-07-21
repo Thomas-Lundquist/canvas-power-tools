@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X } from 'lucide-react'
 import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import NumberField from '../../components/NumberField.jsx'
 import IconButton from '../../components/IconButton.jsx'
@@ -105,12 +105,17 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
             )}
           </span>
           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" onClick={onClearAll}>Clear All</Button>
             <IconButton
-              icon={collapsed ? ChevronDown : ChevronUp}
+              icon={collapsed ? ChevronUp : ChevronDown}
               label={collapsed ? 'Expand action bar' : 'Collapse action bar'}
               size="sm"
               onClick={() => setCollapsed(c => !c)}
+            />
+            <IconButton
+              icon={X}
+              label="Clear selection and close"
+              size="sm"
+              onClick={onClearAll}
             />
           </div>
         </div>

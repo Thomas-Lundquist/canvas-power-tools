@@ -249,7 +249,6 @@ export default function FilterBar({
           <div ref={wrapperRef} className="relative shrink-0">
             <Button
               variant="ghost"
-              size="sm"
               onClick={openAdd}
               aria-haspopup="true"
               aria-expanded={popoverOpen && !editingId}
@@ -302,7 +301,7 @@ export default function FilterBar({
               style={{ background: 'color-mix(in srgb, var(--cpt-color) 8%, transparent)' }}
             >
               <button
-                className="pl-3 pr-1.5 py-1 text-[var(--color-text-body)] hover:text-[var(--cpt-color)] transition-colors duration-75"
+                className="pl-3 pr-1.5 py-2 text-[var(--color-text-body)] hover:text-[var(--cpt-color)] transition-colors duration-75"
                 onClick={() => openEdit(filter)}
                 aria-label={`Edit filter: ${filter.label}: ${filter.displayValue}`}
               >
@@ -310,7 +309,7 @@ export default function FilterBar({
                 {filter.displayValue}
               </button>
               <button
-                className="pr-2.5 py-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors duration-75"
+                className="pr-2.5 py-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] transition-colors duration-75"
                 onClick={() => onRemoveFilter(filter.id)}
                 aria-label={`Remove filter: ${filter.label}: ${filter.displayValue}`}
               >
@@ -331,7 +330,7 @@ export default function FilterBar({
 
         {showChangeLog && (
           <div className="shrink-0">
-            <Button variant="ghost" size="sm" onClick={onChangeLogClick}>
+            <Button variant="ghost" onClick={onChangeLogClick}>
               <History size={14} aria-hidden="true" />
               Change Log
             </Button>
