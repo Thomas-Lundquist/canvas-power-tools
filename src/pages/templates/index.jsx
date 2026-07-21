@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
+import ToolShell from '../../components/ToolShell.jsx'
 import TemplateLibrary from '../../modules/assignments/TemplateLibrary.jsx'
 import TemplateEditor from '../../modules/assignments/TemplateEditor.jsx'
 import DeployTemplate from '../../modules/assignments/DeployTemplate.jsx'
@@ -43,6 +44,7 @@ function App() {
   const [prefillForm, setPrefillForm] = useState(null)
   const [prefillSourceId, setPrefillSourceId] = useState(null)
   const [prefs, setPrefs] = useState({})
+  const [viewMode, setViewMode] = useState('list')
   const { courseId: urlCourseId, moduleId: urlModuleId } = parseUrlContext()
 
   useEffect(() => {
@@ -119,23 +121,13 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <BrandLogo />
-          <div className="flex items-center gap-1">
-            <AppNav current="templates" />
-            <SettingsButton />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        {view === 'library' && (
-          <>
-            <h1 className="text-2xl font-bold text-gray-900">Assignment Templates</h1>
-            <p className="text-sm text-gray-500 mt-1 mb-6">Save assignment structures and deploy them to one or more courses instantly.</p>
+    <ToolShell
+      start={<BrandLogo />}
+      end={<><AppNav current="templates" /><SettingsButton /></>}
+    >
+      <div className="overflow-y-auto flex-1">
+        <div className="px-6 py-6">
+          {view === 'library' && (
             <TemplateLibrary
               templates={templates}
               folders={folders}
@@ -145,33 +137,35 @@ function App() {
               onDataChange={loadData}
               skipDeleteConfirm={prefs.templateSkipDeleteConfirm ?? false}
               autoExpandFolders={prefs.templateAutoExpandFolders ?? true}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
-          </>
-        )}
+          )}
 
-        {view === 'editor' && (
-          <TemplateEditor
-            template={editingTemplate}
-            folders={folders}
-            initialFolderId={newFolderId}
-            initialFormOverride={prefillForm}
-            sourceAssignmentId={prefillSourceId}
-            onSave={handleEditorSave}
-            onCancel={handleEditorCancel}
-          />
-        )}
+          {view === 'editor' && (
+            <TemplateEditor
+              template={editingTemplate}
+              folders={folders}
+              initialFolderId={newFolderId}
+              initialFormOverride={prefillForm}
+              sourceAssignmentId={prefillSourceId}
+              onSave={handleEditorSave}
+              onCancel={handleEditorCancel}
+            />
+          )}
 
-        {view === 'deploy' && deployingTemplate && (
-          <DeployTemplate
-            template={deployingTemplate}
-            initialCourseId={urlCourseId}
-            moduleId={urlModuleId}
-            onDone={handleDeployDone}
-            onBack={handleDeployBack}
-          />
-        )}
+          {view === 'deploy' && deployingTemplate && (
+            <DeployTemplate
+              template={deployingTemplate}
+              initialCourseId={urlCourseId}
+              moduleId={urlModuleId}
+              onDone={handleDeployDone}
+              onBack={handleDeployBack}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </ToolShell>
   )
 }
 
