@@ -63,9 +63,9 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
       >
         <thead className="sticky top-0 z-10 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
           <tr aria-rowindex={1} style={{ height: '3rem' }}>
-            <th className="w-10 px-3 py-3 align-middle">
+            <th className="w-10 py-3 align-middle">
               {!loading && (
-                <div className="flex items-center">
+                <div className="flex items-center justify-center">
                   <Checkbox
                     checked={allSelected}
                     indeterminate={!allSelected && someSelected}
@@ -78,7 +78,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
             {COLUMNS.map(col => (
               <th
                 key={col.key}
-                className={`${col.width} px-3 py-3 text-left font-medium text-xs text-[var(--color-text-secondary)] select-none ${loading ? '' : 'cursor-pointer hover:text-[var(--color-text-body)]'}`}
+                className={`${col.width} px-3 py-3 text-left font-medium text-sm text-[var(--color-text-secondary)] select-none ${loading ? '' : 'cursor-pointer hover:text-[var(--color-text-body)]'}`}
                 onClick={() => !loading && onSort(col.key)}
                 aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
@@ -176,17 +176,17 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
       aria-rowindex={rowIndex + 2}
       aria-selected={selected}
     >
-      <td ref={checkboxTdRef} className="px-3 py-3 align-middle" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center">
+      <td ref={checkboxTdRef} className="py-3 align-middle" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-center">
           <Checkbox checked={selected} onChange={onToggle} ariaLabel={`Select ${a.name}`} />
         </div>
       </td>
       <td className="px-3 py-3 align-middle font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>
-      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.assignmentGroupName ?? '—'}</td>
-      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.dueAt)}</td>
-      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.unlockAt)}</td>
-      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.lockAt)}</td>
-      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.assignmentGroupName}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-body)]">{formatDate(a.dueAt) || <span className="text-[var(--color-text-disabled)]">—</span>}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.unlockAt) || <span className="text-[var(--color-text-disabled)]">—</span>}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.lockAt) || <span className="text-[var(--color-text-disabled)]">—</span>}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.pointsPossible != null ? a.pointsPossible : <span className="text-[var(--color-text-disabled)]">—</span>}</td>
       <td className="px-3 py-3 align-middle">
         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${a.published ? 'bg-green-100 text-green-800' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'}`}>
           {a.published ? 'Published' : 'Unpublished'}

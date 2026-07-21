@@ -5,7 +5,6 @@ import NumberField from '../../components/NumberField.jsx'
 import IconButton from '../../components/IconButton.jsx'
 import Button from '../../components/Button.jsx'
 import DateInput from '../../components/DateInput.jsx'
-import { Checkbox } from '../../components/FormControls.jsx'
 
 const INITIAL_DATE_FIELD = { mode: 'none', setValue: '', shiftDir: '+', shiftDays: '' }
 
@@ -13,7 +12,6 @@ export const INITIAL_ACTIONS = {
   dueAt: { ...INITIAL_DATE_FIELD },
   unlockAt: { ...INITIAL_DATE_FIELD },
   lockAt: { ...INITIAL_DATE_FIELD },
-  applyToAllDates: false,
   points: '',
   status: null,
 }
@@ -26,8 +24,8 @@ const DATE_MODES = [
 
 const DATE_ROWS = [
   { key: 'dueAt', label: 'Due Date' },
-  { key: 'unlockAt', label: 'Avail. From' },
-  { key: 'lockAt', label: 'Avail. Until' },
+  { key: 'unlockAt', label: 'Open Date' },
+  { key: 'lockAt', label: 'Close Date' },
 ]
 
 function countActiveFields(actions) {
@@ -54,20 +52,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
   }, [fieldCount])
 
   function handleDateChange(key, field) {
-    let updated = { ...actions, [key]: field }
-    if (actions.applyToAllDates && key === 'dueAt' &&
-        (field.mode === 'shift' || field.mode === 'clear')) {
-      updated = { ...updated, unlockAt: { ...field }, lockAt: { ...field } }
-    }
-    onActionsChange(updated)
-  }
-
-  function handleApplyToAll(checked) {
-    let updated = { ...actions, applyToAllDates: checked }
-    if (checked && (actions.dueAt.mode === 'shift' || actions.dueAt.mode === 'clear')) {
-      updated = { ...updated, unlockAt: { ...actions.dueAt }, lockAt: { ...actions.dueAt } }
-    }
-    onActionsChange(updated)
+    onActionsChange({ ...actions, [key]: field })
   }
 
   function handleStatusToggle(intent) {
@@ -79,15 +64,15 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
       role="region"
       aria-label="Bulk actions"
       aria-hidden={selectedCount === 0 ? 'true' : undefined}
-      className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[53.75rem] z-20 px-4 transition-transform duration-300 ease-out ${
+      className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[61.5rem] z-20 px-4 transition-transform duration-300 ease-out ${
         selectedCount === 0 ? 'translate-y-full pointer-events-none' : 'translate-y-0'
       }`}
     >
-      <div className="bg-[var(--color-bg-page)] border border-b-0 border-[var(--color-border)] rounded-t-xl shadow-xl">
+      <div className="bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-xl [box-shadow:0_-4px_24px_rgba(0,0,0,0.08),0_-1px_6px_rgba(0,0,0,0.05)]">
 
         {/* Header strip */}
         <div
-          className={`flex items-center justify-between px-4 h-11 ${collapsed ? 'cursor-pointer' : ''}`}
+          className={`flex items-center justify-between px-4 h-11 bg-[var(--color-bg-hover)] rounded-t-xl border-b-2 border-[var(--cpt-color)] ${collapsed ? 'cursor-pointer' : ''}`}
           onClick={() => { if (collapsed) setCollapsed(false) }}
         >
           <span className="text-sm font-medium text-[var(--color-text-body)]">
@@ -120,18 +105,18 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
           </div>
         </div>
 
-        <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
-          collapsed ? 'max-h-0 opacity-0' : 'max-h-[20rem] opacity-100'
+        <div className={`overflow-hidden transition-[height,opacity] duration-300 ease-out ${
+          collapsed ? 'h-0 opacity-0' : 'h-[16rem] opacity-100'
         }`}>
-          <div className="flex border-t border-[var(--color-border)]">
+          <div className="flex h-full">
 
             {/* Dates column */}
-            <div className="flex-1 p-4">
-              <div className="flex items-center gap-1.5 mb-3">
+            <div className="flex-1 p-4 flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
                 <Calendar size={12} aria-hidden="true" className="text-[var(--color-text-secondary)]" />
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">Dates</span>
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col flex-1 divide-y divide-[var(--color-border-subtle)] py-2">
                 {DATE_ROWS.map(({ key, label }) => (
                   <DateRow
                     key={key}
@@ -140,19 +125,6 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
                     onChange={field => handleDateChange(key, field)}
                   />
                 ))}
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                <Checkbox
-                  checked={actions.applyToAllDates}
-                  onChange={handleApplyToAll}
-                  ariaLabel="Apply same shift/clear to all dates"
-                />
-                <span
-                  className="text-xs text-[var(--color-text-secondary)] cursor-pointer select-none"
-                  onClick={() => handleApplyToAll(!actions.applyToAllDates)}
-                >
-                  Apply same shift/clear to all dates
-                </span>
               </div>
             </div>
 
@@ -216,11 +188,16 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
 
 function DateRow({ label, field, onChange }) {
   function handleModeChange(mode) {
-    onChange({ ...field, mode: field.mode === mode ? 'none' : mode })
+    const nextMode = field.mode === mode ? 'none' : mode
+    const nextField = { ...field, mode: nextMode }
+    if (nextMode === 'set' && !nextField.setValue) {
+      nextField.setValue = new Date().toISOString().slice(0, 10)
+    }
+    onChange(nextField)
   }
 
   return (
-    <div className="flex items-center gap-2 h-9">
+    <div className="flex-1 min-h-[2.75rem] flex items-center gap-2">
       <span className="w-24 shrink-0 text-sm text-[var(--color-text-secondary)]">{label}</span>
       <SegmentedToggle
         options={DATE_MODES}
@@ -228,24 +205,30 @@ function DateRow({ label, field, onChange }) {
         onChange={handleModeChange}
         ariaLabel={`${label} edit mode`}
       />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 flex items-center justify-center min-w-0">
         {field.mode === 'set' && (
           <DateInput
             value={field.setValue}
             onChange={v => onChange({ ...field, setValue: v ?? '' })}
+            className="w-40"
           />
         )}
         {field.mode === 'shift' && (
-          <div className="flex items-center gap-1">
-            <select
-              value={field.shiftDir}
-              onChange={e => onChange({ ...field, shiftDir: e.target.value })}
-              className="input text-sm w-14"
-              aria-label="Shift direction"
-            >
-              <option value="+">+</option>
-              <option value="-">−</option>
-            </select>
+          <div className="w-40 flex items-center gap-1">
+            <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden shrink-0" role="group" aria-label="Shift direction">
+              <button
+                type="button"
+                onClick={() => onChange({ ...field, shiftDir: '+' })}
+                aria-pressed={field.shiftDir === '+'}
+                className={`px-2.5 py-1 text-sm font-medium transition-colors duration-75 border-r border-[var(--color-border)] ${field.shiftDir === '+' ? 'bg-[rgba(var(--cpt-color-rgb),0.1)] text-[var(--cpt-color)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'}`}
+              >+</button>
+              <button
+                type="button"
+                onClick={() => onChange({ ...field, shiftDir: '-' })}
+                aria-pressed={field.shiftDir === '-'}
+                className={`px-2.5 py-1 text-sm font-medium transition-colors duration-75 ${field.shiftDir === '-' ? 'bg-[rgba(var(--cpt-color-rgb),0.1)] text-[var(--cpt-color)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'}`}
+              >−</button>
+            </div>
             <NumberField
               value={field.shiftDays}
               onChange={v => onChange({ ...field, shiftDays: v })}
@@ -256,12 +239,12 @@ function DateRow({ label, field, onChange }) {
           </div>
         )}
         {field.mode === 'clear' && (
-          <span className="text-xs text-[var(--color-error)]" role="alert">
-            Removes this date from all selected assignments.
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-[var(--color-error)] text-[var(--color-error)]" role="alert">
+            Clears this date from all selected
           </span>
         )}
         {field.mode === 'none' && (
-          <span className="text-xs text-[var(--color-text-disabled)]">No change</span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-[var(--color-border)] text-[var(--color-text-disabled)]">No change</span>
         )}
       </div>
     </div>

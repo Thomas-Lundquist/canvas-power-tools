@@ -4,7 +4,6 @@ import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import ToolShell from '../../components/ToolShell.jsx'
 import SkipLink from '../../components/SkipLink.jsx'
-import Skeleton from '../../components/Skeleton.jsx'
 import EmptyState from '../../components/EmptyState.jsx'
 import Callout from '../../components/Callout.jsx'
 import Button from '../../components/Button.jsx'
@@ -24,23 +23,6 @@ import { getPreferences, setLastUsedCourse } from '../../storage/preferences.js'
 import { applyTheme, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
 
-const SKELETON_ROWS = 8
-
-function TableSkeleton() {
-  return (
-    <div role="status" aria-label="Loading assignments" aria-busy="true" className="w-full">
-      {Array.from({ length: SKELETON_ROWS }, (_, i) => (
-        <div key={i} className="flex items-center gap-4 h-12 px-6 border-b border-[var(--color-border-subtle)]">
-          <Skeleton width="1rem" height="1rem" />
-          <Skeleton width="38%" />
-          <Skeleton width="12%" />
-          <Skeleton width="14%" />
-          <Skeleton width="10%" />
-        </div>
-      ))}
-    </div>
-  )
-}
 
 function applyFilters(assignments, search, filters) {
   let result = assignments
@@ -222,10 +204,20 @@ export default function App() {
   }
 
   function renderContent() {
-    if (loadingCourses || loadingAssignments) {
+    if (loadingCourses) {
       return (
-        <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4">
-          <TableSkeleton />
+        <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4 [box-shadow:0_4px_24px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.04)]">
+          <AssignmentTable
+            assignments={[]}
+            selectedIds={new Set()}
+            onToggle={() => {}}
+            onToggleAll={() => {}}
+            sortKey=""
+            sortDir="asc"
+            onSort={() => {}}
+            loading
+            fillHeight
+          />
         </Card>
       )
     }
@@ -259,27 +251,29 @@ export default function App() {
       )
     }
 
-    if (assignments.length === 0) {
+    if (!loadingAssignments && assignments.length === 0) {
       return <EmptyState icon={FileText} title="No assignments in this course" />
     }
 
     return (
-      <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4">
-        <FilterBar
-          search={search}
-          onSearchChange={setSearch}
-          filters={filters}
-          groups={groups}
-          modules={modules}
-          onAddFilter={addFilter}
-          onUpdateFilter={updateFilter}
-          onRemoveFilter={removeFilter}
-          onClearAll={clearFilters}
-          onChangeLogClick={() => setShowChangeLog(true)}
-          showChangeLog
-        />
+      <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4 [box-shadow:0_4px_24px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.04)]">
+        {!loadingAssignments && (
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            filters={filters}
+            groups={groups}
+            modules={modules}
+            onAddFilter={addFilter}
+            onUpdateFilter={updateFilter}
+            onRemoveFilter={removeFilter}
+            onClearAll={clearFilters}
+            onChangeLogClick={() => setShowChangeLog(true)}
+            showChangeLog
+          />
+        )}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {filteredAssignments.length === 0 ? (
+          {!loadingAssignments && filteredAssignments.length === 0 ? (
             <EmptyState
               icon={SlidersHorizontal}
               title="No assignments match your filters"
@@ -288,14 +282,14 @@ export default function App() {
             />
           ) : (
             <AssignmentTable
-              assignments={sort.sorted}
+              assignments={loadingAssignments ? [] : sort.sorted}
               selectedIds={selectedIds}
               onToggle={toggleSelection}
               onToggleAll={toggleAllSelection}
               sortKey={sort.key}
               sortDir={sort.dir}
               onSort={sort.onSort}
-              loading={false}
+              loading={loadingAssignments}
               fillHeight
               actionBarVisible={selectedIds.size > 0}
             />
