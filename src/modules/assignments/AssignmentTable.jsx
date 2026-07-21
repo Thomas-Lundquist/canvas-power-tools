@@ -1,4 +1,4 @@
-import { useRef, useState, useLayoutEffect, useEffect } from 'react'
+import { useRef, useState, useLayoutEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { formatDate } from '../../components/DateInput.jsx'
@@ -45,13 +45,6 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
     estimateSize: () => parseFloat(getComputedStyle(document.documentElement).fontSize) * 3, // 3rem in px — adapts to user's text size setting
     overscan: 5,
   })
-  // DEBUG: log scroll-container dimensions on every selection change — remove before ship
-  useEffect(() => {
-    if (!parentRef.current) return
-    const { clientHeight, scrollHeight } = parentRef.current
-    console.log('[DEBUG table] selectedIds.size=', selectedIds.size, '→ clientH=', clientHeight, 'scrollH=', scrollHeight)
-  }, [selectedIds])
-
   // NOTE: only handles the design doc's "100-500 rows" virtual-scrolling tier.
   // The >500-row "virtual scrolling + group-based pagination" tier is not implemented.
   const virtualItems = rowVirtualizer.getVirtualItems()
@@ -70,14 +63,16 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
       >
         <thead className="sticky top-0 z-10 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
           <tr aria-rowindex={1} style={{ height: '3rem' }}>
-            <th className="w-10 px-3 flex items-center" style={{ height: '3rem' }}>
+            <th className="w-10 px-3 py-3 align-middle">
               {!loading && (
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={!allSelected && someSelected}
-                  onChange={() => onToggleAll(!allSelected)}
-                  ariaLabel="Select all assignments"
-                />
+                <div className="flex items-center">
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={!allSelected && someSelected}
+                    onChange={() => onToggleAll(!allSelected)}
+                    ariaLabel="Select all assignments"
+                  />
+                </div>
               )}
             </th>
             {COLUMNS.map(col => (
@@ -164,20 +159,6 @@ function SkeletonRow({ widths }) {
 function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
   const trRef = useRef(null)
   const checkboxTdRef = useRef(null)
-  const prevSel = useRef(selected)
-  // DEBUG: log row and checkbox-cell positions on selection change — remove before ship
-  useEffect(() => {
-    if (prevSel.current !== selected) {
-      const trRect = trRef.current?.getBoundingClientRect()
-      const cbRect = checkboxTdRef.current?.getBoundingClientRect()
-      console.log(
-        `[DEBUG row ${rowIndex}] ${prevSel.current}→${selected}`,
-        `| tr: h=${trRef.current?.offsetHeight} y=${trRect?.y.toFixed(2)}`,
-        `| cb-td: x=${cbRect?.x.toFixed(2)} y=${cbRect?.y.toFixed(2)} w=${cbRect?.width.toFixed(2)} h=${cbRect?.height.toFixed(2)}`,
-      )
-      prevSel.current = selected
-    }
-  })
 
   return (
     <tr
@@ -195,8 +176,10 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
       aria-rowindex={rowIndex + 2}
       aria-selected={selected}
     >
-      <td ref={checkboxTdRef} className="px-3 flex items-center" style={{ height: '3rem' }} onClick={e => e.stopPropagation()}>
-        <Checkbox checked={selected} onChange={onToggle} ariaLabel={`Select ${a.name}`} />
+      <td ref={checkboxTdRef} className="px-3 py-3 align-middle" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center">
+          <Checkbox checked={selected} onChange={onToggle} ariaLabel={`Select ${a.name}`} />
+        </div>
       </td>
       <td className="px-3 py-3 align-middle font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>
       <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.assignmentGroupName ?? '—'}</td>
