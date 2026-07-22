@@ -142,36 +142,6 @@ Library  (Module)  ← Future
 The extension uses a multi-page architecture. Each Tool is a separate
 extension page. Navigation between Tools is a full page transition.
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ Homepage (shell/index.html)                                          │
-│                                                                      │
-│ [Icon] Canvas Power Tools                              [⚙ Settings] │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
-│  │ Bulk Editor     │  │ Grading         │  │ Templates       │     │
-│  │                 │  │ Dashboard       │  │                 │     │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘     │
-│                                                                      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
-│  │ Copy            │  │ Rubrics         │  │ Student Groups  │     │
-│  │ Assignments     │  │                 │  │                 │     │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘     │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────┐
-│ Individual Tool page (pages/<tool>/index.html)                       │
-│                                                                      │
-│ [← Back]  Canvas Power Tools  [Course: Biology 101 ▼]  [⚙ Settings]│
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   Tool content renders here                                          │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
 **Homepage** — a tile or list grid of all available Tools. Tile/list toggle
 is persisted in settings. Clicking a tile navigates to that Tool's page.
 
@@ -549,9 +519,8 @@ signal, particularly in an educational context where FERPA compliance matters.
 **Name:** Canvas Power Tools. Working title — may be revisited before launch.
 
 **Icon direction:** A stylized lightning bolt or CPT monogram. Must be
-legible at 16x16 pixels since that is the Chrome toolbar size. Use a blue
-or teal that is visually distinct from Canvas's own brand blue to avoid
-implying an official affiliation with Instructure.
+legible at 16x16 pixels since that is the Chrome toolbar size. Must not
+imply an official affiliation with Instructure.
 
 **Required assets before Chrome Web Store submission:**
 

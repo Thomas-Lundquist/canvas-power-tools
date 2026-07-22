@@ -4,31 +4,24 @@
 
 ## Overview
 
-Communication Tools provides two focused messaging
-workflows: a Nudge Tool for students who have not submitted an assignment,
-and a Grade Threshold Messenger for students above or below a grade cutoff.
+Communication Tools provides two focused messaging workflows: a Nudge Tool for students who have not submitted an assignment, and a Grade Threshold Messenger for students above or below a grade cutoff.
 
-These are not a general purpose messaging system. They are targeted,
-context-driven communication tools that give teachers a faster path to the
-specific messages they send most frequently.
+These are not a general purpose messaging system. They are targeted, context-driven communication tools that give teachers a faster path to the specific messages they send most frequently.
 
 ---
 
 ## Security Model
 
-Sending messages to students on a teacher's behalf is a higher-stakes
-operation than editing assignment dates. The security model reflects this.
+Sending messages to students on a teacher's behalf is a higher-stakes operation than editing assignment dates. The security model reflects this.
 
 Every message operation requires:
 1. PIN confirmation before sending (if PIN is enabled)
 2. A mandatory preview screen showing the exact message and all recipients
 3. A recipient count prominently displayed before sending
-4. A 5-second delay before the Send button activates on the final confirmation
-   screen — prevents accidental sends
+4. A 5-second delay before the Send button activates on the final confirmation screen — prevents accidental sends
 5. A sent log stored locally showing what was sent, when, and to whom
 
-The Canvas API token scope enforces that teachers can only message students
-in their own courses. The extension adds UI-level enforcement on top of this.
+The Canvas API token scope enforces that teachers can only message students in their own courses. The extension adds UI-level enforcement on top of this.
 
 ---
 
@@ -55,16 +48,13 @@ Every message sent through Communication Tools is logged locally.
 }
 ```
 
-Recipients are stored because teachers frequently need to know who received
-a specific message. Retention: last 50 sent log entries. Stored in
-chrome.storage.local only — never in sync storage.
+Recipients are stored because teachers frequently need to know who received a specific message. Retention: last 50 sent log entries. Stored in `chrome.storage.local` only — never in sync storage.
 
 ---
 
 ## Page Access
 
-Accessible from the extension popup and main navigation. The page has two
-tabs — Nudge Tool and Threshold Messenger.
+Accessible from the extension popup and main navigation. The page has two tabs — Nudge Tool and Threshold Messenger.
 
 ---
 
@@ -72,97 +62,26 @@ tabs — Nudge Tool and Threshold Messenger.
 
 ### The Problem
 
-Teachers frequently need to remind students who have not submitted an
-assignment that the deadline is approaching or has passed. Currently this
-requires manually finding each student in the Canvas inbox and sending
-individual messages.
+Teachers frequently need to remind students who have not submitted an assignment that the deadline is approaching or has passed. Currently this requires manually finding each student in the Canvas inbox and sending individual messages.
 
 ### What It Does
 
-Reads submission data for a selected assignment, identifies students who
-have not submitted, and sends them a personalized message in one operation.
+Reads submission data for a selected assignment, identifies students who have not submitted, and sends them a personalized message in one operation.
 
-### UI
+### Flow
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  [Logo] Canvas Power Tools      [Course: Biology 101 ▼]         │
-├─────────────────────────────────────────────────────────────────┤
-│  Communication Tools                                            │
-│  [Nudge Tool]  [Threshold Messenger]                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Send a nudge for assignment:                                   │
-│  [Quiz 1 — Due Oct 1                              ▼]            │
-│                                                                 │
-│  Students who have not submitted (8 of 28):                     │
-│                                                                 │
-│  [x]  Jane Smith              Missing since Oct 1               │
-│  [x]  Marcus Johnson          Missing since Oct 1               │
-│  [x]  Priya Patel             Missing since Oct 1               │
-│  [x]  Alex Kim                Missing since Oct 1               │
-│  [ ]  Jordan Cruz             Excused — skip                    │
-│  [x]  Sam Rivera              Missing since Oct 1               │
-│  [x]  Taylor Brooks           Missing since Oct 1               │
-│  [x]  Morgan Lee              Missing since Oct 1               │
-│  [x]  Casey Wang              Missing since Oct 1               │
-│                                                                 │
-│  Excused students are automatically deselected.                 │
-│                                                                 │
-│  Message:                                                       │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │ Hi {first_name},                                          │  │
-│  │                                                           │  │
-│  │ This is a reminder that {assignment_name} was due on      │  │
-│  │ {due_date}. Please submit as soon as possible or reach    │  │
-│  │ out if you need assistance.                               │  │
-│  │                                                           │  │
-│  │ {teacher_name}                                            │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  Available tokens: {first_name} {last_name} {assignment_name}  │
-│                    {due_date} {teacher_name} {course_name}      │
-│                                                                 │
-│  Sending to: 7 students  (1 deselected)                         │
-│                                                                 │
-│                                    [Preview]    [Send Nudges]   │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. Teacher selects an assignment from a dropdown
+2. The tool shows all students who have not submitted, with their missing-since date. Excused students are automatically deselected.
+3. Teacher can manually deselect any students
+4. Teacher writes a message using personalization tokens
+5. Recipient count is shown before Preview
+6. Preview screen shows an example rendered message (first selected student), full recipient list, and a warning that messages cannot be unsent
+7. 5-second countdown before Send activates
+8. PIN prompt if PIN is enabled
 
-### Preview Screen
+### Available Tokens (Nudge Tool)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Preview — Nudge Messages                         [Cancel]      │
-├─────────────────────────────────────────────────────────────────┤
-│  7 messages will be sent. Each is personalized per student.     │
-│                                                                 │
-│  Example (Jane Smith):                                          │
-│  ─────────────────────────────────────────────────────────────  │
-│  Hi Jane,                                                       │
-│                                                                 │
-│  This is a reminder that Quiz 1 was due on October 1. Please   │
-│  submit as soon as possible or reach out if you need           │
-│  assistance.                                                    │
-│                                                                 │
-│  Mr. Thomas                                                     │
-│  ─────────────────────────────────────────────────────────────  │
-│                                                                 │
-│  Recipients:                                                    │
-│  Jane Smith, Marcus Johnson, Priya Patel, Alex Kim,            │
-│  Sam Rivera, Taylor Brooks, Morgan Lee, Casey Wang             │
-│                                                                 │
-│  ⚠ This will send 7 messages via Canvas Inbox.                  │
-│    Messages cannot be unsent.                                   │
-│                                                                 │
-│  [PIN prompt if enabled]                                        │
-│                                                                 │
-│  [Cancel]              [Send in 5...]  (countdown activates)   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-The countdown on the send button prevents accidental sends. The teacher
-must wait 5 seconds before the button becomes active.
+`{first_name}` `{last_name}` `{assignment_name}` `{due_date}` `{teacher_name}` `{course_name}`
 
 ---
 
@@ -170,61 +89,24 @@ must wait 5 seconds before the button becomes active.
 
 ### The Problem
 
-Teachers frequently want to reach out to students who are struggling below
-a grade threshold, or recognize students performing exceptionally well above
-one. Finding those students and messaging them individually is time-consuming.
+Teachers frequently want to reach out to students who are struggling below a grade threshold, or recognize students performing exceptionally well above one. Finding those students and messaging them individually is time-consuming.
 
 ### What It Does
 
-Reads grade data for a selected assignment, identifies students above or
-below a threshold, and sends them a personalized message.
+Reads grade data for a selected assignment, identifies students above or below a threshold, and sends them a personalized message.
 
-### UI
+### Flow
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Communication Tools                                            │
-│  [Nudge Tool]  [Threshold Messenger]                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Assignment:  [Quiz 1                              ▼]           │
-│                                                                 │
-│  Send to students who scored:                                   │
-│  ○ Below  [70] %     (or  [14]  points)                         │
-│  ○ Above  [95] %     (or  [19]  points)                         │
-│                                                                 │
-│  Students matching (6 of 28):                                   │
-│                                                                 │
-│  [x]  Jane Smith              58%    11.6 / 20                  │
-│  [x]  Marcus Johnson          64%    12.8 / 20                  │
-│  [x]  Priya Patel             61%    12.2 / 20                  │
-│  [x]  Alex Kim                52%    10.4 / 20                  │
-│  [x]  Jordan Cruz             68%    13.6 / 20                  │
-│  [x]  Sam Rivera              66%    13.2 / 20                  │
-│                                                                 │
-│  Message:                                                       │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │ Hi {first_name},                                          │  │
-│  │                                                           │  │
-│  │ I noticed you scored {score}% on {assignment_name}.       │  │
-│  │ I would like to connect with you to discuss how we can    │  │
-│  │ support your success going forward. Please see me during  │  │
-│  │ office hours or reply to this message.                    │  │
-│  │                                                           │  │
-│  │ {teacher_name}                                            │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  Available tokens: {first_name} {last_name} {score} {grade}    │
-│                    {assignment_name} {teacher_name} {course_name}│
-│                                                                 │
-│  Sending to: 6 students                                         │
-│                                                                 │
-│                                    [Preview]    [Send Messages] │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. Teacher selects an assignment
+2. Teacher sets a threshold: "below X%" or "above X%". Percentage and raw point fields stay in sync — changing one updates the other automatically.
+3. Matching students are listed with their score. Teacher can deselect any.
+4. Teacher writes a message using personalization tokens
+5. Recipient count shown before Preview
+6. Preview → 5-second countdown → PIN → Send (same security flow as Nudge Tool)
 
-The threshold can be entered as a percentage or as a raw point value — both
-fields stay in sync. Changing one updates the other automatically.
+### Available Tokens (Threshold Messenger)
+
+`{first_name}` `{last_name}` `{score}` `{grade}` `{points_possible}` `{assignment_name}` `{teacher_name}` `{course_name}`
 
 ---
 
@@ -246,22 +128,7 @@ fields stay in sync. Changing one updates the other automatically.
 
 ## Sent Log UI
 
-Accessible from the Communication Tools page via a Sent Log button in
-the top right.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Sent Log                                         [Close]       │
-├─────────────────────────────────────────────────────────────────┤
-│  Oct 1, 2:45 PM   Nudge   Quiz 1   Biology 101                  │
-│  Sent to 7 students                               [▼ Expand]    │
-│                                                                 │
-│  Sep 28, 11:20 AM  Threshold   Homework 3   Biology 101         │
-│  Sent to 6 students (below 70%)               [▼ Expand]        │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-Expanding an entry shows the full recipient list and message body.
+Accessible from the Communication Tools page. Shows entries with timestamp, tool type, assignment/course, and recipient count. Expanding an entry shows the full recipient list and message body.
 
 ---
 
@@ -274,19 +141,13 @@ Expanding an entry shows the full recipient list and message body.
 | Get teacher info | GET | /api/v1/users/self |
 | Send conversation message | POST | /api/v1/conversations |
 
-The Canvas Conversations API sends a separate message per recipient. The
-extension iterates through recipients and fires one API call per student.
-Rate limiting is handled by the request queue in the API layer.
+The Canvas Conversations API sends a separate message per recipient. The extension iterates through recipients and fires one API call per student. Rate limiting is handled by the request queue in the API layer.
 
 ---
 
 ## Important Limitation
 
-Canvas messages sent via the Conversations API arrive in students' Canvas
-Inbox and trigger their normal Canvas notification settings (email, push,
-etc.). They appear to come from the teacher's Canvas account. They cannot
-be unsent or recalled once sent. This is stated clearly in the preview
-screen.
+Canvas messages sent via the Conversations API arrive in students' Canvas Inbox and trigger their normal Canvas notification settings (email, push, etc.). They appear to come from the teacher's Canvas account. They cannot be unsent or recalled once sent. This is stated clearly in the preview screen.
 
 ---
 
@@ -294,118 +155,48 @@ screen.
 
 ### Module Context
 
-Announcements is the third Tool in the **Communication Module**, alongside
-Nudges and Threshold. All three share the same mental model — reaching
-students across courses — which is why they live together.
+Announcements is the third Tool in the **Communication Module**, alongside Nudges and Threshold. All three share the same mental model — reaching students across courses — which is why they live together.
 
 ### The Problem
 
-Teachers who run multiple sections of the same course must create the same
-announcement individually in each Canvas course. There is no native way to
-write one announcement and send it everywhere at once. Canvas also provides
-no draft or scheduling functionality in its announcements interface.
+Teachers who run multiple sections of the same course must create the same announcement individually in each Canvas course. There is no native way to write one announcement and send it everywhere at once. Canvas also provides no draft or scheduling functionality in its announcements interface.
 
 ### What It Does
 
-A single interface for writing, scheduling, saving, and sending announcements
-to one or more courses simultaneously. Announcement templates allow frequently
-used structures — welcome messages, assignment reminders, office hours
-notices — to be saved and reused.
+A single interface for writing, scheduling, saving, and sending announcements to one or more courses simultaneously. Announcement templates allow frequently used structures — welcome messages, assignment reminders, office hours notices — to be saved and reused.
 
 ### Announcement Template Architecture
 
-Announcement templates use the same folder and library architecture as
-assignment templates. The design is already established — this is an
-extension of existing infrastructure, not new design work. Templates store
-the subject line and body. They never store recipients or schedule dates,
-which are set at send time.
+Announcement templates use the same folder and library architecture as assignment templates. The design is already established — this is an extension of existing infrastructure, not new design work. Templates store the subject line and body. They never store recipients or schedule dates, which are set at send time.
 
-### UI
+### Form Fields
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Communication — Announcements          [Sent Log]  [Drafts]    │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Send to:                                                       │
-│  [x] Biology 101 — Fall 2025                                    │
-│  [x] Biology 101 — Spring 2026                                  │
-│  [ ] Chemistry 202 — Fall 2025                                  │
-│  [Select All]  [Deselect All]                                   │
-│                                                                 │
-│  Subject:                                                       │
-│  [                                                   ]          │
-│                                                                 │
-│  Message:                                                       │
-│  [                                                   ]          │
-│  [                                                   ]          │
-│  [                                                   ]          │
-│                                                                 │
-│  Schedule:                                                       │
-│  ○ Send immediately                                             │
-│  ○ Send on  [__________]  at  [____]                            │
-│                                                                 │
-│  [Load Template ▼]   [Save as Template]   [Save as Draft]       │
-│                                                                 │
-│  Sending to: 2 courses                                          │
-│                                                                 │
-│                          [Preview]    [Send Announcement]       │
-└─────────────────────────────────────────────────────────────────┘
-```
+- Course selection (multi-select with Select All / Deselect All)
+- Subject line
+- Message body
+- Schedule: Send immediately or send at a specific date/time
+- Load Template / Save as Template / Save as Draft actions
 
 ### Scheduling
 
-Scheduled announcements are stored locally with their target send time.
-The extension uses Chrome's alarms API (chrome.alarms) to trigger sending
-at the scheduled time, provided the browser is open. A warning is displayed
-at schedule time: "Scheduled announcements require your browser to be open
-and the extension to be active at the scheduled send time."
+Scheduled announcements are stored locally with their target send time. The Canvas `delayed_post_at` field handles Canvas-side scheduling for announcements sent with a future date — this is more reliable than client-side scheduling and should be used whenever available. Chrome alarms (`chrome.alarms`) serve as the fallback.
 
-If the browser is closed at the scheduled time, the announcement sends the
-next time the extension is opened, with a notification that a scheduled
-announcement was sent late.
+If the browser is closed at the scheduled time, the announcement sends the next time the extension is opened, with a notification that a scheduled announcement was sent late. A warning at schedule time: "Scheduled announcements require your browser to be open and the extension to be active at the scheduled send time."
 
 ### Drafts
 
-Drafts are stored in chrome.storage.local. A Drafts button in the tool
-header shows the count of saved drafts. Opening a draft pre-fills the form.
-Drafts have no expiry — they persist until the teacher sends or deletes them.
+Stored in `chrome.storage.local`. A Drafts indicator in the tool header shows the count of saved drafts. Opening a draft pre-fills the form. Drafts have no expiry — they persist until the teacher sends or deletes them.
 
 ### Preview Screen
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Preview — Announcement                           [Cancel]      │
-├─────────────────────────────────────────────────────────────────┤
-│  Subject:   Office Hours This Week                              │
-│                                                                 │
-│  Message:                                                       │
-│  Office hours this week will be held on Thursday from           │
-│  3-5 PM in Room 204. Please bring any questions about          │
-│  the upcoming midterm.                                          │
-│                                                                 │
-│  Sending to:                                                    │
-│  Biology 101 — Fall 2025                                        │
-│  Biology 101 — Spring 2026                                      │
-│                                                                 │
-│  Schedule:  Immediately                                         │
-│                                                                 │
-│  ⚠ Announcements cannot be recalled once sent.                  │
-│                                                                 │
-│                          [Cancel]    [Confirm and Send]         │
-└─────────────────────────────────────────────────────────────────┘
-```
+Shows subject, full message body, list of target courses, scheduled send time, and a warning that announcements cannot be recalled. 5-second countdown on Confirm and Send.
 
 ### Canvas API
-
-Announcements are created via the Canvas Discussion Topics API with
-is_announcement: true. One API call is made per course.
 
 | Action | Method | Endpoint |
 |---|---|---|
 | Create announcement | POST | /api/v1/courses/:id/discussion_topics |
 
-Payload includes:
 ```javascript
 {
   title: "Subject line",
@@ -416,35 +207,21 @@ Payload includes:
 }
 ```
 
-The delayed_post_at field handles Canvas-side scheduling for announcements
-sent with a future date. This is more reliable than the chrome.alarms
-approach for scheduled sends, and should be used whenever the feature is
-available. Chrome alarms serve as the fallback for edge cases.
-
 ---
 
 ## Tool 2b — Overall Course Grade Mode (Grade Outreach)
 
 ### The Problem
 
-Teachers need to proactively reach out to students who are falling behind
-overall — not just on one assignment — before a D or F becomes permanent.
-The "By Assignment" mode addresses per-assignment concerns; this mode
-addresses the student's full picture.
+Teachers need to proactively reach out to students who are falling behind overall — not just on one assignment — before a D or F becomes permanent.
 
 ### What It Does
 
-Fetches every active student's overall course grade via the Canvas
-Enrollments API (with `include[]=grades`), filters by a percentage
-threshold, and sends personalized messages in one operation. The messaging
-flow (preview, countdown, PIN, sent log) is identical to the By Assignment
-mode; only the data source and tokens differ.
+Fetches every active student's overall course grade via the Canvas Enrollments API (with `include[]=grades`), filters by a percentage threshold, and sends personalized messages in one operation. The messaging flow (preview, countdown, PIN, sent log) is identical to the By Assignment mode; only the data source and tokens differ.
 
 ### Mode Toggle
 
-The Grade Outreach tool has a mode selector at the top of the form:
-- **Score on an assignment** — existing behavior
-- **Overall course grade** — this mode
+The Grade Outreach tool has a mode selector at the top: "Score on an assignment" or "Overall course grade."
 
 ### Score Type
 
@@ -452,45 +229,9 @@ Canvas provides two overall scores per enrollment:
 - `current_score` — grade on graded work only (ignores unsubmitted assignments)
 - `final_score` — treats unsubmitted as zero (more conservative)
 
-Teachers choose which to use via a "Score type" picker in the Course card.
-The default is `current_score`. For D/F outreach, `final_score` is usually
-more appropriate because it reflects the impact of missing work.
+Teachers choose which to use via a "Score type" picker. Default is `current_score`. For D/F outreach, `final_score` is usually more appropriate because it reflects the impact of missing work.
 
-Students whose score is `null` (grade not yet calculated) are silently
-excluded from matching. A disclosure note shows how many were excluded.
-
-### UI
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Grade Outreach                                    [Sent Log]   │
-├─────────────────────────────────────────────────────────────────┤
-│  Filter students by:                                            │
-│  ( ) Score on an assignment   (•) Overall course grade          │
-├─────────────────────────────────────────────────────────────────┤
-│  Course      [Biology 101 ▼]                                    │
-│  Score type  (•) Current score  ( ) Final score (missing = 0)  │
-├─────────────────────────────────────────────────────────────────┤
-│  Send to students whose overall grade is:                       │
-│  (•) below  ( ) above   [70]%                                   │
-├─────────────────────────────────────────────────────────────────┤
-│  Students matching (5 of 28 enrolled)                           │
-│  [x]  Jane Smith          58%  (F)                              │
-│  [x]  Marcus Johnson      61%  (D)                              │
-│  [x]  Priya Patel         63%  (D)                              │
-│  [ ]  Alex Kim            65%  (D)                              │
-│  [x]  Jordan Cruz         68%  (D)                              │
-│  2 students have no grade data and are excluded.                │
-├─────────────────────────────────────────────────────────────────┤
-│  Message                           Sending to: 4 students       │
-│  Hi {first_name},                                               │
-│  I'm reaching out because your current overall grade in         │
-│  {course_name} is {overall_score}% ({overall_grade})...         │
-│  Available tokens: {first_name}  {last_name}  {overall_score}   │
-│                    {overall_grade}  {teacher_name}  {course_name}│
-│                                          [Preview & Send →]     │
-└─────────────────────────────────────────────────────────────────┘
-```
+Students whose score is `null` (grade not yet calculated) are silently excluded from matching. A disclosure note shows how many were excluded.
 
 ### Personalization Tokens (Overall Mode)
 
@@ -561,9 +302,6 @@ Response grades object per enrollment:
 }
 ```
 
-### SentLogPanel Display
+### Sent Log Display
 
-`type: 'overall-grade'` renders as **"Overall Grade Outreach"** badge.
-Expanded view shows a Filter row:
-- `"Overall grade below 70% · current score"`
-- `"Overall grade above 80% · final score"`
+`type: 'overall-grade'` displays as "Overall Grade Outreach". Expanded view shows the filter description (e.g., "Overall grade below 70% · current score").
