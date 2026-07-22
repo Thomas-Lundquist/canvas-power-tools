@@ -3,7 +3,7 @@ import {
   Plus, FolderPlus, FileText, ClipboardList, Folder, ChevronDown,
   MoreHorizontal, Pencil, Trash2, LayoutList, LayoutGrid,
 } from 'lucide-react'
-import { saveFolder, deleteFolder, deleteTemplate, newFolderId } from '../../storage/templates.js'
+import { saveFolder, deleteFolder, deleteTemplate, newFolderId, saveTemplate } from '../../storage/templates.js'
 import useSort from '../../utils/useSort.js'
 import PageHeader from '../../components/PageHeader.jsx'
 import Toolbar from '../../components/Toolbar.jsx'
@@ -57,6 +57,8 @@ export default function TemplateLibrary({
   const [renameName, setRenameName] = useState('')
   const [addingFolder, setAddingFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [movingTemplate, setMovingTemplate] = useState(null)
+  const [draggedTemplate, setDraggedTemplate] = useState(null)
 
   const sort = useSort(templates, { key: 'lastUsed', dir: 'desc' })
 
@@ -91,6 +93,20 @@ export default function TemplateLibrary({
     onDataChange()
   }
 
+  async function handleMoveTemplate(folderId) {
+    await saveTemplate({ ...movingTemplate, folderId: folderId ?? null })
+    setMovingTemplate(null)
+    onDataChange()
+  }
+
+  async function handleDrop(folderId) {
+    if (!draggedTemplate) return
+    if ((folderId ?? null) === (draggedTemplate.folderId ?? null)) return
+    await saveTemplate({ ...draggedTemplate, folderId: folderId ?? null })
+    setDraggedTemplate(null)
+    onDataChange()
+  }
+
   async function handleRenameFolder() {
     if (!renameName.trim()) return
     await saveFolder({ ...renamingFolder, name: renameName.trim() })
@@ -119,22 +135,29 @@ export default function TemplateLibrary({
 
   function renderRow(t) {
     return (
-      <ListRow
+      <div
         key={t.id}
-        lead={
-          <Badge tone="muted" icon={t.type === 'page' ? FileText : ClipboardList}>
-            {t.type === 'page' ? 'Page' : 'Assignment'}
-          </Badge>
-        }
-        title={t.name}
-        meta={formatMeta(t)}
-        primaryAction={
-          <Button variant="primary" size="sm" onClick={() => onUse(t)}>Use</Button>
-        }
-        overflow={
-          <OverflowMenu onEdit={() => onEdit(t)} onDelete={() => requestDeleteTemplate(t)} />
-        }
-      />
+        draggable="true"
+        onDragStart={() => setDraggedTemplate(t)}
+        onDragEnd={() => setDraggedTemplate(null)}
+        title="Drag to move to a different folder"
+      >
+        <ListRow
+          lead={
+            <Badge tone="muted" icon={t.type === 'page' ? FileText : ClipboardList}>
+              {t.type === 'page' ? 'Page' : 'Assignment'}
+            </Badge>
+          }
+          title={t.name}
+          meta={formatMeta(t)}
+          primaryAction={
+            <Button variant="primary" size="sm" onClick={() => onUse(t)}>Use</Button>
+          }
+          overflow={
+            <OverflowMenu onEdit={() => onEdit(t)} onDelete={() => requestDeleteTemplate(t)} onMove={() => setMovingTemplate(t)} />
+          }
+        />
+      </div>
     )
   }
 
@@ -146,6 +169,9 @@ export default function TemplateLibrary({
         onUse={() => onUse(t)}
         onEdit={() => onEdit(t)}
         onDelete={() => requestDeleteTemplate(t)}
+        onMove={() => setMovingTemplate(t)}
+        onDragStart={() => setDraggedTemplate(t)}
+        onDragEnd={() => setDraggedTemplate(null)}
       />
     )
   }
@@ -219,6 +245,7 @@ export default function TemplateLibrary({
                   onDelete={requestDeleteFolder}
                   renderRow={renderRow}
                   renderTile={renderTile}
+                  onDrop={handleDrop}
                 />
               ))}
 
@@ -231,6 +258,7 @@ export default function TemplateLibrary({
                   defaultOpen={autoExpandFolders}
                   renderRow={renderRow}
                   renderTile={renderTile}
+                  onDrop={handleDrop}
                 />
               )}
             </>
@@ -307,6 +335,43 @@ export default function TemplateLibrary({
           </div>
         </Modal>
       )}
+
+      {movingTemplate && (
+        <Modal onClose={() => setMovingTemplate(null)} title={`Move "${movingTemplate.name}"`}>
+          <div className="space-y-1">
+            <button
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-75 ${
+                !movingTemplate.folderId
+                  ? 'bg-[rgba(var(--cpt-color-rgb),0.08)] text-[var(--color-text-body)]'
+                  : 'text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]'
+              }`}
+              onClick={() => handleMoveTemplate(null)}
+            >
+              <Folder size={14} className="text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
+              Unfiled
+              {!movingTemplate.folderId && <span className="ml-auto text-xs text-[var(--color-text-muted)]">Current</span>}
+            </button>
+            {folders.map(f => (
+              <button
+                key={f.id}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-75 ${
+                  movingTemplate.folderId === f.id
+                    ? 'bg-[rgba(var(--cpt-color-rgb),0.08)] text-[var(--color-text-body)]'
+                    : 'text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]'
+                }`}
+                onClick={() => handleMoveTemplate(f.id)}
+              >
+                <Folder size={14} className="text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
+                {f.name}
+                {movingTemplate.folderId === f.id && <span className="ml-auto text-xs text-[var(--color-text-muted)]">Current</span>}
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button variant="ghost" onClick={() => setMovingTemplate(null)}>Cancel</Button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -320,8 +385,13 @@ function NewDropdown({ onNewTemplate, onNewFolder }) {
   useEffect(() => {
     if (!open) return
     function handle(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', handle)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [open])
 
   return (
@@ -386,14 +456,26 @@ function ViewToggle({ value, onChange }) {
   )
 }
 
-function FolderCard({ folder, items, viewMode, defaultOpen, onNew, onRename, onDelete, renderRow, renderTile }) {
+function FolderCard({ folder, items, viewMode, defaultOpen, onNew, onRename, onDelete, renderRow, renderTile, onDrop }) {
   const [open, setOpen] = useState(defaultOpen)
+  const [dragOver, setDragOver] = useState(false)
+  const dragCounter = useRef(0)
+
+  function handleDragEnter() { dragCounter.current++; setDragOver(true) }
+  function handleDragLeave() { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false) }
+  function handleDrop() { dragCounter.current = 0; setDragOver(false); onDrop(folder.id) }
 
   return (
-    <div className={`card ${CARD_SHADOW}`}>
+    <div
+      className={`card ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={e => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       <div
         className={`flex items-center gap-2 px-4 py-3 rounded-t-md ${open ? 'border-b border-[var(--color-border)]' : 'rounded-b-md'}`}
-        style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.05)' }}
+        style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.10)' }}
       >
         <button
           type="button"
@@ -436,17 +518,29 @@ function FolderCard({ folder, items, viewMode, defaultOpen, onNew, onRename, onD
   )
 }
 
-function SectionCard({ label, count, items, viewMode, defaultOpen, renderRow, renderTile }) {
+function SectionCard({ label, count, items, viewMode, defaultOpen, renderRow, renderTile, onDrop }) {
   const [open, setOpen] = useState(defaultOpen)
+  const [dragOver, setDragOver] = useState(false)
+  const dragCounter = useRef(0)
+
+  function handleDragEnter() { dragCounter.current++; setDragOver(true) }
+  function handleDragLeave() { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false) }
+  function handleDrop() { dragCounter.current = 0; setDragOver(false); onDrop(null) }
 
   return (
-    <div className={`card ${CARD_SHADOW}`}>
+    <div
+      className={`card ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={e => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
         className={`w-full flex items-center gap-2 px-4 py-3 rounded-t-md text-left ${open ? 'border-b border-[var(--color-border)]' : 'rounded-b-md'}`}
-        style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.05)' }}
+        style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.10)' }}
       >
         <span className="text-sm font-semibold text-[var(--color-text-body)]">{label}</span>
         <span className="text-xs text-[var(--color-text-muted)]">({count})</span>
@@ -474,8 +568,13 @@ function FolderMenu({ folderName, onRename, onDelete }) {
   useEffect(() => {
     if (!open) return
     function handle(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', handle)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [open])
 
   return (
@@ -559,24 +658,25 @@ function DescriptionPreview({ html, Icon }) {
   )
 }
 
-function TemplateTile({ template, onUse, onEdit, onDelete }) {
+function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, onDragEnd }) {
   const [hovered, setHovered] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const isPage = template.type === 'page'
   const Icon = isPage ? FileText : ClipboardList
-  const showOverlay = hovered || menuOpen
 
   return (
     <div
-      className="relative rounded-md border border-[var(--color-border)] bg-[var(--color-bg-surface)] shadow-sm flex flex-col"
+      draggable="true"
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className="relative rounded-md border border-[var(--color-border)] bg-[var(--color-bg-surface)] shadow-sm flex flex-col cursor-grab"
       style={{ aspectRatio: '3 / 4' }}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { if (!menuOpen) setHovered(false) }}
-      aria-label={template.name}
+      onMouseLeave={() => setHovered(false)}
+      title="Drag to move to a different folder"
     >
       {/* Type accent strip */}
       <div
-        className={`rounded-t-md shrink-0`}
+        className="rounded-t-md shrink-0"
         style={{
           height: '4px',
           backgroundColor: isPage ? 'var(--color-text-muted)' : 'var(--cpt-color)',
@@ -586,86 +686,89 @@ function TemplateTile({ template, onUse, onEdit, onDelete }) {
       {/* Content preview or icon fallback */}
       <DescriptionPreview html={template.fields?.description} Icon={Icon} />
 
-      {/* Footer — always visible */}
-      <div className="px-2 pb-2 pt-1.5 border-t border-[var(--color-border)] shrink-0">
-        <p className="truncate text-xs font-medium text-[var(--color-text-body)] leading-tight">
-          {template.name}
-        </p>
-        {template.fields?.points != null && (
-          <p className="text-xs text-[var(--color-text-muted)] leading-tight mt-0.5">
-            {template.fields.points} pts
-          </p>
-        )}
-      </div>
-
-      {/* Hover overlay */}
-      {showOverlay && (
-        <div className="absolute inset-0 rounded-md flex items-center justify-center bg-black/50">
-          <Button variant="primary" size="sm" onClick={onUse}>Use</Button>
+      {/* Hover overlay — visual affordance for mouse users; decorative duplicate of footer Use */}
+      {hovered && (
+        <div
+          className="absolute inset-0 rounded-md bg-black/40 flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <button
+            type="button"
+            onClick={onUse}
+            tabIndex={-1}
+            className="btn-primary text-xs px-3 py-1.5 rounded-lg"
+            aria-hidden="true"
+          >
+            Use
+          </button>
         </div>
       )}
 
-      {/* Tile overflow — above overlay */}
-      {showOverlay && (
-        <div className="absolute top-2 right-2 z-10">
+      {/* Footer — always visible; z-10 + opaque bg paint over the overlay in this region */}
+      <div className="relative z-10 px-2 pt-1.5 pb-2 border-t border-[var(--color-border)] shrink-0 bg-[var(--color-bg-surface)]">
+        <p className="truncate text-xs font-medium text-[var(--color-text-body)] leading-tight mb-1">
+          {template.name}
+        </p>
+        <div className="flex items-center gap-1">
+          <span className="flex-1 truncate text-xs text-[var(--color-text-muted)] leading-tight">
+            {template.fields?.points != null ? `${template.fields.points} pts` : ''}
+          </span>
+          <Button variant="primary" size="sm" onClick={onUse}>Use</Button>
           <TileMenu
             templateName={template.name}
             onEdit={onEdit}
             onDelete={onDelete}
-            onOpenMenu={() => setMenuOpen(true)}
-            onCloseMenu={() => { setMenuOpen(false); setHovered(false) }}
+            onMove={onMove}
           />
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-function TileMenu({ templateName, onEdit, onDelete, onOpenMenu, onCloseMenu }) {
+function TileMenu({ templateName, onEdit, onDelete, onMove }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
   useEffect(() => {
     if (!open) return
-    function handle(e) {
-      if (!ref.current?.contains(e.target)) {
-        setOpen(false)
-        onCloseMenu()
-      }
-    }
+    function handle(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [open, onCloseMenu])
-
-  function handleOpen() {
-    setOpen(true)
-    onOpenMenu()
-  }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', handle)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={handleOpen}
-        aria-label={`More actions for ${templateName}`}
-        title={`More actions for ${templateName}`}
+      <IconButton
+        icon={MoreHorizontal}
+        label={`More actions for ${templateName}`}
+        size="sm"
+        onClick={() => setOpen(v => !v)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="inline-flex items-center justify-center rounded min-w-[1.75rem] min-h-[1.75rem] p-1 text-white/70 hover:text-white hover:bg-white/20 transition-colors duration-75"
-      >
-        <MoreHorizontal size={16} aria-hidden="true" />
-      </button>
+      />
       {open && (
         <div className="absolute right-0 top-full mt-1 z-30 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md shadow-md py-1 min-w-[7rem]">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onCloseMenu(); onEdit() }}
+            onClick={() => { setOpen(false); onEdit() }}
           >
             <Pencil size={13} aria-hidden="true" /> Edit
           </button>
           <button
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
+            onClick={() => { setOpen(false); onMove() }}
+          >
+            <Folder size={13} aria-hidden="true" /> Move To
+          </button>
+          <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onCloseMenu(); onDelete() }}
+            onClick={() => { setOpen(false); onDelete() }}
           >
             <Trash2 size={13} aria-hidden="true" /> Delete
           </button>
@@ -675,17 +778,20 @@ function TileMenu({ templateName, onEdit, onDelete, onOpenMenu, onCloseMenu }) {
   )
 }
 
-function OverflowMenu({ onEdit, onDelete }) {
+function OverflowMenu({ onEdit, onDelete, onMove }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
   useEffect(() => {
     if (!open) return
-    function onOutsideClick(e) {
-      if (!ref.current?.contains(e.target)) setOpen(false)
-    }
+    function onOutsideClick(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onOutsideClick)
-    return () => document.removeEventListener('mousedown', onOutsideClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onOutsideClick)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [open])
 
   return (
@@ -695,6 +801,8 @@ function OverflowMenu({ onEdit, onDelete }) {
         label="More actions"
         size="sm"
         onClick={() => setOpen(v => !v)}
+        aria-haspopup="true"
+        aria-expanded={open}
       />
       {open && (
         <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md shadow-md py-1 min-w-[7rem]">
@@ -703,6 +811,12 @@ function OverflowMenu({ onEdit, onDelete }) {
             onClick={() => { setOpen(false); onEdit() }}
           >
             <Pencil size={13} aria-hidden="true" /> Edit
+          </button>
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
+            onClick={() => { setOpen(false); onMove() }}
+          >
+            <Folder size={13} aria-hidden="true" /> Move To
           </button>
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"

@@ -43,6 +43,18 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e \"const {execSync} = require('child_process'); let claimed; try { claimed = execSync('bd list --status=in_progress', {encoding:'utf8'}).split('\\n').slice(0,10).join('\\n').trim() || 'none'; } catch(e) { claimed = 'none'; } const ctx = 'BEADS RULE: Before writing any code or file edit, verify an open + claimed beads issue exists. No exceptions, not even small fixes.\\nWorkflow: bd create -> bd update <id> --claim -> do work -> bd close <id>.\\nCurrently in-progress:\\n' + claimed; process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'UserPromptSubmit',additionalContext:ctx}}));\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
