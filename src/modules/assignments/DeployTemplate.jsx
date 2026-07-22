@@ -8,6 +8,18 @@ import { getPreferences } from '../../storage/preferences.js'
 import { deployTemplateToCourse } from './templateHelpers.js'
 import { addAssignmentToModule } from '../../api/moduleItems.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
+import FieldLabel from '../../components/FieldLabel.jsx'
+import Button from '../../components/Button.jsx'
+import TextField from '../../components/TextField.jsx'
+
+const EMPTY_DATES = { dueAt: '', unlockAt: '', lockAt: '' }
+
+const PUBLISH_OPTIONS = [
+  { value: 'unpublished', label: 'Unpublished' },
+  { value: 'published',   label: 'Published' },
+  { value: 'auto',        label: 'Auto (if due date set)' },
+]
 
 export default function DeployTemplate({ template, initialCourseId, moduleId, onDone, onBack }) {
   const toast = useToast()
@@ -15,20 +27,30 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   const [courses, setCourses] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [selectedIds, setSelectedIds] = useState(new Set())
-  const [dates, setDates] = useState({ dueAt: '', unlockAt: '', lockAt: '' })
+  const [dates, setDates] = useState(EMPTY_DATES)
+  const [individualDates, setIndividualDates] = useState(false)
+  const [perCourseDates, setPerCourseDates] = useState({})
+  const [perCourseGroups, setPerCourseGroups] = useState({})
   const [publishState, setPublishState] = useState('unpublished')
   const [deploying, setDeploying] = useState(false)
   const [results, setResults] = useState(null)
+
+  const defaultGroup = template.fields?.assignmentGroup ?? ''
+
+  function initCourseState(id) {
+    setPerCourseGroups(prev => ({ ...prev, [id]: prev[id] ?? defaultGroup }))
+    setPerCourseDates(prev => ({ ...prev, [id]: prev[id] ?? EMPTY_DATES }))
+  }
 
   useEffect(() => {
     getCourses()
       .then(list => {
         setCourses(list)
-        // Pre-select the course that launched this deploy flow (e.g. from a module button)
         if (initialCourseId) {
           const idStr = String(initialCourseId)
           if (list.find(c => c.id === idStr)) {
             setSelectedIds(new Set([idStr]))
+            initCourseState(idStr)
           }
         }
       })
@@ -38,19 +60,34 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   }, [initialCourseId])
 
   function toggleCourse(id) {
+    const isAdding = !selectedIds.has(id)
     setSelectedIds(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
+    if (isAdding) initCourseState(id)
   }
 
   function toggleAll(checked) {
-    setSelectedIds(checked ? new Set(courses.map(c => c.id)) : new Set())
+    if (checked) {
+      const ids = courses.map(c => c.id)
+      setSelectedIds(new Set(ids))
+      ids.forEach(initCourseState)
+    } else {
+      setSelectedIds(new Set())
+    }
   }
 
-  function setDate(key, value) {
+  function setSharedDate(key, value) {
     setDates(prev => ({ ...prev, [key]: value }))
+  }
+
+  function setCourseDate(courseId, key, value) {
+    setPerCourseDates(prev => ({
+      ...prev,
+      [courseId]: { ...(prev[courseId] ?? EMPTY_DATES), [key]: value },
+    }))
   }
 
   async function deploy() {
@@ -70,11 +107,18 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   async function runDeploy() {
     const selected = courses.filter(c => selectedIds.has(c.id))
     setDeploying(true)
+
     const deployResults = await Promise.all(
-      selected.map(course => deployTemplateToCourse(template, course, dates, publishState))
+      selected.map(course => {
+        const courseDates = individualDates ? (perCourseDates[course.id] ?? EMPTY_DATES) : dates
+        const groupOverride = perCourseGroups[course.id] ?? defaultGroup
+        const courseTemplate = groupOverride !== defaultGroup
+          ? { ...template, fields: { ...template.fields, assignmentGroup: groupOverride } }
+          : template
+        return deployTemplateToCourse(courseTemplate, course, courseDates, publishState)
+      })
     )
 
-    // Auto-add to module if launched from a module button and pref is enabled
     const moduleAddResults = {}
     if (moduleId) {
       const prefs = await getPreferences()
@@ -105,22 +149,26 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   }
 
   const allSelected = courses.length > 0 && courses.every(c => selectedIds.has(c.id))
-  const resolvedPublished = publishState === 'published' ? true : publishState === 'unpublished' ? false : !!dates.dueAt
+  const selectedCourses = courses.filter(c => selectedIds.has(c.id))
+  const resolvedPublished = publishState === 'published' ? true
+    : publishState === 'unpublished' ? false
+    : !!dates.dueAt
 
+  // ── Results screen ─────────────────────────────────────────────────────────
   if (results) {
     const { deployResults, moduleAddResults } = results
     const succeeded = deployResults.filter(r => r.success)
     const failed = deployResults.filter(r => !r.success)
 
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h2 className="text-xl font-bold text-[var(--color-text-body)]">Assignments Created</h2>
+      <div>
+        <PageHeader title="Assignments Created" back={{ label: 'Back to Library', to: onDone }} />
 
         <div className="card p-6 space-y-4">
           {succeeded.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 text-green-700 font-medium mb-3">
-                <CheckCircle size={16} />
+              <div className="flex items-center gap-2 text-[var(--color-success)] font-medium mb-3">
+                <CheckCircle size={16} aria-hidden="true" />
                 Successfully created: {succeeded.length} assignment{succeeded.length !== 1 ? 's' : ''}
               </div>
               <div className="space-y-1.5">
@@ -128,19 +176,19 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
                   <div key={r.courseId} className="pl-6 text-sm text-[var(--color-text-body)]">
                     <span className="font-medium">{r.courseName}</span>
                     {r.warning && (
-                      <div className="flex items-center gap-1 text-yellow-600 text-xs mt-0.5">
-                        <AlertCircle size={12} /> {r.warning}
-                      </div>
+                      <p className="flex items-center gap-1 text-[var(--color-warning)] text-xs mt-0.5">
+                        <AlertCircle size={12} aria-hidden="true" /> {r.warning}
+                      </p>
                     )}
                     {moduleAddResults[r.courseId] === 'added' && (
-                      <div className="flex items-center gap-1 text-green-600 text-xs mt-0.5">
-                        <CheckCircle size={12} /> Added to module
-                      </div>
+                      <p className="flex items-center gap-1 text-[var(--color-success)] text-xs mt-0.5">
+                        <CheckCircle size={12} aria-hidden="true" /> Added to module
+                      </p>
                     )}
                     {moduleAddResults[r.courseId] === 'failed' && (
-                      <div className="flex items-center gap-1 text-yellow-600 text-xs mt-0.5">
-                        <AlertCircle size={12} /> Assignment created but could not add to module — add it manually.
-                      </div>
+                      <p className="flex items-center gap-1 text-[var(--color-warning)] text-xs mt-0.5">
+                        <AlertCircle size={12} aria-hidden="true" /> Assignment created but could not add to module — add it manually.
+                      </p>
                     )}
                   </div>
                 ))}
@@ -150,15 +198,15 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
 
           {failed.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 text-red-700 font-medium mb-3">
-                <AlertCircle size={16} />
+              <div className="flex items-center gap-2 text-[var(--color-danger)] font-medium mb-3">
+                <AlertCircle size={16} aria-hidden="true" />
                 Failed: {failed.length} course{failed.length !== 1 ? 's' : ''}
               </div>
               <div className="space-y-1.5">
                 {failed.map(r => (
-                  <div key={r.courseId} className="pl-6 text-sm text-[var(--color-text-body)]">
-                    <span className="font-medium">{r.courseName}</span>
-                    <span className="ml-2 text-red-600">{r.error}</span>
+                  <div key={r.courseId} className="pl-6 text-sm">
+                    <span className="font-medium text-[var(--color-text-body)]">{r.courseName}</span>
+                    <span className="ml-2 text-[var(--color-danger)]">{r.error}</span>
                   </div>
                 ))}
               </div>
@@ -166,144 +214,215 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           )}
         </div>
 
-        <div className="flex gap-3 justify-end">
-          <button className="btn-secondary flex items-center gap-1.5" onClick={openBulkEditor}>
-            <ExternalLink size={14} /> View in Bulk Editor
-          </button>
-          <button className="btn-primary" onClick={() => {
-            const succeeded = results.deployResults.filter(r => r.success).length
-            if (succeeded > 0) toast(`Deployed to ${succeeded} course${succeeded !== 1 ? 's' : ''}`, 'success')
+        <div className="mt-6 flex gap-3 justify-end">
+          <Button variant="ghost" onClick={openBulkEditor}>
+            <ExternalLink size={14} aria-hidden="true" /> View in Bulk Editor
+          </Button>
+          <Button variant="primary" onClick={() => {
+            const n = results.deployResults.filter(r => r.success).length
+            if (n > 0) toast(`Deployed to ${n} course${n !== 1 ? 's' : ''}`, 'success')
             onDone()
-          }}>Done</button>
+          }}>
+            Done
+          </Button>
         </div>
       </div>
     )
   }
 
+  // ── Deploy form ────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-[var(--color-text-body)]">Deploy Template</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Creating <span className="font-medium text-[var(--color-text-body)]">"{template.fields.name}"</span>
-          {' '}— {template.fields.points != null ? `${template.fields.points} pts` : 'ungraded'}
-          {template.fields.assignmentGroup ? ` · ${template.fields.assignmentGroup}` : ''}
+    <div>
+      <PageHeader
+        title={`Deploy — ${template.fields?.name ?? template.name}`}
+        back={{ label: 'Back to Library', to: onBack }}
+        actions={
+          <Button
+            variant="primary"
+            disabled={selectedIds.size === 0 || deploying}
+            onClick={deploy}
+          >
+            {deploying
+              ? <><Loader size={14} className="animate-spin" aria-hidden="true" /> Creating…</>
+              : `Create Assignment${selectedIds.size !== 1 ? 's' : ''}`}
+          </Button>
+        }
+      >
+        {template.fields?.points != null ? `${template.fields.points} pts` : 'Ungraded'}
+        {defaultGroup ? ` · ${defaultGroup}` : ''}
+      </PageHeader>
+
+      {moduleId && (
+        <p className="flex items-center gap-1.5 text-xs mb-4" style={{ color: 'var(--cpt-color)' }}>
+          <CheckCircle size={12} aria-hidden="true" /> Will be added to this module automatically after creation.
         </p>
-        {moduleId && (
-          <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--cpt-color)' }}>
-            <CheckCircle size={12} /> Will be added to this module automatically after creation.
-          </p>
-        )}
-      </div>
-
-      {/* Course selection */}
-      <div className="card p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[var(--color-text-body)]">Select courses</h3>
-          <button className="text-xs font-medium" style={{ color: 'var(--cpt-color)' }} onClick={() => toggleAll(!allSelected)}>
-            {allSelected ? 'Deselect all' : 'Select all'}
-          </button>
-        </div>
-
-        {loadingCourses && (
-          <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm py-2">
-            <Loader size={14} className="animate-spin" /> Loading courses...
-          </div>
-        )}
-
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {courses.map(c => (
-            <div
-              key={c.id}
-              className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-              onClick={() => toggleCourse(c.id)}
-            >
-              <Checkbox checked={selectedIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
-              <span className="text-sm text-[var(--color-text-body)]">
-                {c.name}
-                {c.term && <span className="text-[var(--color-text-muted)] ml-1.5 text-xs">{c.term}</span>}
-                {moduleId && Number(c.id) === Number(initialCourseId) && (
-                  <span className="ml-2 text-xs font-medium" style={{ color: 'var(--cpt-color)' }}>→ module</span>
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Dates */}
-      <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-[var(--color-text-body)]">Set Dates <span className="font-normal text-[var(--color-text-muted)]">(optional)</span></h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="label">Due Date</label>
-            <input type="date" value={dates.dueAt} onChange={e => setDate('dueAt', e.target.value)} className="input text-sm" />
-          </div>
-          <div>
-            <label className="label">Available From</label>
-            <input type="date" value={dates.unlockAt} onChange={e => setDate('unlockAt', e.target.value)} className="input text-sm" />
-          </div>
-          <div>
-            <label className="label">Available Until</label>
-            <input type="date" value={dates.lockAt} onChange={e => setDate('lockAt', e.target.value)} className="input text-sm" />
-          </div>
-        </div>
-        <div className="pt-2 border-t border-[var(--color-border)]">
-          <label className="label mb-1.5">Publish state</label>
-          <div className="flex items-center gap-1.5">
-            {[
-              { value: 'unpublished', label: 'Unpublished' },
-              { value: 'published',   label: 'Published' },
-              { value: 'auto',        label: 'Auto (if due date set)' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setPublishState(opt.value)}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-75 ${
-                  publishState === opt.value ? 'text-white' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
-                }`}
-                style={publishState === opt.value ? { backgroundColor: 'var(--cpt-color)' } : undefined}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Preview */}
-      {selectedIds.size > 0 && (
-        <div
-          className="rounded-lg p-4 text-sm"
-          style={{
-            backgroundColor: 'rgba(var(--cpt-color-rgb), 0.07)',
-            border: '1px solid rgba(var(--cpt-color-rgb), 0.18)',
-            color: 'var(--color-text-body)',
-          }}
-        >
-          <p className="font-medium mb-1">
-            Creating "{template.fields.name}" in {selectedIds.size} course{selectedIds.size !== 1 ? 's' : ''}
-          </p>
-          <p className="text-xs text-[var(--color-text-secondary)]">
-            {template.fields.points != null ? `${template.fields.points} pts` : 'Ungraded'}
-            {template.fields.assignmentGroup ? ` · Group: ${template.fields.assignmentGroup}` : ''}
-            {' · '}Status: {resolvedPublished ? 'Published' : 'Unpublished'}
-          </p>
-        </div>
       )}
 
-      <div className="flex justify-between">
-        <button className="btn-secondary" onClick={onBack}>Back</button>
-        <button
-          className="btn-primary"
-          disabled={selectedIds.size === 0 || deploying}
-          onClick={deploy}
-        >
-          {deploying
-            ? <><Loader size={14} className="animate-spin" /> Creating...</>
-            : `Create Assignment${selectedIds.size !== 1 ? 's' : ''}`}
-        </button>
+      <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
+
+        {/* Left: course selection + group mapping */}
+        <div className="space-y-4">
+          <div className="card p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="section-label">Courses</h3>
+              <Button variant="ghost" size="sm" onClick={() => toggleAll(!allSelected)}>
+                {allSelected ? 'Deselect all' : 'Select all'}
+              </Button>
+            </div>
+
+            {loadingCourses && (
+              <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm py-2">
+                <Loader size={14} className="animate-spin" aria-hidden="true" /> Loading courses…
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {courses.map(c => (
+                <div
+                  key={c.id}
+                  className="flex items-center gap-3 cursor-pointer px-2 py-2 rounded hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
+                  onClick={() => toggleCourse(c.id)}
+                >
+                  <Checkbox checked={selectedIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
+                  <span className="text-sm text-[var(--color-text-body)] min-w-0 truncate">
+                    {c.name}
+                    {c.term && <span className="text-[var(--color-text-muted)] ml-1.5 text-xs">{c.term}</span>}
+                    {moduleId && Number(c.id) === Number(initialCourseId) && (
+                      <span className="ml-2 text-xs font-medium" style={{ color: 'var(--cpt-color)' }}>→ module</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {selectedCourses.length > 0 && (
+            <div className="card p-5 space-y-3">
+              <div>
+                <h3 className="section-label">Assignment Group</h3>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Matched by name; created if missing.</p>
+              </div>
+              <div className="space-y-2">
+                {selectedCourses.map(c => (
+                  <div key={c.id} className="flex items-center gap-3">
+                    <span className="text-sm text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{c.name}</span>
+                    <div className="w-40 shrink-0">
+                      <TextField
+                        value={perCourseGroups[c.id] ?? defaultGroup}
+                        onChange={v => setPerCourseGroups(prev => ({ ...prev, [c.id]: v }))}
+                        placeholder="Group name"
+                        aria-label={`Assignment group for ${c.name}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: dates + publish + preview */}
+        <div className="space-y-4">
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="section-label">
+                Dates <span className="normal-case font-normal text-[var(--color-text-muted)]">(optional)</span>
+              </h3>
+              <div
+                className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
+                onClick={() => setIndividualDates(v => !v)}
+              >
+                <Checkbox checked={individualDates} onChange={() => setIndividualDates(v => !v)} />
+                Per course
+              </div>
+            </div>
+
+            {!individualDates ? (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <FieldLabel htmlFor="deploy-due">Due Date</FieldLabel>
+                  <input id="deploy-due" type="date" value={dates.dueAt} onChange={e => setSharedDate('dueAt', e.target.value)} className="input text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <FieldLabel htmlFor="deploy-from">Available From</FieldLabel>
+                  <input id="deploy-from" type="date" value={dates.unlockAt} onChange={e => setSharedDate('unlockAt', e.target.value)} className="input text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <FieldLabel htmlFor="deploy-until">Available Until</FieldLabel>
+                  <input id="deploy-until" type="date" value={dates.lockAt} onChange={e => setSharedDate('lockAt', e.target.value)} className="input text-sm" />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {selectedCourses.length === 0 && (
+                  <p className="text-sm text-[var(--color-text-muted)]">Select courses to set dates per course.</p>
+                )}
+                {selectedCourses.map(c => {
+                  const cd = perCourseDates[c.id] ?? EMPTY_DATES
+                  return (
+                    <div key={c.id}>
+                      <p className="text-sm font-medium text-[var(--color-text-body)] mb-2 truncate">{c.name}</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <FieldLabel>Due</FieldLabel>
+                          <input type="date" value={cd.dueAt} onChange={e => setCourseDate(c.id, 'dueAt', e.target.value)} className="input text-sm" />
+                        </div>
+                        <div className="space-y-1">
+                          <FieldLabel>From</FieldLabel>
+                          <input type="date" value={cd.unlockAt} onChange={e => setCourseDate(c.id, 'unlockAt', e.target.value)} className="input text-sm" />
+                        </div>
+                        <div className="space-y-1">
+                          <FieldLabel>Until</FieldLabel>
+                          <input type="date" value={cd.lockAt} onChange={e => setCourseDate(c.id, 'lockAt', e.target.value)} className="input text-sm" />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="card p-5 space-y-3">
+            <FieldLabel>Publish</FieldLabel>
+            <div className="flex items-center gap-1.5">
+              {PUBLISH_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setPublishState(opt.value)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-75 ${
+                    publishState === opt.value
+                      ? 'text-white'
+                      : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
+                  }`}
+                  style={publishState === opt.value ? { backgroundColor: 'var(--cpt-color)' } : undefined}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {selectedIds.size > 0 && (
+            <div
+              className="rounded-md p-4 text-sm"
+              style={{
+                backgroundColor: 'rgba(var(--cpt-color-rgb), 0.07)',
+                border: '1px solid rgba(var(--cpt-color-rgb), 0.18)',
+              }}
+            >
+              <p className="font-medium text-[var(--color-text-body)] mb-1">
+                Creating "{template.fields?.name}" in {selectedIds.size} course{selectedIds.size !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {template.fields?.points != null ? `${template.fields.points} pts` : 'Ungraded'}
+                {' · '}Status: {resolvedPublished ? 'Published' : 'Unpublished'}
+              </p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   )

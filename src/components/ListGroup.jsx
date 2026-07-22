@@ -49,11 +49,11 @@ export default function ListGroup({
           <Chevron size={14} aria-hidden="true" className="shrink-0" />
           {/* section-label typography inline (the .section-label class carries
               a block/margin unsuited to this flex header). */}
-          <span className="truncate text-[0.6875rem] font-medium uppercase tracking-[0.08em]">
+          <span className="truncate text-xs font-medium uppercase tracking-[0.08em]">
             {label}
           </span>
           {count != null && (
-            <span className="shrink-0 text-[0.6875rem] font-medium tabular-nums">
+            <span className="shrink-0 text-xs font-medium tabular-nums">
               ({count})
             </span>
           )}

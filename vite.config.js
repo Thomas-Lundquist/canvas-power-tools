@@ -7,10 +7,38 @@ import { fileURLToPath } from 'url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
+// CRXJS intercepts every <script src="..."> in HTML and tries to transform it
+// as a module entry. theme-init.js is a minified IIFE in public/ — not a module
+// — so CRXJS's transform 500s in dev. Strip it before CRXJS sees it, then
+// re-inject after CRXJS is done. Production build is unaffected.
+const CLASSIC_SCRIPTS = ['/theme-init.js']
+
+const stripClassicScripts = {
+  name: 'strip-classic-scripts',
+  enforce: 'pre',
+  transformIndexHtml(html) {
+    return CLASSIC_SCRIPTS.reduce(
+      (h, src) => h.replace(`<script src="${src}"></script>`, ''),
+      html,
+    )
+  },
+}
+
+const injectClassicScripts = {
+  name: 'inject-classic-scripts',
+  enforce: 'post',
+  transformIndexHtml(html) {
+    const tags = CLASSIC_SCRIPTS.map(src => `  <script src="${src}"></script>`).join('\n')
+    return html.replace('</head>', `${tags}\n</head>`)
+  },
+}
+
 export default defineConfig({
   plugins: [
+    stripClassicScripts,
     react(),
     crx({ manifest }),
+    injectClassicScripts,
   ],
   server: {
     port: 5173,
