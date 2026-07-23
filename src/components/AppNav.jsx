@@ -51,7 +51,7 @@ export default function AppNav({ current }) {
       <button
         ref={triggerRef}
         onClick={() => setOpen(o => !o)}
-        className="cpt-nav-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+        className="cpt-nav-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium transition-colors"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -62,7 +62,7 @@ export default function AppNav({ current }) {
 
       {open && (
         <div
-          className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-60 bg-[var(--color-bg-surface)] rounded-md border border-[var(--color-border)] py-1.5 z-50 max-h-[70vh] overflow-y-auto"
+          className="cpt-nav-dropdown absolute right-0 top-full mt-1.5 w-60 bg-[var(--color-bg-surface)] rounded-[var(--radius-card)] border border-[var(--color-border)] py-1.5 z-50 max-h-[70vh] overflow-y-auto"
           role="menu"
         >
           {grouped.map((group, gi) => (
@@ -107,7 +107,7 @@ export function SettingsButton() {
   return (
     <button
       onClick={() => navigate('src/settings/index.html')}
-      className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
+      className="p-2 rounded-[var(--radius-control)] text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
       title="Settings"
       aria-label="Settings"
     >
@@ -119,7 +119,7 @@ export function SettingsButton() {
 export function BrandMark() {
   return (
     <div className="flex items-center gap-2.5 shrink-0">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+      <div className="w-7 h-7 rounded-[var(--radius-control)] flex items-center justify-center shrink-0"
            style={{ backgroundColor: 'var(--cpt-color)' }}>
         <span className="text-white text-xs font-black">C</span>
       </div>

@@ -12,6 +12,8 @@ The prior single runtime-customizable brand accent (`--cpt-color`, hue-rotated b
 
 **Mechanism — implemented:** `applyPalette(name)` (`src/utils/color.js`) sets `data-theme` on `<html>` and persists to `localStorage`; `public/theme-init.js` applies it pre-paint. Settings > Style writes `prefs.palette`. `[data-theme="bauhaus"]` in `global.css` overrides the semantic/structural tokens (`--color-bg-page`, `--color-border`, `--cpt-color`, `--shadow-*`, `--radius-control`, `--radius-card`) that the shared component layer (`.btn`, `.input`, `.card`, `.segmented-control`) reads. **Not yet done:** any tool whose JSX uses raw Tailwind utility classes (`rounded-lg`, `shadow-sm`, etc.) directly instead of those shared classes won't visually respond to the theme switch until its own rebuild (`canvas-power-tools-1yr.4`) migrates it onto the tokens.
 
+**Pattern for Bauhaus-only visual mechanics:** several rules in this doc (domain accent strips, data-table header/toolbar treatment, bordered badges) apply under Bauhaus only and are explicitly a no-op under Default. These are implemented the same way each time — a base class in `global.css` with an inert default (`border-width: 0`, `background: transparent`, etc.), then a `[data-theme="bauhaus"] .the-class { ... }` override that turns it on. See `.domain-accent`, `.table-header-cell`, `.table-toolbar`, `.badge-pill`. Per-tool rebuilds should reuse this pattern rather than branching on theme in JS.
+
 ### Themes
 
 | Theme | Settings value | Status |
@@ -20,6 +22,22 @@ The prior single runtime-customizable brand accent (`--cpt-color`, hue-rotated b
 | Default | `palette: "default"` | Accessible & Ethical style (see below). Existing warm-grey/primary token system, formalized as the second theme option. |
 
 Both themes keep the same behavioral rules (accessibility, error copy, empty states, keyboard shortcuts, loading/toast behavior) documented later in this file — those are theme-independent.
+
+---
+
+## Typography (cross-theme)
+
+- **Status: heading face deferred.** `h1`–`h6` currently render in **Inter** — same as body — via `--font-heading: var(--font-body)`. This is a placeholder, not a decision: a distinct heading face is still wanted, just not picked yet. Two options were tried and reverted — Oswald (condensed display sans, read too far from Inter) and IBM Plex Mono (monospace-leaning, didn't land visually) — Courier New was considered and rejected outright (system-fallback typewriter face, low x-height, clashes with Inter's grotesque body). Revisit later; swapping the pairing in is a one-line change to `--font-heading` in `global.css`.
+- **Body copy, controls, table cells:** **Inter**, with `font-optical-sizing: auto` and stylistic sets `cv02`/`cv03`/`cv04` enabled.
+- Self-hosted via `@fontsource/inter` (bundled at build time — no runtime font CDN, per the project's security rules). Weights loaded: 400/500/600/700/900.
+
+## Categorical Color Coding (cross-theme)
+
+Distinct from the per-Module **domain** colors (§2 below, Bauhaus-only, fixed meaning) — this is for coloring items from an *open-ended, teacher-defined* set, e.g. Canvas Assignment Groups, where there's no fixed palette to hand-assign. Same mechanism should be reused for any future "arbitrary category → consistent color" need (Modules-by-course, custom tags, etc.), not just assignment groups.
+
+- **Palette:** `--color-cat-1` … `--color-cat-8` in `global.css`. Eight hues, theme-independent (unlike Bauhaus mechanics, category color coding stays on under Default too).
+- **Assignment:** `getGroupColor(id)` (`src/utils/groupColors.js`) — a djb2 string hash of the item's own id, modulo palette length. Same id always resolves to the same color regardless of fetch order, filtering, or reload. Not cryptographic; used only for display.
+- **Usage:** a small color tick/swatch next to the item's name — decorative (`aria-hidden`), since the name text already carries the meaning (WCAG 1.4.1 — color is never the only signal). See `AssignmentTable`'s Group column for the reference implementation.
 
 ---
 
@@ -106,11 +124,12 @@ All colors below are defined as CSS custom properties in `src/styles/global.css`
 - Accordion: 1px-border expandable headers, `[+]` / `[-]` toggle states
 
 **Data tables**
-- Grid frame: `border border-[var(--color-stroke)] bg-[var(--color-bg-surface)] rounded-[var(--radius-sm)]`, no shadow
-- Toolbar: `bg-[var(--color-container-inset)]`, monospace search, status filter, density switcher, bulk-selection metrics
-- Column headers: `bg-[var(--color-canvas-paper)]`, uppercase monospace tracking-wider, `border-r border-[var(--color-grid-divider)]`, sort glyphs (`▲`/`▼`)
-- Rows: `border-b border-[var(--color-grid-divider)]`, hover `bg-[var(--color-canvas-paper)]`, 4px domain accent strip, right-aligned monospace scores
-- Pagination footer: `bg-[var(--color-container-inset)]`, record count (`SHOWING 1-5 OF 24`), stepped controls `[◄ PREV] [1] [2] [3] [NEXT ►]`
+- Grid frame: `.card` + `.domain-accent` (top-level container, not per-row — see §2), no shadow. Implemented on Bulk Editor's table `Card` with `--domain-color: var(--color-domain-assignments)`.
+- Toolbar: `.table-toolbar` class → `bg-[var(--color-container-inset)]` + monospace, applied to `FilterBar`'s wrapper. Search, filters, and bulk-selection metrics come from the existing `FilterBar`/`BulkActionBar` — no separate density switcher exists (not in this tool's spec).
+- Column headers: `.table-header-cell` class → uppercase monospace tracking-wider + `border-r border-[var(--color-grid-divider)]` (last column excluded), applied per `<th>` in `AssignmentTable`. Background already correct via the existing `--color-bg-page` token. Sort glyphs are Lucide chevrons, not `▲`/`▼` glyphs — consistent with the rest of the app's iconography.
+- Rows: **not** a repeated per-row Module strip (that would just be the same color on every row, since a tool's rows all belong to one Module) — instead, per-row color coding uses the Categorical Color Coding mechanism above, keyed by Canvas Assignment Group. Bottom divider already correct via the existing `--color-border-subtle` → `--color-grid-divider` mapping under Bauhaus.
+- Status cells: `Badge` atom + `.badge-pill` class — flat `--radius-sm` + 1px `currentColor` border under Bauhaus (soft tinted pill, no border, under Default). Used for Published/Unpublished in `AssignmentTable`.
+- Pagination footer: **not implemented** — deliberate, not a gap. `AssignmentTable` is virtualized (`@tanstack/react-virtual`, per doc 02/06), which the project chose over paginating; a stepped pagination footer would contradict that. Row-count context instead comes from the FilterBar/toolbar area.
 
 ### 6. Mechanical Animation
 

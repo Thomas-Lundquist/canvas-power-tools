@@ -47,7 +47,7 @@ export default function Callout({
   return (
     <div
       role={assertive ? 'alert' : 'status'}
-      className={`rounded-lg flex items-start gap-2 ${className}`.trim()}
+      className={`rounded-[var(--radius-card)] flex items-start gap-2 ${className}`.trim()}
       style={{
         background: tint(token, 10),
         border: `1px solid ${tint(token, 35)}`,

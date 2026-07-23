@@ -80,7 +80,7 @@ export default function Badge({ tone = 'neutral', icon: Icon, children }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full font-medium leading-none whitespace-nowrap"
+      className="badge-pill inline-flex items-center gap-1 font-medium leading-none whitespace-nowrap"
       style={{
         fontSize: MICRO_TEXT,
         // var(--token, fallback): uses the literal today, auto-upgrades to the

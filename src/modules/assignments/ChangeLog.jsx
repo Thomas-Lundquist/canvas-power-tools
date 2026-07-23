@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, RotateCcw, X, AlertCircle, CheckCircle, Loader } from 'lucide-react'
+import { ChevronDown, ChevronRight, RotateCcw, AlertCircle, Loader } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
+import Callout from '../../components/Callout.jsx'
+import Badge from '../../components/Badge.jsx'
 import { getChangeLog, addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { updateAssignment } from '../../api/assignments.js'
@@ -101,46 +103,43 @@ export default function ChangeLog({ courseId, courseName, onClose, onRevertCompl
   return (
     <Modal title={`Change Log — ${courseName}`} onClose={onClose} size="lg">
       {revertResult && (
-        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 text-sm">
-          <p className="font-medium text-green-800 flex items-center gap-2">
-            <CheckCircle size={16} /> Revert complete
-          </p>
-          <p className="text-green-700 mt-1">{revertResult.succeeded.length} change{revertResult.succeeded.length !== 1 ? 's' : ''} reverted successfully.</p>
+        <Callout tone="success" title="Revert complete" className="mb-4">
+          <p>{revertResult.succeeded.length} change{revertResult.succeeded.length !== 1 ? 's' : ''} reverted successfully.</p>
           {revertResult.skipped.length > 0 && (
-            <p className="text-yellow-700 mt-1 flex items-center gap-1">
+            <p className="mt-1 flex items-center gap-1" style={{ color: 'var(--color-warning)' }}>
               <AlertCircle size={14} /> {revertResult.skipped.length} skipped (assignment may have been deleted).
             </p>
           )}
-          <button className="text-xs text-green-600 underline mt-2" onClick={() => setRevertResult(null)}>Dismiss</button>
-        </div>
+          <button className="text-xs underline mt-2" style={{ color: 'var(--color-success)' }} onClick={() => setRevertResult(null)}>Dismiss</button>
+        </Callout>
       )}
 
       {entries.length === 0 && (
-        <p className="text-sm text-gray-500 py-8 text-center">No changes recorded for this course yet.</p>
+        <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">No changes recorded for this course yet.</p>
       )}
 
       <div className="space-y-2">
         {entries.map(entry => (
-          <div key={entry.id} className="border border-gray-200 rounded-lg overflow-hidden">
+          <div key={entry.id} className="border border-[var(--color-border)] rounded-[var(--radius-card)] overflow-hidden">
             <div
-              className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+              className="flex items-center justify-between px-4 py-3 bg-[var(--color-bg-page)] cursor-pointer hover:bg-[var(--color-bg-hover)]"
               onClick={() => toggleExpand(entry.id)}
             >
               <div className="flex items-center gap-3">
-                <button className="text-gray-400">
+                <button className="text-[var(--color-text-muted)]">
                   {expanded.has(entry.id) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 </button>
                 <div>
-                  <span className="text-sm font-medium text-gray-900">{entry.summary}</span>
+                  <span className="text-sm font-medium text-[var(--color-text-body)]">{entry.summary}</span>
                   {entry.type === 'revert' && (
-                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">Revert</span>
+                    <span className="ml-2"><Badge tone="warning">Revert</Badge></span>
                   )}
-                  <span className="ml-3 text-xs text-gray-500">{timeAgo(entry.timestamp)}</span>
+                  <span className="ml-3 text-xs text-[var(--color-text-muted)]">{timeAgo(entry.timestamp)}</span>
                 </div>
               </div>
               {confirming === entry.id ? (
                 <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                  <span className="text-xs text-gray-600">Revert {entry.changes.length} change{entry.changes.length !== 1 ? 's' : ''}?</span>
+                  <span className="text-xs text-[var(--color-text-secondary)]">Revert {entry.changes.length} change{entry.changes.length !== 1 ? 's' : ''}?</span>
                   <button className="btn-danger text-xs px-2 py-1" onClick={() => handleRevert(entry)}>Confirm</button>
                   <button className="btn-ghost text-xs px-2 py-1" onClick={() => setConfirming(null)}>Cancel</button>
                 </div>
@@ -157,10 +156,10 @@ export default function ChangeLog({ courseId, courseName, onClose, onRevertCompl
             </div>
 
             {expanded.has(entry.id) && (
-              <div className="px-4 py-3 border-t border-gray-100">
+              <div className="px-4 py-3 border-t border-[var(--color-border-subtle)]">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-gray-400 border-b border-gray-100">
+                    <tr className="text-[var(--color-text-muted)] border-b border-[var(--color-border-subtle)]">
                       <th className="text-left py-1 pr-4 font-medium">Assignment</th>
                       <th className="text-left py-1 pr-4 font-medium">Field</th>
                       <th className="text-left py-1 pr-4 font-medium">Before</th>
@@ -169,10 +168,10 @@ export default function ChangeLog({ courseId, courseName, onClose, onRevertCompl
                   </thead>
                   <tbody>
                     {entry.changes.map((c, i) => (
-                      <tr key={i} className="border-b border-gray-50 last:border-0">
-                        <td className="py-1.5 pr-4 text-gray-700 font-medium">{c.assignmentName}</td>
-                        <td className="py-1.5 pr-4 text-gray-500">{FIELD_LABELS[c.field] ?? c.field}</td>
-                        <td className="py-1.5 pr-4 text-gray-500">{formatValue(c.field, c.previousValue)}</td>
+                      <tr key={i} className="border-b border-[var(--color-border-subtle)] last:border-0">
+                        <td className="py-1.5 pr-4 text-[var(--color-text-secondary)] font-medium">{c.assignmentName}</td>
+                        <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{FIELD_LABELS[c.field] ?? c.field}</td>
+                        <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{formatValue(c.field, c.previousValue)}</td>
                         <td className="py-1.5 font-medium" style={{ color: 'var(--cpt-color)' }}>{formatValue(c.field, c.newValue)}</td>
                       </tr>
                     ))}

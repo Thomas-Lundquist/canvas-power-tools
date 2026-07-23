@@ -233,7 +233,7 @@ export default function FilterBar({
   }
 
   return (
-    <div className="px-3 border-b border-[var(--color-border)]">
+    <div className="table-toolbar px-3 border-b border-[var(--color-border)]">
       {/* Search + Add Filter + chips inline — chips wrap within the middle section, no layout jump */}
       <div className="flex items-start gap-3 py-3">
         <div className="shrink-0">
@@ -259,7 +259,7 @@ export default function FilterBar({
 
             {popoverOpen && (
               <div
-                className="absolute top-full left-0 mt-1.5 w-60 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 overflow-hidden"
+                className="absolute top-full left-0 mt-1.5 w-60 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-lg)] z-20 overflow-hidden"
                 role="dialog"
                 aria-label={step === 'type' ? 'Choose a filter type' : `Set ${pendingType?.label ?? ''} filter`}
               >

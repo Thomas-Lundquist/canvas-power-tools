@@ -27,7 +27,7 @@ const ICON_PX = { sm: 16, md: 20 };
 // Base: layout + the touch-target floor. min-w/min-h 2rem (= --space-6) keeps
 // the tappable area >= 2rem even when size="sm" shrinks the padding/glyph.
 const BASE =
-  'inline-flex items-center justify-center rounded-lg transition-colors duration-75 ' +
+  'inline-flex items-center justify-center rounded-[var(--radius-control)] transition-colors duration-75 ' +
   'min-w-[2rem] min-h-[2rem] ' +
   'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
 

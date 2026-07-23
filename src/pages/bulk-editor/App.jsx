@@ -206,7 +206,11 @@ export default function App() {
   function renderContent() {
     if (loadingCourses) {
       return (
-        <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4 [box-shadow:0_4px_24px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.04)]">
+        <Card
+          padding="none"
+          className="domain-accent flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4 shadow-[var(--shadow-md)]"
+          style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+        >
           <AssignmentTable
             assignments={[]}
             selectedIds={new Set()}
@@ -256,7 +260,11 @@ export default function App() {
     }
 
     return (
-      <Card padding="none" className="flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4 [box-shadow:0_4px_24px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.04)]">
+      <Card
+        padding="none"
+        className="domain-accent flex-1 flex flex-col min-h-0 overflow-hidden mx-6 mt-4 mb-4 shadow-[var(--shadow-md)]"
+        style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+      >
         {!loadingAssignments && (
           <FilterBar
             search={search}

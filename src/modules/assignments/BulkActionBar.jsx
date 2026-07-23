@@ -68,11 +68,11 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
         selectedCount === 0 ? 'translate-y-full pointer-events-none' : 'translate-y-0'
       }`}
     >
-      <div className="bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-xl [box-shadow:0_-4px_24px_rgba(0,0,0,0.08),0_-1px_6px_rgba(0,0,0,0.05)]">
+      <div className="bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-[var(--radius-card)] shadow-[var(--shadow-lg)]">
 
         {/* Header strip */}
         <div
-          className={`flex items-center justify-between px-4 h-11 bg-[var(--color-bg-hover)] rounded-t-xl border-b-2 border-[var(--cpt-color)] ${collapsed ? 'cursor-pointer' : ''}`}
+          className={`flex items-center justify-between px-4 h-11 bg-[var(--color-bg-hover)] rounded-t-[var(--radius-card)] border-b-2 border-[var(--cpt-color)] ${collapsed ? 'cursor-pointer' : ''}`}
           onClick={() => { if (collapsed) setCollapsed(false) }}
         >
           <span className="text-sm font-medium text-[var(--color-text-body)]">
@@ -215,7 +215,7 @@ function DateRow({ label, field, onChange }) {
         )}
         {field.mode === 'shift' && (
           <div className="w-40 flex items-center gap-1">
-            <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden shrink-0" role="group" aria-label="Shift direction">
+            <div className="flex rounded-[var(--radius-control)] border border-[var(--color-border)] overflow-hidden shrink-0" role="group" aria-label="Shift direction">
               <button
                 type="button"
                 onClick={() => onChange({ ...field, shiftDir: '+' })}
@@ -239,12 +239,12 @@ function DateRow({ label, field, onChange }) {
           </div>
         )}
         {field.mode === 'clear' && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-[var(--color-error)] text-[var(--color-error)]" role="alert">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-[var(--radius-control)] text-xs border border-[var(--color-error)] text-[var(--color-error)]" role="alert">
             Clears this date from all selected
           </span>
         )}
         {field.mode === 'none' && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-[var(--color-border)] text-[var(--color-text-disabled)]">No change</span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-[var(--radius-control)] text-xs border border-[var(--color-border)] text-[var(--color-text-disabled)]">No change</span>
         )}
       </div>
     </div>
@@ -257,7 +257,7 @@ function StatusButton({ icon: Icon, label, active, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+      className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 rounded-[var(--radius-control)] text-xs font-medium transition-colors
         ${active
           ? 'bg-[rgba(var(--cpt-color-rgb),0.1)] text-[var(--cpt-color)]'
           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-body)]'

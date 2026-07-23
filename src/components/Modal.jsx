@@ -54,17 +54,17 @@ export default function Modal({ title, subtitle, children, onClose, size = 'md',
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`bg-white rounded-xl shadow-xl w-full ${widths[size]} flex flex-col max-h-[90vh]`}
+        className={`bg-[var(--color-bg-surface)] rounded-[var(--radius-card)] shadow-[var(--shadow-xl)] w-full ${widths[size]} flex flex-col max-h-[90vh]`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
-            <h2 id="modal-title" className="text-lg font-semibold text-gray-900">{title}</h2>
-            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+            <h2 id="modal-title" className="text-lg font-semibold text-[var(--color-text-body)]">{title}</h2>
+            {subtitle && <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{subtitle}</p>}
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              className="p-1 rounded-[var(--radius-control)] text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]"
               aria-label="Close dialog"
             >
               <X size={18} />
@@ -73,7 +73,7 @@ export default function Modal({ title, subtitle, children, onClose, size = 'md',
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0 bg-gray-50 rounded-b-xl">
+          <div className="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3 flex-shrink-0 bg-[var(--color-bg-hover)] rounded-b-[var(--radius-card)]">
             {footer}
           </div>
         )}

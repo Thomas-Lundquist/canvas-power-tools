@@ -1,3 +1,14 @@
+/* Self-hosted fonts (bundled at build time, no runtime CDN — see CLAUDE.md
+   security rule 6). Inter only for now — a separate heading face (Oswald,
+   then IBM Plex Mono were both tried and reverted) is deferred; see
+   design_docs/10 § Typography. Weight subset matches the font-* utility
+   classes in use. */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/900.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,6 +20,13 @@
    (src/utils/color.js) setting data-theme on <html>. No per-color
    customization — see design_docs/10 § Themes. */
 :root {
+  /* Typography — body/heading font pairing (design_docs/10 § Typography).
+     --font-heading is a separate token on purpose, even though it's Inter
+     too right now — the heading-face decision is deferred, not abandoned;
+     swapping the pairing later is a one-line change here. */
+  --font-body:    'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-body);
+
   /* ──────────────────────────────────────────────────────────────
      PRIMITIVE RAMPS (1yr.1) — raw scale. Semantic tokens below alias
      onto these. Components consume the SEMANTIC layer, never these.
@@ -116,6 +134,19 @@
   --color-domain-setup:         #334155;  /* Dark Slate */
   --color-domain-alert:         #B7102A;  /* Bauhaus Red */
 
+  /* Categorical palette — hashed per-item (e.g. Canvas Assignment Groups,
+     src/utils/groupColors.js), not tied to a fixed meaning like the domain
+     colors above. Theme-independent: unlike the Bauhaus mechanics, category
+     color coding is useful under Default too (design_docs/10 § Data Tables). */
+  --color-cat-1: #2563EB;  /* blue */
+  --color-cat-2: #059669;  /* green */
+  --color-cat-3: #7C3AED;  /* purple */
+  --color-cat-4: #EA580C;  /* orange */
+  --color-cat-5: #0D9488;  /* teal */
+  --color-cat-6: #DB2777;  /* pink */
+  --color-cat-7: #B45309;  /* amber */
+  --color-cat-8: #334155;  /* slate */
+
   /* Flat corner radii — replaces rounded-lg/rounded-xl/rounded-2xl */
   --radius-none: 0px;
   --radius-xs:   1px;
@@ -141,10 +172,22 @@
   body {
     background-color: var(--color-bg-page);
     color: var(--color-text-body);
+    font-family: var(--font-body);
     @apply antialiased;
     scrollbar-gutter: stable;
     font-optical-sizing: auto;
     font-feature-settings: 'cv02', 'cv03', 'cv04';
+  }
+  /* Headings get the display face; Tailwind's preflight already resets their
+     size/weight, so this only needs to set the family. Any component may also
+     opt in explicitly via the .font-heading utility (e.g. Modal titles render
+     an <h2>, which is covered automatically — this exists for non-heading
+     elements that carry title styling, like PageHeader's back-link row). */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+  .font-heading {
+    font-family: var(--font-heading);
   }
   /* Checkboxes and radio buttons pick up the brand color automatically */
   input[type='checkbox'],
@@ -258,6 +301,31 @@
     border-radius: var(--radius-card);
     background-color: var(--color-bg-surface);
     border: 1px solid var(--color-border);
+  }
+  /* Per-Module domain accent strip (design_docs/10 §2) — Bauhaus-only visual
+     mechanic; a no-op under Default (doc 10: "do not carry over"). Caller sets
+     --domain-color to the relevant --color-domain-* token. */
+  .domain-accent {
+    border-top: 0 solid var(--domain-color, transparent);
+  }
+  /* Bauhaus data-table header treatment (design_docs/10 § Data Tables) — a
+     no-op under Default, which keeps its existing sans-serif header style. */
+  .table-header-cell {
+    border-right: 0 solid var(--color-grid-divider);
+  }
+  /* Bauhaus data-table toolbar tint (design_docs/10 § Data Tables) — a no-op
+     under Default, which keeps FilterBar's current plain background. */
+  .table-toolbar {
+    background-color: transparent;
+  }
+  /* Badge shape/border — pill + no border under Default (existing look);
+     flat radius ceiling + 1px currentColor border under Bauhaus, per doc 10's
+     "high-contrast 1px border badges with explicit status fills". Border is
+     0-width by default so it's a no-op unless the theme override below fires;
+     'neutral' tone already sets its own inline border and wins over this. */
+  .badge-pill {
+    border-radius: 9999px;
+    border: 0 solid currentColor;
   }
   /* section-title kept as alias for backwards compatibility; use section-label going forward */
   .section-title {
@@ -378,6 +446,24 @@
 
   --radius-control: var(--radius-sm);
   --radius-card:    var(--radius-sm);
+}
+[data-theme="bauhaus"] .domain-accent {
+  border-top-width: 4px;
+}
+[data-theme="bauhaus"] .table-header-cell {
+  @apply font-mono uppercase tracking-wider font-bold;
+  border-right-width: 1px;
+}
+[data-theme="bauhaus"] .table-header-cell:last-child {
+  border-right-width: 0;
+}
+[data-theme="bauhaus"] .table-toolbar {
+  background-color: var(--color-bg-hover);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+[data-theme="bauhaus"] .badge-pill {
+  border-radius: var(--radius-sm);
+  border-width: 1px;
 }
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { formatDate } from '../../components/DateInput.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
+import Badge from '../../components/Badge.jsx'
+import { getGroupColor } from '../../utils/groupColors.js'
 
 const COLUMNS = [
   { key: 'name', label: 'Assignment', width: 'w-64' },
@@ -63,7 +65,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
       >
         <thead className="sticky top-0 z-10 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
           <tr aria-rowindex={1} style={{ height: '3rem' }}>
-            <th className="w-10 py-3 align-middle">
+            <th className="table-header-cell w-10 py-3 align-middle">
               {!loading && (
                 <div className="flex items-center justify-center">
                   <Checkbox
@@ -78,7 +80,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
             {COLUMNS.map(col => (
               <th
                 key={col.key}
-                className={`${col.width} px-3 py-3 text-left font-medium text-sm text-[var(--color-text-secondary)] select-none ${loading ? '' : 'cursor-pointer hover:text-[var(--color-text-body)]'}`}
+                className={`table-header-cell ${col.width} px-3 py-3 text-left font-medium text-sm text-[var(--color-text-secondary)] select-none ${loading ? '' : 'cursor-pointer hover:text-[var(--color-text-body)]'}`}
                 onClick={() => !loading && onSort(col.key)}
                 aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
@@ -182,15 +184,24 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
         </div>
       </td>
       <td className="px-3 py-3 align-middle font-medium text-[var(--color-text-body)] max-w-xs truncate">{a.name}</td>
-      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.assignmentGroupName}</td>
+      <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">
+        <span className="inline-flex items-center gap-1.5 max-w-full">
+          <span
+            aria-hidden="true"
+            className="inline-block w-1.5 h-3 shrink-0 rounded-[1px]"
+            style={{ backgroundColor: getGroupColor(a.assignmentGroupId) }}
+          />
+          <span className="truncate">{a.assignmentGroupName}</span>
+        </span>
+      </td>
       <td className="px-3 py-3 align-middle text-[var(--color-text-body)]">{formatDate(a.dueAt) || <span className="text-[var(--color-text-disabled)]">—</span>}</td>
       <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.unlockAt) || <span className="text-[var(--color-text-disabled)]">—</span>}</td>
       <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{formatDate(a.lockAt) || <span className="text-[var(--color-text-disabled)]">—</span>}</td>
       <td className="px-3 py-3 align-middle text-[var(--color-text-secondary)]">{a.pointsPossible != null ? a.pointsPossible : <span className="text-[var(--color-text-disabled)]">—</span>}</td>
       <td className="px-3 py-3 align-middle">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${a.published ? 'bg-green-100 text-green-800' : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'}`}>
+        <Badge tone={a.published ? 'success' : 'neutral'}>
           {a.published ? 'Published' : 'Unpublished'}
-        </span>
+        </Badge>
       </td>
     </tr>
   )

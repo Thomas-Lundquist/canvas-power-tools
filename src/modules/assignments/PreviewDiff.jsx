@@ -215,7 +215,7 @@ export default function PreviewDiff({
               {failures.map(f => (
                 <div
                   key={f.assignmentId}
-                  className="rounded-lg border border-[var(--color-error)] px-4 py-3"
+                  className="rounded-[var(--radius-card)] border border-[var(--color-error)] px-4 py-3"
                   style={{ background: 'color-mix(in srgb, var(--color-error) 6%, transparent)' }}
                 >
                   <p className="text-sm font-medium text-[var(--color-text-body)]">
