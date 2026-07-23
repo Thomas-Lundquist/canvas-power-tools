@@ -1,33 +1,4 @@
 {
-  "enabledPlugins": {
-    "context-mode@context-mode": true,
-    "frontend-design@claude-plugins-official": true
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bd prime --hook-json",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "node -e \"const {execSync} = require('child_process'); let claimed; try { claimed = execSync('bd list --status=in_progress', {encoding:'utf8'}).split('\\n').slice(0,10).join('\\n').trim() || 'none'; } catch(e) { claimed = 'none'; } const ctx = 'BEADS RULE: Before writing any code or file edit, verify an open + claimed beads issue exists. No exceptions, not even small fixes.\\nWorkflow: bd create -\u003e bd update \u003cid\u003e --claim -\u003e do work -\u003e bd close \u003cid\u003e.\\nCurrently in-progress:\\n' + claimed; process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'UserPromptSubmit',additionalContext:ctx}}));\"",
-            "shell": "bash",
-            "timeout": 10,
-            "type": "command"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "mcp__playwright__browser_take_screenshot",
@@ -60,5 +31,35 @@
       "mcp__instructure-developer-documentation-portal__getPage",
       "mcp__instructure-developer-documentation-portal__searchDocumentation"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime --hook-json"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const {execSync} = require('child_process'); let claimed; try { claimed = execSync('bd list --status=in_progress', {encoding:'utf8'}).split('\\n').slice(0,10).join('\\n').trim() || 'none'; } catch(e) { claimed = 'none'; } const ctx = 'BEADS RULE: Before writing any code or file edit, verify an open + claimed beads issue exists. No exceptions, not even small fixes.\\nWorkflow: bd create -> bd update <id> --claim -> do work -> bd close <id>.\\nCurrently in-progress:\\n' + claimed; process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'UserPromptSubmit',additionalContext:ctx}}));\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "context-mode@context-mode": true,
+    "frontend-design@claude-plugins-official": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
   }
 }
