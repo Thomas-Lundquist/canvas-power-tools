@@ -7,7 +7,7 @@ import TemplateEditor from '../../modules/assignments/TemplateEditor.jsx'
 import DeployTemplate from '../../modules/assignments/DeployTemplate.jsx'
 import { getTemplates } from '../../storage/templates.js'
 import { getPreferences } from '../../storage/preferences.js'
-import { applyTheme, applyDarkMode, applyTextSize } from '../../utils/color.js'
+import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { getAssignment } from '../../api/assignments.js'
 import { assignmentToFormFields } from '../../modules/assignments/templateHelpers.js'
 import '../../styles/global.css'
@@ -50,7 +50,7 @@ function App() {
   useEffect(() => {
     loadData()
     handleSaveFromParam()
-    getPreferences().then(p => { setPrefs(p); applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
+    getPreferences().then(p => { setPrefs(p); applyPalette(p.palette); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
   }, [])
 
   async function loadData() {

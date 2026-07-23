@@ -20,7 +20,7 @@ import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getModules } from '../../api/modules.js'
 import { getPreferences, setLastUsedCourse } from '../../storage/preferences.js'
-import { applyTheme, applyDarkMode, applyTextSize } from '../../utils/color.js'
+import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
 
 
@@ -98,7 +98,7 @@ export default function App() {
     async function init() {
       try {
         const [fetchedCourses, prefs] = await Promise.all([getCourses(), getPreferences()])
-        applyTheme(prefs.buttonColor)
+        applyPalette(prefs.palette)
         applyDarkMode(prefs.themeMode ?? 'system')
         applyTextSize(prefs.textSize ?? 'medium')
         setCourses(fetchedCourses)

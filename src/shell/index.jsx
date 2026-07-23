@@ -4,7 +4,7 @@ import { LayoutGrid, List, ChevronRight } from 'lucide-react'
 import { SettingsButton, BrandMark } from '../components/AppNav.jsx'
 import { TOOLS, MODULES } from '../config/tools.jsx'
 import { getPreferences, setPreference } from '../storage/preferences.js'
-import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
+import { applyPalette, applyDarkMode, applyTextSize } from '../utils/color.js'
 import '../styles/global.css'
 import { ToastProvider } from '../components/Toast.jsx'
 import SetupGuard from '../components/SetupGuard.jsx'
@@ -17,7 +17,7 @@ function App() {
 
   useEffect(() => {
     getPreferences().then(p => {
-      applyTheme(p.buttonColor)
+      applyPalette(p.palette)
       applyDarkMode(p.themeMode ?? 'system')
       setDisplayMode(p.homepageDisplayMode ?? 'tiles')
     })
@@ -112,5 +112,5 @@ function App() {
   )
 }
 
-getPreferences().then(p => { applyTheme(p.buttonColor); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
+getPreferences().then(p => { applyPalette(p.palette); applyDarkMode(p.themeMode ?? 'system'); applyTextSize(p.textSize ?? 'medium') })
 createRoot(document.getElementById('root')).render(<SetupGuard><ToastProvider><App /></ToastProvider></SetupGuard>)

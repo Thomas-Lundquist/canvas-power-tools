@@ -71,9 +71,9 @@ this document.
 {
   settings: {
     general: {
-      theme: "system",               // "system" | "light" | "dark"
-      accentColor: "blue",           // "blue" | "teal" | "green" | "purple" |
-                                     // "orange" | "slate" | "indigo"
+      themeMode: "system",           // "system" | "light" | "dark"
+      palette: "bauhaus",            // "bauhaus" | "default" — full-palette theme;
+                                     // no per-color customization (see design_docs/10 § Themes)
       textSize: "medium",            // "small" | "medium" | "large" | "extra-large"
       dateFormat: "MM/DD/YYYY",      // "MM/DD/YYYY" | "DD/MM/YYYY" |
                                      // "YYYY-MM-DD" | "Month D YYYY"
@@ -469,7 +469,8 @@ error.
 
 export const DEFAULTS = {
   general: {
-    theme: "system",
+    themeMode: "system",
+    palette: "bauhaus",
     dateFormat: "MM/DD/YYYY",
     timeFormat: "12h",
     // ... all defaults

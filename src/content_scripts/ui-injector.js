@@ -11,12 +11,16 @@ function safeMessage(path) {
   }
 }
 
+// Injected buttons live in Canvas's page, outside our extension's CSS cascade,
+// so they need a literal hex per palette rather than a CSS custom property.
+const PALETTE_COLORS = { bauhaus: '#B7102A', default: '#4f46e5' }
+
 async function getButtonColor() {
   try {
     const result = await chrome.storage.local.get('preferences')
-    return result.preferences?.buttonColor ?? '#4f46e5'
+    return PALETTE_COLORS[result.preferences?.palette] ?? PALETTE_COLORS.bauhaus
   } catch {
-    return '#4f46e5'
+    return PALETTE_COLORS.bauhaus
   }
 }
 

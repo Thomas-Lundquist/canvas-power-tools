@@ -2,15 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default theme values — overridden at runtime by applyTheme() */
+/* "Default" theme (Accessible & Ethical) token values — the palette this
+   :root block defines. "Bauhaus" (the shipped-default palette) overrides
+   the relevant tokens below in the [data-theme="bauhaus"] block. Palette is
+   chosen via Settings > Style (prefs.palette), applied via applyPalette()
+   (src/utils/color.js) setting data-theme on <html>. No per-color
+   customization — see design_docs/10 § Themes. */
 :root {
   /* ──────────────────────────────────────────────────────────────
      PRIMITIVE RAMPS (1yr.1) — raw scale. Semantic tokens below alias
      onto these. Components consume the SEMANTIC layer, never these.
      ────────────────────────────────────────────────────────────── */
 
-  /* Warm grey — hue 35°, contrast-verified against white. Fixed (theme
-     changes regenerate only the primary ramp, never the greys). */
+  /* Warm grey — hue 35°, contrast-verified against white. Fixed. */
   --grey-50:  #F9F8F6;   /* page bg / lightest surface */
   --grey-100: #F2F0EE;   /* hover / subtle fill */
   --grey-200: #E6E3E0;   /* subtle border */
@@ -21,8 +25,7 @@
   --grey-700: #433E38;   /* strong text (10.58) */
   --grey-900: #221F1C;   /* body text (16.40) */
 
-  /* Primary blue — hue 225° (warm blue). DEFAULT ramp; applyTheme()
-     regenerates 50…900 from the user's seed hue/sat at runtime. */
+  /* Primary blue — hue 225° (warm blue). Fixed ramp for the Default theme. */
   --primary-50:  #EEF1FC;   /* focus-tint bg / selected row */
   --primary-100: #D4DDF7;   /* light tint */
   --primary-200: #A9BBEF;   /* tint border */
@@ -33,12 +36,11 @@
   --primary-700: #1C3C9C;   /* active */
   --primary-900: #132A72;   /* accent text on light bg */
 
-  /* Label text on accent fills — auto-flipped white/dark by applyTheme()
-     so no user accent can break AA. White for the default blue. */
+  /* Label text on accent fills. White for the default blue. */
   --primary-contrast: #FFFFFF;
 
-  /* Brand accent — default single-sourced from the primary ramp;
-     applyTheme() overrides these with explicit hex for custom themes. */
+  /* Brand accent — Default theme value; [data-theme="bauhaus"] overrides
+     these to the fixed Bauhaus Red. */
   --cpt-color:      var(--primary-500);
   --cpt-color-dark: var(--primary-600);
   --cpt-color-rgb:  43, 84, 212;
@@ -83,6 +85,50 @@
   --shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.05);
   --shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04);
   --shadow-xl: 0 20px 25px rgba(0,0,0,0.08), 0 10px 10px rgba(0,0,0,0.03);
+
+  /* ──────────────────────────────────────────────────────────────
+     BAUHAUS DESIGN TOKENS (design_docs/10) — shipped-default theme.
+     Consumed via the [data-theme="bauhaus"] override block below,
+     which re-points the semantic tokens above at these values. Raw
+     per-tool markup (rounded-lg, shadow-sm used directly in JSX
+     rather than through a shared component class) still needs each
+     tool's own rebuild — tracked in canvas-power-tools-1yr.4.
+     ────────────────────────────────────────────────────────────── */
+  --color-canvas-paper:     #FAF9F5;  /* page background */
+  --color-container-inset:  #EFEEEA;  /* secondary container fill */
+  --color-stroke:           #1B1C1A;  /* primary 1px border / text */
+  --color-stroke-soft:      #4A4E69;  /* alternate 1px border */
+  --color-grid-divider:     #E3E2DF;  /* interior table dividers */
+
+  /* Primary triad */
+  --color-bauhaus-red:      #B7102A;
+  --color-bauhaus-blue:     #485F84;
+  --color-bauhaus-blue-bright: #2563EB;
+  --color-bauhaus-ochre:    #7A5500;
+  --color-bauhaus-ochre-light: #FEF08A;
+
+  /* Domain top-accent colors — one per Module */
+  --color-domain-assignments:   #2563EB;  /* Cobalt Blue */
+  --color-domain-grading:       #059669;  /* Emerald Green */
+  --color-domain-communication: #7C3AED;  /* Purple */
+  --color-domain-people:        #EA580C;  /* Orange */
+  --color-domain-content:       #0D9488;  /* Teal */
+  --color-domain-setup:         #334155;  /* Dark Slate */
+  --color-domain-alert:         #B7102A;  /* Bauhaus Red */
+
+  /* Flat corner radii — replaces rounded-lg/rounded-xl/rounded-2xl */
+  --radius-none: 0px;
+  --radius-xs:   1px;
+  --radius-sm:   2px;
+
+  /* Default theme (Accessible & Ethical) — 44x44px minimum tappable area */
+  --touch-target-min: 2.75rem;
+
+  /* ── Structural tokens the shared component layer (below) reads, so
+     [data-theme="bauhaus"] can reskin shape/elevation, not just color.
+     Default theme values here match the pre-existing look. ── */
+  --radius-control: 0.5rem;    /* buttons, inputs, segmented-control */
+  --radius-card:    0.375rem;  /* card */
 }
 
 /* Text size — set via data-text-size attribute by applyTextSize() and theme-init.js */
@@ -118,7 +164,8 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-75 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-75 disabled:opacity-50 disabled:cursor-not-allowed;
+    border-radius: var(--radius-control);
   }
   .btn-primary {
     @apply btn text-white;
@@ -168,8 +215,10 @@
     filter: brightness(0.96);
   }
   .input {
-    @apply block w-full rounded-lg px-3 py-2 text-sm shadow-sm disabled:cursor-not-allowed;
+    @apply block w-full px-3 py-2 text-sm disabled:cursor-not-allowed;
     border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    box-shadow: var(--shadow-sm);
     background-color: var(--color-bg-surface);
     color: var(--color-text-body);
   }
@@ -206,7 +255,7 @@
     color: var(--color-text-secondary);
   }
   .card {
-    @apply rounded-md;
+    border-radius: var(--radius-card);
     background-color: var(--color-bg-surface);
     border: 1px solid var(--color-border);
   }
@@ -228,7 +277,7 @@
   }
   .segmented-control {
     display: inline-flex;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-control);
     overflow: hidden;
     border: 1px solid var(--color-border);
     background-color: var(--color-bg-hover);
@@ -296,6 +345,39 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─── Bauhaus theme ────────────────────────────────────────────────────────────
+   Applied when data-theme="bauhaus" is present (set by theme-init.js +
+   applyPalette() — the shipped default; see design_docs/10 § Themes). Re-points
+   the semantic/structural tokens from :root at the Bauhaus token block above,
+   the same way html.dark below overrides them for dark mode. Only covers the
+   shared component layer (.btn, .input, .card, .segmented-control) — raw
+   Tailwind utility classes used directly in a tool's own JSX (rounded-lg,
+   shadow-sm, etc.) don't read these tokens and need that tool's own rebuild
+   (canvas-power-tools-1yr.4) to actually look like Bauhaus.
+   Dark mode × Bauhaus is undefined — the spec has no documented dark variant;
+   do not assume [data-theme="bauhaus"].dark renders correctly.
+   ──────────────────────────────────────────────────────────────────────────── */
+[data-theme="bauhaus"] {
+  --color-bg-page:       var(--color-canvas-paper);
+  --color-bg-hover:      var(--color-container-inset);
+  --color-text-body:     var(--color-stroke);
+  --color-border:        var(--color-stroke);
+  --color-border-subtle: var(--color-grid-divider);
+
+  --cpt-color:      var(--color-bauhaus-red);
+  --cpt-color-dark: color-mix(in srgb, var(--color-bauhaus-red) 85%, black);
+  --cpt-color-rgb:  183, 16, 42;
+
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+
+  --radius-control: var(--radius-sm);
+  --radius-card:    var(--radius-sm);
 }
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────

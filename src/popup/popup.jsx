@@ -4,7 +4,7 @@ import { Settings, AlertCircle, BookOpen } from 'lucide-react'
 import { TOOLS, MODULES } from '../config/tools.jsx'
 import { isSetupComplete, getAccount } from '../storage/account.js'
 import { getPreferences } from '../storage/preferences.js'
-import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
+import { applyPalette, applyDarkMode, applyTextSize } from '../utils/color.js'
 import '../styles/global.css'
 
 function open(path) {
@@ -19,7 +19,7 @@ function Popup() {
   useEffect(() => {
     async function load() {
       const [complete, acc, p] = await Promise.all([isSetupComplete(), getAccount(), getPreferences()])
-      applyTheme(p.buttonColor)
+      applyPalette(p.palette)
       applyDarkMode(p.themeMode ?? 'system')
       setReady(complete)
       setAccount(acc)

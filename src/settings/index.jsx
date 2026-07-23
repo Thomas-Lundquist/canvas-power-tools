@@ -15,7 +15,7 @@ import SetupGuard from '../components/SetupGuard.jsx'
 import { TOOLS } from '../config/tools.jsx'
 import { getAccount, updateVerificationStatus, saveAccount, markSetupComplete } from '../storage/account.js'
 import { getPreferences, setPreference, resetPreferences, DEFAULTS } from '../storage/preferences.js'
-import { applyTheme, applyDarkMode, applyTextSize } from '../utils/color.js'
+import { applyPalette, applyDarkMode, applyTextSize } from '../utils/color.js'
 import { clearAllChangeLogs } from '../storage/changeLogs.js'
 import { getTemplates, saveTemplate, saveFolder } from '../storage/templates.js'
 import { verifyToken } from '../api/auth.js'
@@ -28,26 +28,13 @@ import { PinGateProvider } from '../security/usePinGate.jsx'
 
 // ─── Brand colors ─────────────────────────────────────────────────────────────
 
-const BRAND_COLORS = [
-  { name: 'Indigo',  hex: '#4f46e5' },
-  { name: 'Blue',    hex: '#2563eb' },
-  { name: 'Sky',     hex: '#0284c7' },
-  { name: 'Teal',    hex: '#0d9488' },
-  { name: 'Green',   hex: '#16a34a' },
-  { name: 'Amber',   hex: '#b45309' },
-  { name: 'Orange',  hex: '#ea580c' },
-  { name: 'Red',     hex: '#dc2626' },
-  { name: 'Pink',    hex: '#db2777' },
-  { name: 'Purple',  hex: '#9333ea' },
-  { name: 'Slate',   hex: '#475569' },
-]
 
 // ─── Section reset key maps ────────────────────────────────────────────────────
 
 const SECTION_KEYS = {
   account: ['verificationFrequency', 'showConnectionInPopup', 'showRateLimitWarnings', 'apiTimeout', 'resultsPerPage', 'rateLimitBehavior'],
   navigation: ['navDefaultModule', 'rememberLastTool', 'defaultLandingPage', 'defaultCourse', 'sidebarDefault'],
-  general: ['textSize', 'dateFormat', 'timeFormat', 'timezone', 'autoAddToModule', 'buttonColor', 'themeMode', 'homepageDisplayMode', 'defaultDueTime', 'defaultAvailableFromTime', 'defaultAvailableUntilTime', 'firstDayOfWeek', 'showCourseTerm', 'courseDisplayFormat'],
+  general: ['textSize', 'dateFormat', 'timeFormat', 'timezone', 'autoAddToModule', 'palette', 'themeMode', 'homepageDisplayMode', 'defaultDueTime', 'defaultAvailableFromTime', 'defaultAvailableUntilTime', 'firstDayOfWeek', 'showCourseTerm', 'courseDisplayFormat'],
   bulkEditor: ['shiftAllDatesTogether', 'bulkEditorAfterApply', 'bulkEditorSelectAllBehavior', 'bulkEditorDefaultSort', 'bulkEditorDefaultSortDir', 'bulkEditorDefaultDateShiftDays', 'bulkEditorDefaultShiftDirection', 'bulkEditorShowChangeLogAfterSave', 'bulkEditorShiftNullDates', 'bulkEditorRowsPerPage', 'bulkEditorVisibleColumns', 'bulkEditorIncludeGradedDiscussions', 'bulkEditorIncludeQuizzes', 'bulkEditorIncludeUngraded', 'bulkEditorIncludeLocked', 'bulkEditorIncludeUnpublished'],
   templates: ['templatesSort', 'templatesDefaultFolder', 'templatesAfterDeploy', 'templatesActiveCoursesOnly', 'templateAutoExpandFolders', 'templateSkipDeleteConfirm', 'templatesSearchScope', 'templatesDefaultSubmissionType', 'templatesDefaultGradingType', 'templatesDefaultPoints', 'templatesDefaultPeerReview'],
   copyAssignments: ['copyDefaultDateMode', 'copyDefaultShiftDays', 'copyDefaultPublishMode'],
@@ -740,7 +727,7 @@ function App() {
     Promise.all([getAccount(), getPreferences()]).then(([acc, p]) => {
       setAccount(acc)
       setPrefs(p)
-      applyTheme(p.buttonColor)
+      applyPalette(p.palette)
       applyDarkMode(p.themeMode ?? 'system')
       applyTextSize(p.textSize ?? 'medium')
     })
@@ -756,7 +743,7 @@ function App() {
   async function setPref(key, value) {
     const updated = await setPreference(key, value)
     setPrefs(updated)
-    if (key === 'buttonColor') applyTheme(value)
+    if (key === 'palette') applyPalette(value)
     if (key === 'themeMode') applyDarkMode(value)
     if (key === 'textSize') applyTextSize(value)
   }
@@ -766,7 +753,7 @@ function App() {
     if (!keys) return
     const updated = await resetPreferences(keys)
     setPrefs(updated)
-    applyTheme(updated.buttonColor)
+    applyPalette(updated.palette)
     applyDarkMode(updated.themeMode ?? 'system')
     applyTextSize(updated.textSize ?? 'medium')
     setResetConfirm(null)
@@ -903,7 +890,7 @@ function App() {
       await chrome.storage.sync.set({ preferences: updated })
       await chrome.storage.local.set({ preferences: updated })
       setPrefs(updated)
-      applyTheme(updated.buttonColor)
+      applyPalette(updated.palette)
       applyDarkMode(updated.themeMode ?? 'system')
       applyTextSize(updated.textSize ?? 'medium')
       toast('Settings imported successfully', 'success')
@@ -1317,28 +1304,28 @@ function App() {
             </div>
           </PrefRow>
 
-          {/* Brand color */}
-          <PrefRow title="Accent color" description="Applied to buttons, accents, and the injected Canvas button.">
-            <div className="flex flex-wrap gap-1.5">
-              {BRAND_COLORS.map(c => (
+          {/* Palette theme */}
+          <PrefRow title="Style" description="Full visual style used throughout the extension, including the injected Canvas button. No per-color customization.">
+            <div className="flex gap-2">
+              {[
+                { value: 'bauhaus', label: 'Bauhaus', title: 'Flat surfaces, no shadows, per-module accent colors' },
+                { value: 'default', label: 'Default',  title: 'Accessible & Ethical — WCAG AAA contrast target' },
+              ].map(({ value, label, title }) => (
                 <button
-                  key={c.hex}
-                  title={c.name}
-                  aria-label={prefs.buttonColor === c.hex ? `${c.name} (selected)` : c.name}
-                  aria-pressed={prefs.buttonColor === c.hex}
-                  onClick={() => setPref('buttonColor', c.hex)}
-                  className="w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center"
-                  style={{
-                    background: c.hex,
-                    borderColor: prefs.buttonColor === c.hex ? '#fff' : c.hex,
-                    boxShadow: prefs.buttonColor === c.hex ? `0 0 0 3px ${c.hex}` : 'none',
-                  }}
+                  key={value}
+                  title={title}
+                  aria-pressed={(prefs.palette ?? 'bauhaus') === value}
+                  onClick={() => setPref('palette', value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                    (prefs.palette ?? 'bauhaus') === value
+                      ? 'text-white border-transparent'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                  style={(prefs.palette ?? 'bauhaus') === value
+                    ? { backgroundColor: 'var(--cpt-color)', borderColor: 'var(--cpt-color)' }
+                    : undefined}
                 >
-                  {prefs.buttonColor === c.hex && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                      <path d="M2 5.5l2.5 2.5 4-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  {label}
                 </button>
               ))}
             </div>

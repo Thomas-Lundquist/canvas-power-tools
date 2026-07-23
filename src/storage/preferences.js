@@ -15,7 +15,7 @@ export const DEFAULTS = {
   defaultLandingPage: 'last',           // 'last' | 'bulk_editor' | 'template_library' | 'settings'
   defaultCourse: 'last_used',           // 'last_used' | 'ask'
   autoAddToModule: true,
-  buttonColor: '#4f46e5',
+  palette: 'bauhaus',                   // 'bauhaus' | 'default' — full theme, no per-color customization
   themeMode: 'system',                  // 'light' | 'dark' | 'system'
   homepageDisplayMode: 'tiles',         // 'tiles' | 'list'
 

@@ -4,11 +4,150 @@
 
 ## Status
 
-**Design language: TBD — pending Stitch redesign.**
+**Design language: Adopted — selectable full-palette themes (`canvas-power-tools-l0l`).**
 
-This document previously contained the visual design language (typography, spacing tokens, color system, component ledger, interaction grammar, archetypes). Those prescriptions have been stripped. The new design language will be defined from Stitch and documented here before any UI implementation begins.
+This replaces the prior "TBD — pending Stitch redesign" placeholder (see doc 17, superseded). Rollout is per-tool via the "Full UI overhaul" Beads epic (`canvas-power-tools-1yr` and its `Rebuild <Tool> UI` subtasks) — a shipped Tool only matches this spec once its rebuild task is closed. Do not assume the rest of this codebase matches this section until then.
 
-Do not implement visual decisions from a previous version of this document.
+The prior single runtime-customizable brand accent (`--cpt-color`, hue-rotated by the old `applyTheme(hex)`) is retired in favor of complete, hand-tuned theme packages — no per-color user customization. This resolves the shadow/domain-accent tension previously noted here: each theme owns its own complete token set (colors, shadows, radii), swapped via a `data-theme` attribute the same way `html.dark` already overrides tokens today. `canvas-power-tools-4of` (pre-paint FOUC fix) is superseded — there is no runtime ramp generation left to flash.
+
+**Mechanism — implemented:** `applyPalette(name)` (`src/utils/color.js`) sets `data-theme` on `<html>` and persists to `localStorage`; `public/theme-init.js` applies it pre-paint. Settings > Style writes `prefs.palette`. `[data-theme="bauhaus"]` in `global.css` overrides the semantic/structural tokens (`--color-bg-page`, `--color-border`, `--cpt-color`, `--shadow-*`, `--radius-control`, `--radius-card`) that the shared component layer (`.btn`, `.input`, `.card`, `.segmented-control`) reads. **Not yet done:** any tool whose JSX uses raw Tailwind utility classes (`rounded-lg`, `shadow-sm`, etc.) directly instead of those shared classes won't visually respond to the theme switch until its own rebuild (`canvas-power-tools-1yr.4`) migrates it onto the tokens.
+
+### Themes
+
+| Theme | Settings value | Status |
+|---|---|---|
+| Bauhaus | `palette: "bauhaus"` | **Shipped default.** Flat, no shadows, fixed per-Module domain accent colors. |
+| Default | `palette: "default"` | Accessible & Ethical style (see below). Existing warm-grey/primary token system, formalized as the second theme option. |
+
+Both themes keep the same behavioral rules (accessibility, error copy, empty states, keyboard shortcuts, loading/toast behavior) documented later in this file — those are theme-independent.
+
+---
+
+## Theme: Bauhaus (v2.4.0)
+
+All colors below are defined as CSS custom properties in `src/styles/global.css` (Bauhaus token block) — components reference them via `var(--token-name)`, never raw hex, per the project's standing token convention.
+
+### 1. Zero Shadow & Flat Surfaces
+
+- Strictly ban all drop-shadows, glow filters, blur backdrops, ambient radial gradients, and glassmorphism.
+- Containers, cards, dialogs, popups, and inputs sit flat on a 1px border: `border border-[var(--color-stroke)]` or `border border-[var(--color-stroke-soft)]`.
+- Corner radii restricted to `rounded-[var(--radius-none)]`, `rounded-[var(--radius-xs)]`, or `rounded-[var(--radius-sm)]`. Never use `rounded-lg`, `rounded-xl`, or `rounded-2xl`.
+
+### 2. Canvas Grid & Domain Accent Strips
+
+- Canvas background: `bg-[var(--color-canvas-paper)]`
+- Secondary container fill: `bg-[var(--color-container-inset)]`
+- Interior input fill: `bg-[var(--color-bg-surface)]` (white)
+- A 4px solid top border (`border-t-4`) denotes the Module a surface belongs to:
+
+| Module | Token |
+|---|---|
+| Assignments / Core | `var(--color-domain-assignments)` (Cobalt Blue) |
+| Grading / Analytics | `var(--color-domain-grading)` (Emerald Green) |
+| Communication | `var(--color-domain-communication)` (Purple) |
+| People | `var(--color-domain-people)` (Orange) |
+| Content | `var(--color-domain-content)` (Teal) |
+| Setup / System | `var(--color-domain-setup)` (Dark Slate) |
+| Alerts / destructive | `var(--color-domain-alert)` (Bauhaus Red) |
+
+### 3. Color Tokens
+
+| Token | Hex | Purpose |
+|---|---|---|
+| `--color-canvas-paper` | `#FAF9F5` | page background |
+| `--color-container-inset` | `#EFEEEA` | secondary container fill |
+| `--color-bg-surface` | `#FFFFFF` | surface / input fill (existing token, reused) |
+| `--color-stroke` | `#1B1C1A` | primary 1px border, high-contrast text |
+| `--color-stroke-soft` | `#4A4E69` | alternate 1px border |
+| `--color-grid-divider` | `#E3E2DF` | interior table dividers |
+| `--color-bauhaus-red` | `#B7102A` | primary triad — red |
+| `--color-bauhaus-blue` | `#485F84` | primary triad — blue |
+| `--color-bauhaus-blue-bright` | `#2563EB` | primary triad — bright blue accent |
+| `--color-bauhaus-ochre` | `#7A5500` | primary triad — ochre |
+| `--color-bauhaus-ochre-light` | `#FEF08A` | primary triad — ochre fill (warnings, switches) |
+| `--color-domain-*` | see §2 | per-Module accent strips |
+
+### 4. Typography & Button Labels
+
+- Font family: Inter / system sans, paired with monospace (`font-mono`) for metadata, codes, and specs.
+- Action buttons and badges: uppercase, bold, tracked letter-spacing (`uppercase font-bold tracking-wider text-xs`).
+- Metadata tags: monospace for dates, IDs, specs (`font-mono text-xs uppercase`, `text-[var(--color-text-secondary)]`).
+- Paragraph body: `text-xs` or `text-sm`, line-height 1.5, on `var(--color-bg-surface)` or `var(--color-canvas-paper)`.
+
+### 5. Component Taxonomy
+
+**Input controls**
+- Standard input: `bg-[var(--color-bg-surface)] border border-[var(--color-stroke)] text-xs font-mono p-2 rounded-[var(--radius-sm)] focus:ring-1 focus:ring-[var(--color-bauhaus-blue-bright)] outline-none`
+- Range slider: inset track (`bg-[var(--color-container-inset)] border border-[var(--color-stroke)]`), squared thumb (`accent-[var(--color-bauhaus-red)]`, `rounded-[var(--radius-none)]`)
+- Stepper: 1px-border button group `[-] [ VALUE ] [+]`, monospace numeric readout
+- Date/time picker: inset field, calendar glyph trigger button
+- Dropdown: inset select, monospace options, down-arrow glyph
+- Switch: squared toggle (`w-10 h-5 bg-[var(--color-container-inset)] border border-[var(--color-stroke)]`) with `var(--color-bauhaus-ochre-light)` thumb
+
+**Navigation**
+- Header navbar: 1px-border sticky bar, brand square (`w-4 h-4 bg-[var(--color-bauhaus-red)] border border-[var(--color-stroke)]`)
+- Menu triggers: 1px-boxed, expandable list popups
+- App grid: 2D bento cards, 1px dark borders, hover color state
+- Kebab / overflow menus: dropdown popovers, 1px border, `hover:bg-[var(--color-container-inset)]`
+- Breadcrumbs / pagination: monospace path (`HOME / MODULES / GRADING`), stepped counters `[1] [2] [3]`
+- Sub-tabs: monospace, active state `bg-[var(--color-stroke)] text-white`
+
+**Feedback**
+- Notification badges: `bg-[var(--color-bauhaus-red)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-[var(--radius-xs)]`
+- Activity feed: 1px vertical guide line, status-dot milestones
+- Comment thread: threaded blocks, author metadata tag, timestamp, action buttons
+- Tooltip: 1px-border popover, dark/light/yellow/red variants, 120ms cubic-bezier transition
+- Status dots: green (published), yellow (pending), red (alert), gray (archived) — always paired with text, never color alone (see Accessibility below)
+
+**Containers & overlays**
+- Modal: titlebar (`bg-[var(--color-stroke)]` or `bg-[var(--color-container-inset)]`), `[✕]` close control, no minimize/maximize
+- Destructive dialog: `border-t-4 border-t-[var(--color-domain-alert)]`, alert glyph
+- Slide-over drawer: `border-l-4 border-l-[var(--color-domain-assignments)]`
+- Accordion: 1px-border expandable headers, `[+]` / `[-]` toggle states
+
+**Data tables**
+- Grid frame: `border border-[var(--color-stroke)] bg-[var(--color-bg-surface)] rounded-[var(--radius-sm)]`, no shadow
+- Toolbar: `bg-[var(--color-container-inset)]`, monospace search, status filter, density switcher, bulk-selection metrics
+- Column headers: `bg-[var(--color-canvas-paper)]`, uppercase monospace tracking-wider, `border-r border-[var(--color-grid-divider)]`, sort glyphs (`▲`/`▼`)
+- Rows: `border-b border-[var(--color-grid-divider)]`, hover `bg-[var(--color-canvas-paper)]`, 4px domain accent strip, right-aligned monospace scores
+- Pagination footer: `bg-[var(--color-container-inset)]`, record count (`SHOWING 1-5 OF 24`), stepped controls `[◄ PREV] [1] [2] [3] [NEXT ►]`
+
+### 6. Mechanical Animation
+
+- Stepped spinner: 8-tick rotation (`steps(8, end)`) — never a smooth fluid gradient spinner
+- Progress meters: discrete block segments (`[■■■■■□□□]`) or 4-step fills
+- Pulse indicators: discrete status dots, hairline rings
+- Skeleton loaders: `bg-[var(--color-container-inset)] border border-[var(--color-stroke)] animate-pulse rounded-[var(--radius-sm)]`
+- All motion still respects `prefers-reduced-motion` (see Accessibility below — non-negotiable).
+
+### 7. Iconography
+
+- Frame utility icons in a 1px border box: `w-8 h-8 bg-[var(--color-bg-surface)] border border-[var(--color-stroke)] rounded-[var(--radius-sm)]`
+- Destructive icons: `hover:bg-[color-mix(in_srgb,var(--color-domain-alert)_15%,white)] hover:text-[var(--color-domain-alert)]`
+- Settings gears rotate on hover (`group-hover:rotate-90 duration-200`)
+- Sizing: micro/table `w-3.5 h-3.5`, standard `w-4 h-4`, section titles `w-5 h-5`; always `strokeWidth={2}`
+
+### 8. Toasts & Notification Banners
+
+- 1px border frame, 4px top color bar: success `var(--color-success)`, warning `var(--color-bauhaus-ochre-light)` fill, destructive `var(--color-domain-alert)`, info `var(--color-bauhaus-blue-bright)`
+- Dismiss: top-right `[✕]`, instant unmount (no fade/shadow transition)
+- All other toast behavior (max 3 visible, hover-pause, auto-dismiss timing) is unchanged — see "Toast Behavior Rules" below.
+
+---
+
+## Theme: Default (Accessible & Ethical)
+
+Source: `ui-ux-pro-max:ui-styling` style database, "Accessible & Ethical" (category 8). Reuses the existing warm-grey/primary token system already in `src/styles/global.css` — no new hex values — formalized against this style's specific bar rather than replaced with a new palette.
+
+This theme targets WCAG **AAA** (7:1 contrast), one level above the AA/4.5:1 floor required of every theme regardless of which one is active (see Accessibility Requirements below).
+
+- **Contrast 7:1+.** The existing ramp already clears this for most text tiers: `--grey-900` (body, 16.40:1), `--grey-700` (strong, 10.58:1), `--grey-600` (secondary, 7.03:1) all pass AAA. `--grey-500` / `--color-text-muted` (4.85:1) is AA only — do not use it for body copy under this theme; reserve it for large text or decorative use per the WCAG AAA large-text exception.
+- **Focus rings 3–4px.** Already matches: `:focus-visible { outline: 3px solid var(--cpt-color); }` in global.css.
+- **Touch targets 44×44px minimum.** Not yet a token — add `--touch-target-min: 2.75rem` (44px at the 16px root) and apply to every tappable control (buttons, checkboxes, row actions). New requirement, not currently enforced anywhere in the codebase.
+- **Base font size 16px+.** Open conflict, not resolved here: `data-text-size="medium"` (the default) is 15px, `"small"` is 13px — both under this style's floor. Text size is a user-controlled, theme-independent setting (doc 08), and letting people choose smaller text is itself an accessibility preference some users want, so this isn't a simple fix. Needs an explicit decision before this theme can claim full 16px+ compliance out of the box.
+- **Reduced motion, skip links, ARIA labels, semantic HTML, color never used alone** — already standing project-wide rules (see below); this theme adds nothing new here, it just can't regress them.
+
+**Not applicable:** Bauhaus-specific visual mechanics (flat/no-shadow surfaces, fixed corner-radius ceiling, per-Module domain accent strips, monospace metadata, Windows-98-style component taxonomy) do not carry over — Default keeps its existing rounded corners, `--shadow-*` elevation, and single warm-primary accent look.
 
 ---
 
