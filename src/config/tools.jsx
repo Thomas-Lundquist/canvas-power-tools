@@ -1,5 +1,5 @@
 import {
-  LayoutList, BarChart2, Layers, BookTemplate, Copy,
+  LayoutList, BarChart2, Layers, BookTemplate,
   ClipboardList, Users, SplitSquareVertical, Clock,
   Bell, TrendingDown, Megaphone,
 } from 'lucide-react'
@@ -43,15 +43,6 @@ export const TOOLS = [
     description: 'Edit due dates, availability, points, and publish status across all assignments at once.',
     Icon:        LayoutList,
     path:        'src/pages/bulk-editor/index.html',
-  },
-  {
-    id:          'duplicate',
-    module:      'assignments',
-    label:       'Copy Assignments',
-    shortLabel:  'Copy',
-    description: 'Copy assignments from one course to another with flexible date shifting options.',
-    Icon:        Copy,
-    path:        'src/pages/duplicate/index.html',
   },
   {
     id:          'rubrics',

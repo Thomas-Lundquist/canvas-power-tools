@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Plus, Trash2, ChevronUp, ChevronDown, Check, X, AlertCircle,
-         Loader, Copy, GitMerge, Edit2, FolderKanban, FileText } from 'lucide-react'
+         Loader, Copy, GitMerge, Edit2, FolderKanban, FileText, ExternalLink } from 'lucide-react'
 import { useToast } from '../../components/Toast.jsx'
 import Modal from '../../components/Modal.jsx'
+import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
 import { getAssignments, updateAssignment } from '../../api/assignments.js'
 import {
@@ -38,6 +39,7 @@ export default function AssignmentGroupManager({ courseId, courses }) {
 
   const [saving, setSaving]                 = useState(false)
   const [error, setError]                   = useState(null)
+  const [copyToGroup, setCopyToGroup]       = useState(null)
 
   useEffect(() => {
     if (courseId) loadCourseData(courseId)
@@ -335,6 +337,7 @@ export default function AssignmentGroupManager({ courseId, courses }) {
                 onSaveEdit={saveEdit}
                 onCancelEdit={cancelEdit}
                 onCopy={() => copyGroup(group)}
+                onCopyTo={() => setCopyToGroup(group)}
                 onMerge={() => openMergeModal(group)}
                 onDelete={() => openDeleteModal(group)}
                 onMoveAssignment={moveAssignment}
@@ -451,6 +454,14 @@ export default function AssignmentGroupManager({ courseId, courses }) {
           </div>
         </Modal>
       )}
+
+      {copyToGroup && (
+        <CopyToCoursesModal
+          assignments={assignmentsByGroup[copyToGroup.id] ?? []}
+          sourceCourseId={courseId}
+          onClose={() => setCopyToGroup(null)}
+        />
+      )}
     </div>
   )
 }
@@ -492,7 +503,7 @@ function GroupCard({
   group, index, total, count, assignments, allGroups, expanded,
   isEditing, editForm, onEditFormChange, saving, loadingAssignments, movingId,
   onToggleExpand, onMoveUp, onMoveDown,
-  onEdit, onSaveEdit, onCancelEdit, onCopy, onMerge, onDelete,
+  onEdit, onSaveEdit, onCancelEdit, onCopy, onCopyTo, onMerge, onDelete,
   onMoveAssignment, deleteDisabled, mergeDisabled,
 }) {
   return (
@@ -580,6 +591,7 @@ function GroupCard({
             </div>
             <ToolbarBtn onClick={onEdit} icon={<Edit2 size={12} />} label="RENAME" />
             <ToolbarBtn onClick={onCopy} icon={<Copy size={12} />} label="DUPLICATE" />
+            <ToolbarBtn onClick={onCopyTo} disabled={!assignments.length} icon={<ExternalLink size={12} />} label="COPY TO" />
             <ToolbarBtn onClick={onMerge} disabled={mergeDisabled} icon={<GitMerge size={12} />} label="MERGE" />
             <ToolbarBtn
               onClick={onDelete}

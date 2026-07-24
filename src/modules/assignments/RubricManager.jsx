@@ -1,170 +1,293 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Upload, Search, Loader, Download, X, CheckCircle } from 'lucide-react'
-import { getRubrics, saveRubric, deleteRubric as deleteLocalRubric, newRubricId } from '../../storage/rubrics.js'
+import { Plus, Folder, Search, Download, Loader, Trash2, Pencil, ArrowRight, Layers, HelpCircle, X, CheckCircle, Check, Copy } from 'lucide-react'
+import { getRubrics, saveRubric, deleteRubric as deleteLocalRubric, newRubricId, newCriterionId, newRatingId } from '../../storage/rubrics.js'
 import { getRubrics as getCanvasRubrics } from '../../api/rubrics.js'
 import { getCourses } from '../../api/courses.js'
 import RubricEditor from './RubricEditor.jsx'
 import DeployRubric from './DeployRubric.jsx'
 
-function totalPoints(rubric) {
+function maxPoints(rubric) {
   return rubric.criteria.reduce((sum, c) => sum + c.ratings.reduce((m, r) => Math.max(m, r.points), 0), 0)
 }
 
 export default function RubricManager() {
-  const [rubrics, setRubrics]         = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [view, setView]               = useState('library') // 'library' | 'edit' | 'deploy'
-  const [activeRubric, setActiveRubric] = useState(null)
-  const [search, setSearch]           = useState('')
+  const [rubrics, setRubrics]             = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [selectedId, setSelectedId]       = useState(null)
+  const [rightPanel, setRightPanel]       = useState('empty') // 'empty' | 'view' | 'edit' | 'deploy'
+  const [isNewDraft, setIsNewDraft]       = useState(false)
+  const [search, setSearch]               = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [showImport, setShowImport]   = useState(false)
+  const [showImport, setShowImport]       = useState(false)
+  const [copiedId, setCopiedId]           = useState(null)
 
   async function reload() {
     const data = await getRubrics()
     setRubrics(data.items)
+    return data.items
   }
 
   useEffect(() => {
     reload().finally(() => setLoading(false))
   }, [])
 
-  async function handleSave(rubricData) {
-    const base = activeRubric ?? {
-      id: newRubricId(),
-      createdAt: new Date().toISOString(),
-      lastUsed: null,
-    }
-    await saveRubric({ ...base, ...rubricData })
-    await reload()
-    setView('library')
-    setActiveRubric(null)
-  }
-
-  async function handleDelete(id) {
-    await deleteLocalRubric(id)
-    await reload()
-    setConfirmDelete(null)
-  }
-
-  function goEdit(rubric = null) {
-    setActiveRubric(rubric)
-    setView('edit')
-  }
-
-  function goDeploy(rubric) {
-    setActiveRubric(rubric)
-    setView('deploy')
-  }
-
-  function goBack() {
-    setView('library')
-    setActiveRubric(null)
-  }
-
   const filtered = search.trim()
     ? rubrics.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
     : rubrics
 
-  /* ─── Edit view ─── */
-  if (view === 'edit') {
-    return (
-      <div className="space-y-5">
-        <Breadcrumb label={activeRubric ? `Edit: ${activeRubric.name}` : 'New Rubric'} onBack={goBack} />
-        <RubricEditor rubric={activeRubric} onSave={handleSave} onCancel={goBack} />
-      </div>
-    )
+  const selectedRubric = rubrics.find(r => r.id === selectedId) ?? null
+
+  function selectRubric(rubric) {
+    setSelectedId(rubric.id)
+    setIsNewDraft(false)
+    setRightPanel('view')
   }
 
-  /* ─── Deploy view ─── */
-  if (view === 'deploy') {
-    return (
-      <div className="space-y-5">
-        <Breadcrumb label={`Deploy: ${activeRubric.name}`} onBack={goBack} />
-        <DeployRubric rubric={activeRubric} onDone={goBack} onBack={goBack} />
-      </div>
-    )
+  function startNew() {
+    setSelectedId(null)
+    setIsNewDraft(true)
+    setRightPanel('edit')
   }
 
-  /* ─── Library view ─── */
+  function startEdit() {
+    setIsNewDraft(false)
+    setRightPanel('edit')
+  }
+
+  function startDeploy() {
+    setRightPanel('deploy')
+  }
+
+  async function handleSave(rubricData) {
+    const base = isNewDraft
+      ? { id: newRubricId(), createdAt: new Date().toISOString(), lastUsed: null }
+      : { ...selectedRubric }
+    const saved = {
+      ...base,
+      ...rubricData,
+      pointsPossible: maxPoints({ criteria: rubricData.criteria }),
+    }
+    await saveRubric(saved)
+    await reload()
+    setSelectedId(saved.id)
+    setIsNewDraft(false)
+    setRightPanel('view')
+  }
+
+  function handleCancelEdit() {
+    if (isNewDraft) {
+      setSelectedId(null)
+      setIsNewDraft(false)
+      setRightPanel('empty')
+    } else {
+      setRightPanel('view')
+    }
+  }
+
+  async function handleDelete(id) {
+    await deleteLocalRubric(id)
+    if (selectedId === id) {
+      setSelectedId(null)
+      setRightPanel('empty')
+    }
+    await reload()
+    setConfirmDelete(null)
+  }
+
+  async function handleDuplicate(rubric) {
+    const duped = {
+      ...rubric,
+      id: newRubricId(),
+      name: `${rubric.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+      lastUsed: null,
+      criteria: rubric.criteria.map(c => ({
+        ...c,
+        id: newCriterionId(),
+        ratings: c.ratings.map(r => ({ ...r, id: newRatingId() })),
+      })),
+    }
+    await saveRubric(duped)
+    const items = await reload()
+    const saved = items.find(r => r.id === duped.id)
+    if (saved) { setSelectedId(saved.id); setRightPanel('view') }
+    setCopiedId(duped.id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  async function handleImport(rubricData) {
+    await saveRubric({
+      ...rubricData,
+      id: newRubricId(),
+      createdAt: new Date().toISOString(),
+      lastUsed: null,
+    })
+    await reload()
+    setShowImport(false)
+  }
+
   return (
-    <div className="space-y-5">
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rubric Manager</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Build reusable rubric templates and deploy them to any Canvas course.
-        </p>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            className="input pl-9 text-sm w-full"
-            placeholder="Search rubrics…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <button
-          className="btn-secondary flex items-center gap-1.5 text-sm shrink-0"
-          onClick={() => setShowImport(true)}
-        >
-          <Download size={15} /> Import from Canvas
-        </button>
-        <button
-          className="btn-primary flex items-center gap-1.5 text-sm shrink-0"
-          onClick={() => goEdit(null)}
-        >
-          <Plus size={15} /> New Rubric
-        </button>
-      </div>
-
-      {/* List */}
-      {loading ? (
-        <div className="flex items-center gap-2 text-gray-400 py-16 justify-center">
-          <Loader size={18} className="animate-spin" /> Loading…
-        </div>
-      ) : filtered.length === 0 ? (
-        <EmptyState hasSearch={!!search.trim()} onCreate={() => goEdit(null)} />
-      ) : (
-        <div className="space-y-2">
-          {filtered.map(rubric => (
-            <RubricCard
-              key={rubric.id}
-              rubric={rubric}
-              pts={totalPoints(rubric)}
-              onEdit={() => goEdit(rubric)}
-              onDeploy={() => goDeploy(rubric)}
-              onDelete={() => setConfirmDelete(rubric.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Delete confirm */}
-      {confirmDelete && (
-        <Modal onClose={() => setConfirmDelete(null)}>
-          <h3 className="font-semibold text-gray-900 mb-2">Delete Rubric?</h3>
-          <p className="text-sm text-gray-600 mb-5">
-            This removes the local template only. Rubrics already created in Canvas are not affected.
+    <div className="space-y-6">
+      {/* ── Page Header ─────────────────────────────────────────────────────── */}
+      <div className="border-b border-[#1B1C1A] pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span className="px-2 py-0.5 bg-[#059669] text-white font-mono font-bold text-[10px] uppercase">
+            GRADING MODULE // RUBRICS
+          </span>
+          <h1 className="text-3xl font-black tracking-tight text-[#1B1C1A] uppercase mt-1">
+            RUBRIC MANAGER & LIBRARY
+          </h1>
+          <p className="text-xs text-gray-600 font-mono mt-0.5">
+            Build, save, and deploy rubrics across Canvas courses.
           </p>
-          <div className="flex justify-end gap-3">
-            <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>
-            <button className="btn-danger" onClick={() => handleDelete(confirmDelete)}>Delete</button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="px-3 py-2 bg-[#FAF9F5] border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] flex items-center gap-1.5 hover:bg-[#EFEEEA]"
+          >
+            <Download className="w-3.5 h-3.5" />
+            IMPORT
+          </button>
+          <button
+            onClick={startNew}
+            className="px-4 py-2 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-2 hover:bg-emerald-700"
+          >
+            <Plus className="w-4 h-4" />
+            BUILD NEW RUBRIC
+          </button>
+        </div>
+      </div>
+
+      {/* ── Main Grid ───────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* ── Left: Rubric List ──────────────────────────────────────────── */}
+        <div className="lg:col-span-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              className="w-full bg-white border border-[#1B1C1A] rounded-[2px] text-xs font-mono p-2 pl-8 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+              placeholder="SEARCH RUBRICS…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
-        </Modal>
+
+          <div className="bg-[#EFEEEA] border border-[#1B1C1A] p-3 text-[10px] font-mono font-bold uppercase flex items-center gap-1.5 text-[#1B1C1A]">
+            <Folder className="w-3.5 h-3.5 text-[#059669]" />
+            SAVED RUBRICS ({filtered.length})
+          </div>
+
+          {loading ? (
+            <div className="flex items-center gap-2 text-gray-400 py-12 justify-center font-mono text-xs">
+              <Loader className="w-4 h-4 animate-spin" /> LOADING…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="border border-[#E3E2DF] rounded-[2px] p-6 text-center space-y-2">
+              <p className="text-xs font-mono font-bold uppercase text-gray-500">
+                {search.trim() ? 'No rubrics match' : 'No rubrics yet'}
+              </p>
+              {!search.trim() && (
+                <button
+                  onClick={startNew}
+                  className="text-[10px] font-mono font-bold uppercase text-[#059669] hover:underline"
+                >
+                  BUILD FIRST RUBRIC →
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(r => {
+                const isSelected = selectedId === r.id
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => selectRubric(r)}
+                    className={`p-3 border rounded-[2px] cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-white border-[#1B1C1A] border-l-4 border-l-[#059669]'
+                        : 'bg-[#FAF9F5] border-[#E3E2DF] hover:border-[#1B1C1A]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-mono font-bold uppercase text-[#059669] bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded-[2px]">
+                        {r.criteria.length} {r.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-gray-500">
+                          {maxPoints(r)} PTS
+                        </span>
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); handleDuplicate(r) }}
+                          className="p-1 rounded-[2px] hover:bg-[#EFEEEA] text-gray-400 hover:text-[#1B1C1A] transition-colors"
+                          aria-label="Duplicate rubric"
+                          title="Duplicate rubric"
+                        >
+                          {copiedId === r.id
+                            ? <Check className="w-3.5 h-3.5 text-[#059669]" />
+                            : <Copy className="w-3.5 h-3.5" />
+                          }
+                        </button>
+                      </div>
+                    </div>
+                    <h4 className="font-bold text-[#1B1C1A] text-sm leading-tight">{r.name}</h4>
+                    {r.lastUsed && (
+                      <p className="text-[10px] font-mono text-gray-400 mt-1.5 pt-1.5 border-t border-[#E3E2DF]">
+                        DEPLOYED {new Date(r.lastUsed).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: Detail Panel ────────────────────────────────────────── */}
+        <div className="lg:col-span-8 bg-white border border-[#1B1C1A] rounded-[2px] p-6 min-h-[400px]">
+          {rightPanel === 'empty' && (
+            <EmptyPanel onNew={startNew} />
+          )}
+          {rightPanel === 'view' && selectedRubric && (
+            <RubricDetailView
+              rubric={selectedRubric}
+              onEdit={startEdit}
+              onDeploy={startDeploy}
+              onDelete={() => setConfirmDelete(selectedRubric.id)}
+            />
+          )}
+          {rightPanel === 'edit' && (
+            <RubricEditor
+              key={selectedId ?? 'new'}
+              rubric={isNewDraft ? null : selectedRubric}
+              onSave={handleSave}
+              onCancel={handleCancelEdit}
+              onDelete={isNewDraft ? null : () => setConfirmDelete(selectedRubric.id)}
+            />
+          )}
+          {rightPanel === 'deploy' && selectedRubric && (
+            <DeployRubric
+              rubric={selectedRubric}
+              onDone={() => setRightPanel('view')}
+              onBack={() => setRightPanel('view')}
+            />
+          )}
+        </div>
+      </div>
+
+      {confirmDelete && (
+        <DeleteModal
+          onConfirm={() => handleDelete(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
-      {/* Import from Canvas */}
       {showImport && (
         <ImportFromCanvas
-          onImport={async rubric => {
-            await saveRubric({ ...rubric, id: newRubricId(), createdAt: new Date().toISOString(), lastUsed: null })
-            await reload()
-            setShowImport(false)
-          }}
+          onImport={handleImport}
           onClose={() => setShowImport(false)}
         />
       )}
@@ -172,84 +295,172 @@ export default function RubricManager() {
   )
 }
 
-function Breadcrumb({ label, onBack }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <button className="btn-ghost text-sm text-gray-500 hover:text-gray-800" onClick={onBack}>
-        ← Rubric Library
-      </button>
-      <span className="text-gray-300">/</span>
-      <span className="font-medium text-gray-700">{label}</span>
-    </div>
-  )
-}
+// ─── Right panel: view mode ───────────────────────────────────────────────────
 
-function RubricCard({ rubric, pts, onEdit, onDeploy, onDelete }) {
+function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
+  const pts = maxPoints(rubric)
+
   return (
-    <div className="card p-4 flex items-center gap-4">
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 truncate">{rubric.name}</p>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {rubric.criteria.length} {rubric.criteria.length === 1 ? 'criterion' : 'criteria'}
-          {' · '}{pts} pts
-          {rubric.lastUsed && ` · Last deployed ${new Date(rubric.lastUsed).toLocaleDateString()}`}
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#E3E2DF] pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono font-bold uppercase text-white bg-[#1B1C1A] px-2 py-0.5 rounded-[2px]">
+              {rubric.criteria.length} {rubric.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-gray-500">
+              TOTAL: {pts} PTS
+            </span>
+          </div>
+          <h2 className="text-2xl font-black text-[#1B1C1A] uppercase tracking-tight leading-tight">
+            {rubric.name}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onDeploy}
+            className="px-3 py-1.5 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-1.5 hover:bg-emerald-700"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+            DEPLOY
+          </button>
+          <button
+            onClick={onEdit}
+            className="px-3 py-1.5 bg-[#FAF9F5] text-[#1B1C1A] font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-1.5 hover:bg-[#EFEEEA]"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            EDIT
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1.5 bg-[#FAF9F5] border border-[#1B1C1A] rounded-[2px] hover:bg-red-50 text-[#B7102A]"
+            aria-label="Delete rubric"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+          <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
+          CRITERIA & RATING BREAKDOWN
+        </h3>
+
+        {rubric.criteria.map((c, idx) => {
+          const cPts = c.ratings.reduce((m, r) => Math.max(m, r.points), 0)
+          const sorted = [...c.ratings].sort((a, b) => b.points - a.points)
+          return (
+            <div key={c.id} className="border border-[#1B1C1A] rounded-[2px] overflow-hidden">
+              <div className="bg-[#EFEEEA] p-2.5 border-b border-[#1B1C1A] flex items-center justify-between font-mono text-xs">
+                <span className="font-bold text-[#1B1C1A]">
+                  {idx + 1}. {c.description || <em className="font-normal text-gray-400">Unnamed</em>}
+                </span>
+                <span className="font-bold text-[#2563EB] bg-white px-2 py-0.5 border border-[#1B1C1A] rounded-[2px] shrink-0 ml-2">
+                  MAX {cPts} PTS
+                </span>
+              </div>
+              <div className="p-3 bg-white">
+                {c.longDescription && (
+                  <p className="text-xs text-gray-500 mb-2 pb-2 border-b border-[#E3E2DF]">{c.longDescription}</p>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {sorted.map(rt => (
+                    <div key={rt.id} className="p-2 bg-[#FAF9F5] border border-[#E3E2DF] rounded-[2px]">
+                      <span className="text-xs font-bold font-mono text-[#1B1C1A] block mb-1">
+                        {rt.points} PTS
+                      </span>
+                      <p className="text-[11px] text-gray-600 leading-tight">{rt.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="p-3 bg-[#FEF08A]/20 border border-[#1B1C1A] rounded-[2px] flex items-start gap-2">
+        <HelpCircle className="w-4 h-4 text-[#7A5500] shrink-0 mt-0.5" />
+        <p className="text-[11px] font-mono text-[#1B1C1A] leading-relaxed">
+          <strong>Canvas Lock Note:</strong> Canvas locks rubrics once graded. Deploy creates a new copy in the target course — it does not modify rubrics already attached to graded submissions.
         </p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <button className="btn-secondary text-sm flex items-center gap-1.5" onClick={onEdit}>
-          <Pencil size={13} /> Edit
-        </button>
-        <button className="btn-primary text-sm flex items-center gap-1.5" onClick={onDeploy}>
-          <Upload size={13} /> Deploy
-        </button>
-        <button
-          className="btn-ghost p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-          onClick={onDelete}
-          title="Delete"
-        >
-          <Trash2 size={15} />
-        </button>
-      </div>
     </div>
   )
 }
 
-function EmptyState({ hasSearch, onCreate }) {
-  if (hasSearch) {
-    return <p className="text-center text-gray-400 py-16 text-sm">No rubrics match your search.</p>
-  }
+// ─── Right panel: empty state ─────────────────────────────────────────────────
+
+function EmptyPanel({ onNew }) {
   return (
-    <div className="text-center py-20 space-y-3">
-      <p className="text-gray-500 font-medium">No rubric templates yet.</p>
-      <p className="text-sm text-gray-400 max-w-xs mx-auto">
-        Create a rubric template below, or import existing rubrics from a Canvas course.
-      </p>
-      <button className="btn-primary text-sm inline-flex items-center gap-1.5 mx-auto" onClick={onCreate}>
-        <Plus size={15} /> Create Your First Rubric
+    <div className="flex flex-col items-center justify-center h-full min-h-[320px] space-y-4 text-center">
+      <div className="w-14 h-14 bg-[#EFEEEA] border border-[#1B1C1A] rounded-[2px] flex items-center justify-center">
+        <Folder className="w-7 h-7 text-[#059669]" />
+      </div>
+      <div>
+        <p className="font-mono font-black uppercase text-[#1B1C1A] text-sm">NO RUBRIC SELECTED</p>
+        <p className="text-xs text-gray-500 font-mono mt-1">Select from the list or build a new one.</p>
+      </div>
+      <button
+        onClick={onNew}
+        className="px-4 py-2 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-2 hover:bg-emerald-700"
+      >
+        <Plus className="w-4 h-4" />
+        BUILD FIRST RUBRIC
       </button>
     </div>
   )
 }
 
-function Modal({ children, onClose }) {
+// ─── Delete confirm modal ──────────────────────────────────────────────────────
+
+function DeleteModal({ onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
-        {children}
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rubric-del-title"
+      onClick={e => e.target === e.currentTarget && onCancel()}
+    >
+      <div className="bg-white border border-[#1B1C1A] rounded-[2px] p-6 max-w-sm w-full space-y-4">
+        <h2 id="rubric-del-title" className="font-mono font-black uppercase text-[#1B1C1A]">
+          DELETE RUBRIC?
+        </h2>
+        <p className="text-xs text-gray-600 font-mono leading-relaxed">
+          Removes the local template only. Rubrics already deployed to Canvas are not affected.
+        </p>
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            onClick={onCancel}
+            className="px-3 py-1.5 bg-[#FAF9F5] border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA]"
+          >
+            CANCEL
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-3 py-1.5 bg-[#B7102A] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-red-800"
+          >
+            DELETE
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
+// ─── Import from Canvas modal ──────────────────────────────────────────────────
+
 function ImportFromCanvas({ onImport, onClose }) {
-  const [courses, setCourses]           = useState([])
+  const [courses, setCourses]               = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [selectedCourseId, setSelectedCourseId] = useState('')
-  const [rubrics, setRubrics]           = useState([])
+  const [rubrics, setRubrics]               = useState([])
   const [loadingRubrics, setLoadingRubrics] = useState(false)
-  const [selectedIds, setSelectedIds]   = useState(new Set())
-  const [importing, setImporting]       = useState(false)
-  const [imported, setImported]         = useState(0)
+  const [selectedIds, setSelectedIds]       = useState(new Set())
+  const [importing, setImporting]           = useState(false)
+  const [imported, setImported]             = useState(0)
 
   useEffect(() => {
     getCourses()
@@ -297,23 +508,38 @@ function ImportFromCanvas({ onImport, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900">Import Rubrics from Canvas</h3>
-          <button className="btn-ghost p-1" onClick={onClose}><X size={16} /></button>
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white border border-[#1B1C1A] rounded-[2px] w-full max-w-lg">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#1B1C1A] bg-[#EFEEEA]">
+          <h3 className="font-mono font-black uppercase text-xs text-[#1B1C1A]">
+            IMPORT RUBRICS FROM CANVAS
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-[#1B1C1A]/10 rounded-[2px]"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4 text-[#1B1C1A]" />
+          </button>
         </div>
+
         <div className="p-5 space-y-4">
           {imported > 0 ? (
-            <div className="flex items-center gap-2 text-green-700 py-4 justify-center">
-              <CheckCircle size={18} /> {imported} rubric{imported !== 1 ? 's' : ''} imported successfully.
+            <div className="flex items-center gap-2 text-[#059669] py-4 justify-center font-mono text-xs font-bold uppercase">
+              <CheckCircle className="w-5 h-5" />
+              {imported} RUBRIC{imported !== 1 ? 'S' : ''} IMPORTED
             </div>
           ) : (
             <>
               <div>
-                <label className="label">Course</label>
+                <label className="block text-[10px] font-mono font-bold uppercase text-gray-500 mb-1">
+                  Course
+                </label>
                 <select
-                  className="input w-full text-sm mt-1"
+                  className="w-full bg-white border border-[#1B1C1A] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
                   value={selectedCourseId}
                   onChange={e => setSelectedCourseId(e.target.value)}
                   disabled={loadingCourses}
@@ -323,38 +549,38 @@ function ImportFromCanvas({ onImport, onClose }) {
               </div>
 
               <div>
-                <p className="label mb-1.5">Rubrics in this course</p>
+                <p className="text-[10px] font-mono font-bold uppercase text-gray-500 mb-1">
+                  Rubrics in this course
+                </p>
                 {loadingRubrics ? (
-                  <div className="flex items-center gap-2 text-gray-400 py-4 text-sm justify-center">
-                    <Loader size={15} className="animate-spin" /> Loading rubrics…
+                  <div className="flex items-center gap-2 text-gray-400 py-4 text-xs font-mono justify-center">
+                    <Loader className="w-4 h-4 animate-spin" /> LOADING…
                   </div>
                 ) : rubrics.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-4 text-center">No rubrics found in this course.</p>
+                  <p className="text-xs font-mono text-gray-400 py-4 text-center uppercase">
+                    No rubrics in this course
+                  </p>
                 ) : (
-                  <div className="max-h-52 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-2">
+                  <div className="max-h-52 overflow-y-auto space-y-1 border border-[#1B1C1A] rounded-[2px] p-2">
                     {rubrics.map(r => (
                       <button
                         key={r.id}
                         type="button"
                         onClick={() => toggle(r.id)}
-                        className="w-full flex items-center gap-3 px-2.5 py-2 rounded-md hover:bg-gray-50 transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-2.5 py-2 hover:bg-[#FAF9F5] transition-colors text-left rounded-[2px]"
                       >
                         <span
-                          className="w-4.5 h-4.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
+                          className="w-4 h-4 border border-[#1B1C1A] rounded-[2px] flex items-center justify-center shrink-0 transition-colors"
                           style={selectedIds.has(r.id)
-                            ? { backgroundColor: 'var(--cpt-color)', borderColor: 'var(--cpt-color)' }
-                            : { borderColor: '#d1d5db' }}
+                            ? { backgroundColor: '#059669', borderColor: '#059669' }
+                            : { backgroundColor: '#FFFFFF' }}
                         >
-                          {selectedIds.has(r.id) && (
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                              <path d="M1.5 5L4 7.5 8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          )}
+                          {selectedIds.has(r.id) && <Check className="w-3 h-3 text-white" />}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">{r.title}</p>
-                          <p className="text-xs text-gray-400">
-                            {r.criteria.length} criteria · {r.pointsPossible} pts
+                          <p className="text-xs font-bold text-[#1B1C1A] truncate font-mono">{r.title}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">
+                            {r.criteria.length} CRITERIA · {r.pointsPossible} PTS
                           </p>
                         </div>
                       </button>
@@ -365,19 +591,24 @@ function ImportFromCanvas({ onImport, onClose }) {
             </>
           )}
         </div>
-        <div className="flex justify-end gap-3 px-5 pb-5">
-          <button className="btn-secondary" onClick={onClose}>
-            {imported > 0 ? 'Close' : 'Cancel'}
+
+        <div className="flex justify-end gap-3 px-5 pb-5 border-t border-[#E3E2DF] pt-4">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 bg-[#FAF9F5] border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA]"
+          >
+            {imported > 0 ? 'CLOSE' : 'CANCEL'}
           </button>
           {imported === 0 && (
             <button
-              className="btn-primary"
-              disabled={selectedIds.size === 0 || importing}
               onClick={doImport}
+              disabled={selectedIds.size === 0 || importing}
+              className="px-4 py-1.5 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-emerald-700 disabled:opacity-40 flex items-center gap-2"
             >
               {importing
-                ? <><Loader size={13} className="animate-spin inline mr-1.5" />Importing…</>
-                : `Import ${selectedIds.size > 0 ? selectedIds.size : ''} Rubric${selectedIds.size !== 1 ? 's' : ''}`}
+                ? <><Loader className="w-3.5 h-3.5 animate-spin" /> IMPORTING…</>
+                : `IMPORT${selectedIds.size > 0 ? ` ${selectedIds.size}` : ''} RUBRIC${selectedIds.size !== 1 ? 'S' : ''}`
+              }
             </button>
           )}
         </div>

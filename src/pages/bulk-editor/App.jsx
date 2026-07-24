@@ -15,6 +15,7 @@ import ChangeLog from '../../modules/assignments/ChangeLog.jsx'
 import useSort from '../../utils/useSort.js'
 import BulkActionBar, { INITIAL_ACTIONS } from '../../modules/assignments/BulkActionBar.jsx'
 import PreviewDiff from '../../modules/assignments/PreviewDiff.jsx'
+import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
@@ -84,6 +85,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [actions, setActions] = useState(INITIAL_ACTIONS)
   const [showPreview, setShowPreview] = useState(false)
+  const [showCopyModal, setShowCopyModal] = useState(false)
 
   const filteredAssignments = useMemo(
     () => applyFilters(assignments, search, filters),
@@ -340,6 +342,7 @@ export default function App() {
         onActionsChange={setActions}
         onPreview={() => setShowPreview(true)}
         onClearAll={clearSelection}
+        onCopyTo={() => setShowCopyModal(true)}
       />
       {showPreview && (
         <PreviewDiff
@@ -350,6 +353,13 @@ export default function App() {
           onCancel={() => setShowPreview(false)}
           onDone={handlePreviewDone}
           onViewReport={handleViewReport}
+        />
+      )}
+      {showCopyModal && (
+        <CopyToCoursesModal
+          assignments={selectedAssignments}
+          sourceCourseId={selectedCourseId}
+          onClose={() => setShowCopyModal(false)}
         />
       )}
       {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} context="bulk-editor" />}

@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { newCriterionId, newRatingId } from '../../storage/rubrics.js'
 
 function defaultRatings() {
   return [
-    { id: newRatingId(), description: 'Excellent', points: 5 },
-    { id: newRatingId(), description: 'Good',      points: 3 },
-    { id: newRatingId(), description: 'Needs Work', points: 0 },
+    { id: newRatingId(), description: 'Excellent',   points: 5 },
+    { id: newRatingId(), description: 'Good',        points: 3 },
+    { id: newRatingId(), description: 'Needs Work',  points: 0 },
   ]
 }
 
@@ -18,7 +18,9 @@ function criterionMaxPoints(crit) {
   return crit.ratings.reduce((m, r) => Math.max(m, r.points), 0)
 }
 
-export default function RubricEditor({ rubric, onSave, onCancel }) {
+const inputCls = 'w-full bg-white border border-[#1B1C1A] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[#2563EB]'
+
+export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null }) {
   const [name, setName]         = useState(rubric?.name ?? '')
   const [criteria, setCriteria] = useState(() =>
     rubric?.criteria?.length > 0 ? rubric.criteria : [defaultCriterion()]
@@ -28,6 +30,7 @@ export default function RubricEditor({ rubric, onSave, onCancel }) {
   ))
 
   const totalPoints = criteria.reduce((sum, c) => sum + criterionMaxPoints(c), 0)
+  const canSave = name.trim().length > 0 && criteria.length > 0
 
   function updateCriterion(id, field, value) {
     setCriteria(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c))
@@ -85,119 +88,153 @@ export default function RubricEditor({ rubric, onSave, onCancel }) {
   }
 
   function handleSave() {
-    if (!name.trim() || criteria.length === 0) return
+    if (!canSave) return
     onSave({ name: name.trim(), criteria })
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      {/* Name + total */}
-      <div className="flex items-center gap-4">
+    <div className="space-y-4">
+      {/* ── Edit mode header ─────────────────────────────────────────────── */}
+      <div className="border-b border-[#E3E2DF] pb-3 flex items-center justify-between">
+        <span className="text-[10px] font-mono font-bold uppercase text-gray-400">
+          {rubric ? 'EDITING RUBRIC' : 'NEW RUBRIC'}
+        </span>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#B7102A] hover:underline"
+            aria-label="Delete rubric"
+          >
+            <X className="w-3 h-3" /> DELETE RUBRIC
+          </button>
+        )}
+      </div>
+
+      {/* ── Name + total ─────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3">
         <input
-          className="input flex-1 font-semibold text-base"
-          placeholder="Rubric name"
+          className={`${inputCls} flex-1 font-bold`}
+          placeholder="RUBRIC NAME…"
           value={name}
           onChange={e => setName(e.target.value)}
-          autoFocus
         />
-        <div className="text-sm text-gray-500 shrink-0">
-          Total: <span className="font-bold text-gray-900">{totalPoints} pts</span>
+        <div className="text-[10px] font-mono font-bold text-gray-500 shrink-0 whitespace-nowrap">
+          TOTAL: <span className="text-[#1B1C1A]">{totalPoints} PTS</span>
         </div>
       </div>
 
-      {/* Criteria */}
-      <div className="space-y-3">
+      {/* ── Criteria ─────────────────────────────────────────────────────── */}
+      <div className="space-y-2">
         {criteria.map((crit, idx) => {
           const maxPts = criterionMaxPoints(crit)
           const open = expanded.has(crit.id)
           return (
-            <div key={crit.id} className="card border border-gray-200 overflow-hidden">
-              {/* Criterion header row */}
-              <div className="flex items-center gap-2 px-3 py-2.5">
+            <div key={crit.id} className="border border-[#1B1C1A] rounded-[2px] overflow-hidden">
+              {/* Criterion header */}
+              <div className="bg-[#EFEEEA] flex items-center gap-2 px-3 py-2">
                 <button
                   type="button"
                   onClick={() => toggleExpand(crit.id)}
-                  className="text-gray-400 hover:text-gray-600 shrink-0"
+                  className="text-gray-500 hover:text-[#1B1C1A] shrink-0"
+                  aria-label={open ? 'Collapse' : 'Expand'}
                 >
-                  {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 <input
-                  className="input flex-1 text-sm"
-                  placeholder="Criterion description (e.g. Organization, Content, Grammar…)"
+                  className="flex-1 bg-transparent border-0 text-xs font-mono font-bold text-[#1B1C1A] placeholder-gray-400 focus:outline-none min-w-0"
+                  placeholder={`CRITERION ${idx + 1} DESCRIPTION…`}
                   value={crit.description}
                   onChange={e => updateCriterion(crit.id, 'description', e.target.value)}
                 />
-                <span className="text-xs text-gray-400 shrink-0 w-14 text-right">{maxPts} pts</span>
+                <span className="text-[10px] font-mono text-[#2563EB] font-bold shrink-0">
+                  {maxPts} PTS
+                </span>
                 <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     type="button"
                     disabled={idx === 0}
                     onClick={() => moveCriterion(crit.id, -1)}
-                    className="btn-ghost p-1 disabled:opacity-25"
-                    title="Move up"
+                    className="p-0.5 text-gray-400 hover:text-[#1B1C1A] disabled:opacity-25"
+                    aria-label="Move up"
                   >
-                    <ChevronUp size={14} />
+                    <ChevronUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
                     disabled={idx === criteria.length - 1}
                     onClick={() => moveCriterion(crit.id, 1)}
-                    className="btn-ghost p-1 disabled:opacity-25"
-                    title="Move down"
+                    className="p-0.5 text-gray-400 hover:text-[#1B1C1A] disabled:opacity-25"
+                    aria-label="Move down"
                   >
-                    <ChevronDown size={14} />
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
                     disabled={criteria.length === 1}
                     onClick={() => removeCriterion(crit.id)}
-                    className="btn-ghost p-1 text-red-400 hover:text-red-600 disabled:opacity-25"
-                    title="Remove criterion"
+                    className="p-0.5 text-[#B7102A] hover:text-red-800 disabled:opacity-25"
+                    aria-label="Remove criterion"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              {/* Ratings */}
+              {/* Criterion body */}
               {open && (
-                <div className="border-t border-gray-100 bg-gray-50 px-3 py-3 space-y-1.5">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Ratings (highest → lowest)</p>
-                  {crit.ratings.map(r => (
-                    <div key={r.id} className="flex items-center gap-2">
-                      <input
-                        className="input flex-1 text-sm"
-                        placeholder="Rating label (e.g. Excellent, Proficient…)"
-                        value={r.description}
-                        onChange={e => updateRating(crit.id, r.id, 'description', e.target.value)}
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        className="input w-20 text-sm text-right shrink-0"
-                        value={r.points}
-                        onChange={e => updateRating(crit.id, r.id, 'points', parseFloat(e.target.value) || 0)}
-                      />
-                      <span className="text-xs text-gray-400 shrink-0">pts</span>
-                      <button
-                        type="button"
-                        disabled={crit.ratings.length === 1}
-                        onClick={() => removeRating(crit.id, r.id)}
-                        className="btn-ghost p-1 text-red-400 hover:text-red-600 disabled:opacity-25 shrink-0"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => addRating(crit.id)}
-                    className="flex items-center gap-1.5 text-xs font-medium mt-1"
-                    style={{ color: 'var(--cpt-color)' }}
-                  >
-                    <Plus size={12} /> Add Rating
-                  </button>
+                <div className="bg-white px-3 py-3 space-y-3 border-t border-[#E3E2DF]">
+                  {/* Long description */}
+                  <textarea
+                    className={`${inputCls} resize-none`}
+                    rows={2}
+                    placeholder="FULL DESCRIPTION / EXPECTATIONS (optional)…"
+                    value={crit.longDescription}
+                    onChange={e => updateCriterion(crit.id, 'longDescription', e.target.value)}
+                  />
+
+                  {/* Ratings */}
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-mono font-bold uppercase text-gray-400">
+                      RATINGS (HIGHEST → LOWEST)
+                    </p>
+                    {crit.ratings.map(r => (
+                      <div key={r.id} className="flex items-center gap-2">
+                        <input
+                          className={`${inputCls} flex-1`}
+                          placeholder="RATING LABEL…"
+                          value={r.description}
+                          onChange={e => updateRating(crit.id, r.id, 'description', e.target.value)}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          className={`${inputCls} w-20 text-right shrink-0`}
+                          value={r.points}
+                          onChange={e => updateRating(crit.id, r.id, 'points', parseFloat(e.target.value) || 0)}
+                          aria-label="Points"
+                        />
+                        <span className="text-[10px] font-mono text-gray-400 shrink-0">PTS</span>
+                        <button
+                          type="button"
+                          disabled={crit.ratings.length === 1}
+                          onClick={() => removeRating(crit.id, r.id)}
+                          className="text-[#B7102A] hover:text-red-800 disabled:opacity-25 shrink-0"
+                          aria-label="Remove rating"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addRating(crit.id)}
+                      className="text-[10px] font-mono font-bold uppercase text-[#059669] flex items-center gap-1 hover:underline mt-1"
+                    >
+                      <Plus className="w-3 h-3" /> ADD RATING
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -205,24 +242,29 @@ export default function RubricEditor({ rubric, onSave, onCancel }) {
         })}
       </div>
 
-      {/* Add criterion */}
+      {/* ── Add criterion ────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={addCriterion}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+        className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#1B1C1A] rounded-[2px] text-xs font-mono font-bold uppercase text-gray-500 hover:bg-[#FAF9F5] hover:text-[#1B1C1A] transition-colors"
       >
-        <Plus size={15} /> Add Criterion
+        <Plus className="w-3.5 h-3.5" /> ADD CRITERION
       </button>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
-        <button className="btn-secondary" onClick={onCancel}>Cancel</button>
+      {/* ── Actions ──────────────────────────────────────────────────────── */}
+      <div className="flex justify-end gap-3 pt-3 border-t border-[#E3E2DF]">
         <button
-          className="btn-primary"
-          onClick={handleSave}
-          disabled={!name.trim() || criteria.length === 0}
+          onClick={onCancel}
+          className="px-3 py-1.5 bg-[#FAF9F5] border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA]"
         >
-          Save Rubric
+          {rubric ? 'CANCEL' : 'DISCARD'}
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!canSave}
+          className="px-4 py-1.5 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-emerald-700 disabled:opacity-40"
+        >
+          SAVE RUBRIC
         </button>
       </div>
     </div>

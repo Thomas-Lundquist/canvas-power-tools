@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X, Copy } from 'lucide-react'
 import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import NumberField from '../../components/NumberField.jsx'
 import IconButton from '../../components/IconButton.jsx'
@@ -41,7 +41,7 @@ function countActiveFields(actions) {
   return count
 }
 
-export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll }) {
+export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const fieldCount = countActiveFields(actions)
@@ -90,6 +90,17 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
             )}
           </span>
           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+            {onCopyTo && (
+              <button
+                type="button"
+                onClick={onCopyTo}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-control)] text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-body)] transition-colors duration-75"
+                aria-label={`Copy ${selectedCount} selected assignment${selectedCount !== 1 ? 's' : ''} to another course`}
+              >
+                <Copy size={12} aria-hidden="true" />
+                Copy To
+              </button>
+            )}
             <IconButton
               icon={collapsed ? ChevronUp : ChevronDown}
               label={collapsed ? 'Expand action bar' : 'Collapse action bar'}

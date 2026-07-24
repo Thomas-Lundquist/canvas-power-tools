@@ -52,7 +52,6 @@ export default defineConfig({
         bulkEditor: resolve(__dirname, 'src/pages/bulk-editor/index.html'),
         settings:   resolve(__dirname, 'src/settings/index.html'),
         templates:  resolve(__dirname, 'src/pages/templates/index.html'),
-        duplicate:  resolve(__dirname, 'src/pages/duplicate/index.html'),
         grading:    resolve(__dirname, 'src/pages/grading/index.html'),
         groups:     resolve(__dirname, 'src/pages/groups/index.html'),
         rubrics:         resolve(__dirname, 'src/pages/rubrics/index.html'),
