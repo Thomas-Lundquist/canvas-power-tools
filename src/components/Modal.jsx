@@ -12,7 +12,12 @@ const FOCUSABLE_SELECTORS = [
 
 export default function Modal({ title, subtitle, children, onClose, size = 'md', footer }) {
   const dialogRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
+  // Mount-only: re-running this on every onClose identity change (callers routinely pass
+  // an inline arrow function) re-focused the dialog's first focusable element — the close
+  // button — on every keystroke in a form field further down. Read onClose via a ref instead.
   useEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) return
@@ -24,7 +29,7 @@ export default function Modal({ title, subtitle, children, onClose, size = 'md',
     focusable()[0]?.focus()
 
     function handleKeyDown(e) {
-      if (e.key === 'Escape') { onClose?.(); return }
+      if (e.key === 'Escape') { onCloseRef.current?.(); return }
       if (e.key !== 'Tab') return
       const els = focusable()
       if (!els.length) return
@@ -40,7 +45,7 @@ export default function Modal({ title, subtitle, children, onClose, size = 'md',
       document.removeEventListener('keydown', handleKeyDown)
       previouslyFocused?.focus()
     }
-  }, [onClose])
+  }, [])
 
   const widths = { sm: 'max-w-md', md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-5xl' }
 

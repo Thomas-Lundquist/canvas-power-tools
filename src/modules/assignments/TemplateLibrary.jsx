@@ -226,7 +226,7 @@ export default function TemplateLibrary({
       {/* Folder tree */}
       {!filtered && (
         <div className="space-y-4">
-          {templates.length === 0 && (
+          {templates.length === 0 && folders.length === 0 && (
             <EmptyState
               title="No templates yet"
               description="Save an assignment structure once and deploy it to any number of courses."
@@ -234,7 +234,7 @@ export default function TemplateLibrary({
             />
           )}
 
-          {templates.length > 0 && (
+          {(templates.length > 0 || folders.length > 0) && (
             <>
               {folderedGroups.map(({ folder, items }) => (
                 <FolderCard
