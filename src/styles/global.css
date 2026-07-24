@@ -196,9 +196,9 @@
   }
   /* Keyboard focus ring — accent-colored, suppressed for mouse clicks */
   :focus-visible {
-    outline: 3px solid var(--cpt-color);
-    outline-offset: 2px;
-    border-radius: 2px;
+    outline: 2px solid var(--cpt-color);
+    outline-offset: 1px;
+    border-radius: 0;
   }
   :focus:not(:focus-visible) {
     outline: none;
@@ -273,7 +273,7 @@
   }
   .input:focus-visible {
     border-color: var(--cpt-color);
-    box-shadow: 0 0 0 2px rgba(var(--cpt-color-rgb), 0.2);
+    box-shadow: 0 0 0 1px rgba(var(--cpt-color-rgb), 0.25);
   }
   /* Replace native OS arrow with a consistent custom SVG chevron.
      appearance:none removes the OS arrow; background-image provides ours.
@@ -291,7 +291,7 @@
   /* Native selects outside .input also get a themed focus ring */
   select:focus-visible {
     border-color: var(--cpt-color);
-    box-shadow: 0 0 0 2px rgba(var(--cpt-color-rgb), 0.2);
+    box-shadow: 0 0 0 1px rgba(var(--cpt-color-rgb), 0.25);
   }
   .label {
     @apply block text-sm font-medium mb-1;

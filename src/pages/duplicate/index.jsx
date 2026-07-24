@@ -1,6 +1,7 @@
 ﻿import React from 'react'
 import { createRoot } from 'react-dom/client'
 import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
+import ToolShell from '../../components/ToolShell.jsx'
 import CopyFlow from '../../modules/assignments/CopyFlow.jsx'
 import { getPreferences } from '../../storage/preferences.js'
 import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
@@ -13,20 +14,14 @@ function App() {
   const initialCourseId = new URLSearchParams(window.location.search).get('courseId') ?? null
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-          <BrandLogo />
-          <div className="flex items-center gap-1">
-            <AppNav current="duplicate" />
-            <SettingsButton />
-          </div>
-        </div>
-      </div>
+    <ToolShell
+      start={<BrandLogo />}
+      end={<><AppNav current="duplicate" /><SettingsButton /></>}
+    >
       <div className="max-w-7xl mx-auto px-6 py-8 flex-1 flex flex-col min-h-0 w-full">
         <CopyFlow initialCourseId={initialCourseId} />
       </div>
-    </div>
+    </ToolShell>
   )
 }
 
