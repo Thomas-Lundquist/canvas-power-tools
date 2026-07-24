@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react'
 import {
-  Plus, FolderPlus, FileText, ClipboardList, Folder, ChevronDown,
+  Plus, FolderPlus, FileText, ClipboardList, Folder, Layers, ChevronDown,
   MoreHorizontal, Pencil, Trash2, LayoutList, LayoutGrid,
 } from 'lucide-react'
 import { saveFolder, deleteFolder, deleteTemplate, newFolderId, saveTemplate } from '../../storage/templates.js'
@@ -21,7 +21,6 @@ const SORT_OPTIONS = [
   { key: 'name', label: 'Name' },
 ]
 
-const CARD_SHADOW = '[box-shadow:0_4px_24px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.04)]'
 const PREVIEW_RENDER_WIDTH = 900
 
 const SUBMISSION_LABELS = {
@@ -38,9 +37,9 @@ function formatLastUsed(lastUsed) {
 
 function formatMeta(t) {
   const parts = []
-  if (t.fields?.points != null) parts.push(`${t.fields.points} pts`)
+  if (t.type !== 'page' && t.fields?.points != null) parts.push(`${t.fields.points} pts`)
   const subLabel = SUBMISSION_LABELS[t.fields?.submissionType]
-  if (subLabel) parts.push(subLabel)
+  if (t.type !== 'page' && subLabel) parts.push(subLabel)
   parts.push(formatLastUsed(t.lastUsed))
   return parts.join(' · ')
 }
@@ -48,9 +47,10 @@ function formatMeta(t) {
 export default function TemplateLibrary({
   templates, folders, onUse, onEdit, onNew, onDataChange,
   viewMode = 'list', onViewModeChange,
-  skipDeleteConfirm = false, autoExpandFolders = true,
+  skipDeleteConfirm = false,
 }) {
   const [search, setSearch] = useState('')
+  const [selectedFolder, setSelectedFolder] = useState('all')
   const [deletingTemplate, setDeletingTemplate] = useState(null)
   const [deletingFolder, setDeletingFolder] = useState(null)
   const [renamingFolder, setRenamingFolder] = useState(null)
@@ -61,25 +61,30 @@ export default function TemplateLibrary({
   const [draggedTemplate, setDraggedTemplate] = useState(null)
 
   const sort = useSort(templates, { key: 'lastUsed', dir: 'desc' })
+  const isSearching = search.trim().length > 0
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return null
-    const q = search.toLowerCase()
-    return sort.sorted.filter(t => t.name.toLowerCase().includes(q))
-  }, [search, sort.sorted])
+  const sidebarFolders = useMemo(() => {
+    const unfiledCount = templates.filter(t => !t.folderId).length
+    return [
+      { id: 'all', name: 'All Templates', count: templates.length, icon: Layers, droppable: false },
+      ...folders.map(f => ({
+        id: f.id, name: f.name,
+        count: templates.filter(t => t.folderId === f.id).length,
+        icon: Folder, droppable: true, editable: true,
+      })),
+      { id: 'unfiled', name: 'Unfiled', count: unfiledCount, icon: Folder, droppable: true },
+    ]
+  }, [templates, folders])
 
-  const folderedGroups = useMemo(
-    () => folders.map(folder => ({
-      folder,
-      items: sort.sorted.filter(t => t.folderId === folder.id),
-    })),
-    [sort.sorted, folders],
-  )
-
-  const unfiled = useMemo(
-    () => sort.sorted.filter(t => !t.folderId),
-    [sort.sorted],
-  )
+  const visibleTemplates = useMemo(() => {
+    if (isSearching) {
+      const q = search.toLowerCase()
+      return sort.sorted.filter(t => t.name.toLowerCase().includes(q))
+    }
+    if (selectedFolder === 'all') return sort.sorted
+    if (selectedFolder === 'unfiled') return sort.sorted.filter(t => !t.folderId)
+    return sort.sorted.filter(t => t.folderId === selectedFolder)
+  }, [isSearching, search, selectedFolder, sort.sorted])
 
   async function handleDeleteTemplate(template) {
     await deleteTemplate(template.id)
@@ -90,6 +95,7 @@ export default function TemplateLibrary({
   async function handleDeleteFolder(folder) {
     await deleteFolder(folder.id)
     setDeletingFolder(null)
+    if (selectedFolder === folder.id) setSelectedFolder('all')
     onDataChange()
   }
 
@@ -99,7 +105,7 @@ export default function TemplateLibrary({
     onDataChange()
   }
 
-  async function handleDrop(folderId) {
+  async function handleDropOnFolder(folderId) {
     if (!draggedTemplate) return
     if ((folderId ?? null) === (draggedTemplate.folderId ?? null)) return
     await saveTemplate({ ...draggedTemplate, folderId: folderId ?? null })
@@ -117,9 +123,11 @@ export default function TemplateLibrary({
 
   async function handleAddFolder() {
     if (!newFolderName.trim()) return
-    await saveFolder({ id: newFolderId(), name: newFolderName.trim(), createdAt: new Date().toISOString() })
+    const id = newFolderId()
+    await saveFolder({ id, name: newFolderName.trim(), createdAt: new Date().toISOString() })
     setAddingFolder(false)
     setNewFolderName('')
+    setSelectedFolder(id)
     onDataChange()
   }
 
@@ -131,6 +139,11 @@ export default function TemplateLibrary({
   function requestDeleteFolder(folder) {
     if (skipDeleteConfirm) handleDeleteFolder(folder)
     else setDeletingFolder(folder)
+  }
+
+  function handleNewTemplate() {
+    const folderId = selectedFolder === 'all' || selectedFolder === 'unfiled' ? null : selectedFolder
+    onNew(folderId)
   }
 
   function renderRow(t) {
@@ -182,7 +195,7 @@ export default function TemplateLibrary({
         title="Assignment Templates"
         actions={
           <NewDropdown
-            onNewTemplate={() => onNew(null)}
+            onNewTemplate={handleNewTemplate}
             onNewFolder={() => setAddingFolder(true)}
           />
         }
@@ -209,65 +222,57 @@ export default function TemplateLibrary({
         </Toolbar.End>
       </Toolbar>
 
-      {/* Flat search results */}
-      {filtered && (
-        <div
-          className={`card domain-accent ${CARD_SHADOW} divide-y divide-[var(--color-border)]`}
+      <div className="grid grid-cols-[minmax(0,14rem)_1fr] gap-4 items-start">
+        {/* Folder sidebar */}
+        <nav
+          aria-label="Template folders"
+          className="card domain-accent shadow-[var(--shadow-sm)] overflow-hidden"
           style={{ '--domain-color': 'var(--color-domain-assignments)' }}
         >
-          {filtered.length === 0 ? (
-            <EmptyState title={`No results for "${search}"`} />
-          ) : (
-            filtered.map(renderRow)
-          )}
-        </div>
-      )}
+          <div className="px-3 py-2.5 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
+            Folders
+          </div>
+          <div className="p-1.5 space-y-0.5">
+            {sidebarFolders.map(f => (
+              <SidebarFolderRow
+                key={f.id}
+                folder={f}
+                selected={!isSearching && selectedFolder === f.id}
+                onSelect={() => setSelectedFolder(f.id)}
+                onRename={f.editable ? () => { setRenamingFolder(f); setRenameName(f.name) } : undefined}
+                onDelete={f.editable ? () => requestDeleteFolder(f) : undefined}
+                onDrop={f.droppable ? () => handleDropOnFolder(f.id === 'unfiled' ? null : f.id) : undefined}
+              />
+            ))}
+          </div>
+        </nav>
 
-      {/* Folder tree */}
-      {!filtered && (
-        <div className="space-y-4">
-          {templates.length === 0 && folders.length === 0 && (
+        {/* Main viewport */}
+        <div>
+          {templates.length === 0 && folders.length === 0 ? (
             <EmptyState
               title="No templates yet"
               description="Save an assignment structure once and deploy it to any number of courses."
               action={<Button variant="primary" onClick={() => onNew(null)}>Create your first template</Button>}
             />
-          )}
-
-          {(templates.length > 0 || folders.length > 0) && (
-            <>
-              {folderedGroups.map(({ folder, items }) => (
-                <FolderCard
-                  key={folder.id}
-                  folder={folder}
-                  items={items}
-                  viewMode={viewMode}
-                  defaultOpen={autoExpandFolders}
-                  onNew={onNew}
-                  onRename={f => { setRenamingFolder(f); setRenameName(f.name) }}
-                  onDelete={requestDeleteFolder}
-                  renderRow={renderRow}
-                  renderTile={renderTile}
-                  onDrop={handleDrop}
-                />
-              ))}
-
-              {unfiled.length > 0 && (
-                <SectionCard
-                  label="Unfiled"
-                  count={unfiled.length}
-                  items={unfiled}
-                  viewMode={viewMode}
-                  defaultOpen={autoExpandFolders}
-                  renderRow={renderRow}
-                  renderTile={renderTile}
-                  onDrop={handleDrop}
-                />
-              )}
-            </>
+          ) : visibleTemplates.length === 0 ? (
+            <EmptyState
+              title={isSearching ? `No results for "${search}"` : 'No templates in this folder'}
+            />
+          ) : viewMode === 'tile' ? (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
+              {visibleTemplates.map(renderTile)}
+            </div>
+          ) : (
+            <div
+              className="card domain-accent shadow-[var(--shadow-md)] divide-y divide-[var(--color-border)]"
+              style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+            >
+              {visibleTemplates.map(renderRow)}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {addingFolder && (
         <Modal onClose={() => { setAddingFolder(false); setNewFolderName('') }} title="New Folder">
@@ -459,114 +464,52 @@ function ViewToggle({ value, onChange }) {
   )
 }
 
-function FolderCard({ folder, items, viewMode, defaultOpen, onNew, onRename, onDelete, renderRow, renderTile, onDrop }) {
-  const [open, setOpen] = useState(defaultOpen)
+// A single row in the folder sidebar — selectable, and (for real folders and
+// Unfiled) a drag-and-drop target for moving a template. "All Templates" is
+// not droppable (it isn't a real bucket a template can belong to).
+function SidebarFolderRow({ folder, selected, onSelect, onRename, onDelete, onDrop }) {
   const [dragOver, setDragOver] = useState(false)
   const dragCounter = useRef(0)
+  const Icon = folder.icon
 
-  function handleDragEnter() { dragCounter.current++; setDragOver(true) }
-  function handleDragLeave() { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false) }
-  function handleDrop() { dragCounter.current = 0; setDragOver(false); onDrop(folder.id) }
+  function handleDragEnter() { if (onDrop) { dragCounter.current++; setDragOver(true) } }
+  function handleDragLeave() { if (onDrop) { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false) } }
+  function handleDrop() { if (!onDrop) return; dragCounter.current = 0; setDragOver(false); onDrop() }
 
   return (
     <div
-      className={`card domain-accent ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
-      style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+      className={`group relative rounded-[var(--radius-control)] ${dragOver ? 'ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
-      onDragOver={e => e.preventDefault()}
-      onDrop={handleDrop}
-    >
-      <div
-        className={`flex items-center gap-2 px-4 py-3 rounded-t-md ${open ? 'border-b border-[var(--color-border)]' : 'rounded-b-md'}`}
-        style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.10)' }}
-      >
-        <button
-          type="button"
-          onClick={() => setOpen(v => !v)}
-          aria-expanded={open}
-          className="flex items-center gap-2 min-w-0 flex-1 text-left"
-        >
-          <Folder size={16} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
-          <span className="truncate text-sm font-semibold text-[var(--color-text-body)]">
-            {folder.name}
-          </span>
-          <span className="shrink-0 text-xs text-[var(--color-text-muted)]">({items.length})</span>
-        </button>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => onNew(folder.id)}>
-            <Plus size={14} aria-hidden="true" /> New
-          </Button>
-          <FolderMenu
-            folderName={folder.name}
-            onRename={() => onRename(folder)}
-            onDelete={() => onDelete(folder)}
-          />
-        </div>
-      </div>
-
-      {open && (
-        items.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-[var(--color-text-muted)]">No templates in this folder.</p>
-        ) : viewMode === 'tile' ? (
-          <div className="p-4 grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
-            {items.map(renderTile)}
-          </div>
-        ) : (
-          <div className="divide-y divide-[var(--color-border)]">
-            {items.map(renderRow)}
-          </div>
-        )
-      )}
-    </div>
-  )
-}
-
-function SectionCard({ label, count, items, viewMode, defaultOpen, renderRow, renderTile, onDrop }) {
-  const [open, setOpen] = useState(defaultOpen)
-  const [dragOver, setDragOver] = useState(false)
-  const dragCounter = useRef(0)
-
-  function handleDragEnter() { dragCounter.current++; setDragOver(true) }
-  function handleDragLeave() { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false) }
-  function handleDrop() { dragCounter.current = 0; setDragOver(false); onDrop(null) }
-
-  return (
-    <div
-      className={`card domain-accent ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
-      style={{ '--domain-color': 'var(--color-domain-assignments)' }}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={e => e.preventDefault()}
+      onDragOver={e => { if (onDrop) e.preventDefault() }}
       onDrop={handleDrop}
     >
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
-        aria-expanded={open}
-        className={`w-full flex items-center gap-2 px-4 py-3 rounded-t-md text-left ${open ? 'border-b border-[var(--color-border)]' : 'rounded-b-md'}`}
-        style={{ backgroundColor: 'rgba(var(--cpt-color-rgb), 0.10)' }}
+        onClick={onSelect}
+        aria-current={selected ? 'true' : undefined}
+        className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius-control)] text-sm text-left transition-colors duration-75 ${
+          selected
+            ? 'bg-[var(--cpt-color)] text-white font-medium'
+            : 'text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]'
+        }`}
       >
-        <span className="text-sm font-semibold text-[var(--color-text-body)]">{label}</span>
-        <span className="text-xs text-[var(--color-text-muted)]">({count})</span>
+        <Icon size={14} className={`shrink-0 ${selected ? 'text-white' : 'text-[var(--color-text-muted)]'}`} aria-hidden="true" />
+        <span className="truncate flex-1">{folder.name}</span>
+        <span className={`shrink-0 text-xs ${selected ? 'text-white/80' : 'text-[var(--color-text-muted)]'} ${onRename ? 'group-hover:opacity-0 group-focus-within:opacity-0' : ''}`}>
+          {folder.count}
+        </span>
       </button>
-
-      {open && (
-        viewMode === 'tile' ? (
-          <div className="p-4 grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
-            {items.map(renderTile)}
-          </div>
-        ) : (
-          <div className="divide-y divide-[var(--color-border)]">
-            {items.map(renderRow)}
-          </div>
-        )
+      {onRename && (
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+          <FolderMenu folderName={folder.name} onRename={onRename} onDelete={onDelete} light={selected} />
+        </div>
       )}
     </div>
   )
 }
 
-function FolderMenu({ folderName, onRename, onDelete }) {
+function FolderMenu({ folderName, onRename, onDelete, light = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -588,6 +531,7 @@ function FolderMenu({ folderName, onRename, onDelete }) {
         icon={MoreHorizontal}
         label={`Options for ${folderName}`}
         size="sm"
+        className={light ? 'text-white hover:bg-white/20' : ''}
         onClick={() => setOpen(v => !v)}
         aria-haspopup="true"
         aria-expanded={open}
@@ -716,7 +660,7 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
         </p>
         <div className="flex items-center gap-1">
           <span className="flex-1 truncate text-xs text-[var(--color-text-muted)] leading-tight">
-            {template.fields?.points != null ? `${template.fields.points} pts` : ''}
+            {!isPage && template.fields?.points != null ? `${template.fields.points} pts` : ''}
           </span>
           <Button variant="primary" size="sm" onClick={onUse}>Use</Button>
           <TileMenu

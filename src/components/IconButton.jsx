@@ -16,6 +16,9 @@
  * @param {'ghost'|'danger'} [variant='ghost']
  * @param {'sm'|'md'} [size='md']
  * @param {boolean} [disabled=false]
+ * @param {string} [className='']  Appended to the button's own classes (e.g. an
+ *                                  on-accent color override when sitting on a
+ *                                  colored background).
  * @param {object} [rest]       Passed through to <button> (e.g. aria-haspopup,
  *                              aria-expanded, type, data-*).
  */
@@ -57,9 +60,10 @@ export default function IconButton({
   variant = 'ghost',
   size = 'md',
   disabled = false,
+  className: extraClassName = '',
   ...rest
 }) {
-  const className = `${BASE} ${SIZE_CLASS[size]} ${VARIANT_CLASS[variant]}`;
+  const className = `${BASE} ${SIZE_CLASS[size]} ${VARIANT_CLASS[variant]} ${extraClassName}`.trim();
 
   return (
     <button

@@ -5,7 +5,8 @@ import { newTemplateId } from '../../storage/templates.js'
 export function validateTemplate(fields) {
   const errors = {}
   if (!fields.templateName?.trim()) errors.templateName = 'Template name is required.'
-  if (!fields.name?.trim()) errors.name = 'Assignment name is required.'
+  if (!fields.name?.trim()) errors.name = 'Name is required.'
+  if (fields.type === 'page') return errors
   if (fields.points !== '' && fields.points !== null && fields.points !== undefined) {
     if (isNaN(Number(fields.points)) || Number(fields.points) < 0) {
       errors.points = 'Points must be a number of 0 or more.'
@@ -17,31 +18,41 @@ export function validateTemplate(fields) {
   return errors
 }
 
-export function buildTemplateObject({ templateName, folderId, fields, sourceAssignmentId = null, existingId = null }) {
+export function buildTemplateObject({ templateName, folderId, fields, publishDefault = 'auto', sourceAssignmentId = null, existingId = null }) {
+  const type = fields.type === 'page' ? 'page' : 'assignment'
   return {
     id: existingId ?? newTemplateId(),
+    type,
     folderId: folderId ?? null,
     name: templateName,
     createdAt: existingId ? undefined : new Date().toISOString(),
     lastUsed: null,
     sourceAssignmentId,
-    fields: {
-      name: fields.name,
-      description: fields.description ?? '',
-      points: fields.points !== '' && fields.points !== null ? Number(fields.points) : null,
-      submissionType: fields.submissionType ?? 'online',
-      allowedFormats: fields.allowedFormats ?? [],
-      assignmentGroup: fields.assignmentGroup ?? '',
-      gradingType: fields.gradingType ?? 'points',
-      peerReview: fields.peerReview ?? false,
-    },
+    publishDefault,
+    fields: type === 'page'
+      ? {
+        name: fields.name,
+        description: fields.description ?? '',
+      }
+      : {
+        name: fields.name,
+        description: fields.description ?? '',
+        points: fields.points !== '' && fields.points !== null ? Number(fields.points) : null,
+        submissionType: fields.submissionType ?? 'online',
+        allowedFormats: fields.allowedFormats ?? [],
+        assignmentGroup: fields.assignmentGroup ?? '',
+        gradingType: fields.gradingType ?? 'points',
+        peerReview: fields.peerReview ?? false,
+      },
   }
 }
 
 export function templateToFormFields(template) {
   return {
+    type: template.type === 'page' ? 'page' : 'assignment',
     templateName: template.name,
     folderId: template.folderId ?? null,
+    publishDefault: template.publishDefault ?? 'auto',
     name: template.fields.name,
     description: template.fields.description ?? '',
     points: template.fields.points ?? '',
@@ -63,8 +74,10 @@ export function assignmentToFormFields(assignment) {
   }
   const allowedFormats = (assignment.submissionTypes ?? []).filter(t => onlineFormats[t])
   return {
+    type: 'assignment',
     templateName: assignment.name,
     folderId: null,
+    publishDefault: 'auto',
     name: assignment.name,
     description: assignment.description ?? '',
     points: assignment.pointsPossible ?? '',

@@ -132,8 +132,10 @@ All colors below are defined as CSS custom properties in `src/styles/global.css`
 - Pagination footer: **not implemented** — deliberate, not a gap. `AssignmentTable` is virtualized (`@tanstack/react-virtual`, per doc 02/06), which the project chose over paginating; a stepped pagination footer would contradict that. Row-count context instead comes from the FilterBar/toolbar area.
 
 **Browse-list**
-- Grid frame: `.card` + `.domain-accent`, applied per browse-surface card rather than to one top-level container (contrast the Data Tables rule above) — `TemplateLibrary` renders several sibling cards (each folder card, the Unfiled section, and the flat search-results card), so each carries its own `--domain-color: var(--color-domain-assignments)` strip.
+- Layout: a persistent folder-select sidebar (`.card` + `.domain-accent`, `--domain-color: var(--color-domain-assignments)`) next to a main viewport, not stacked always-expanded folder sections. `TemplateLibrary` renders one `All Templates` pseudo-folder, each real folder, and `Unfiled` as single-select `SidebarFolderRow`s; the main viewport shows only the selected folder's items (or, when searching, a flat cross-folder result set — search overrides the folder filter per design_docs/03). The main viewport's list/grid also carries its own `.card` + `.domain-accent`.
 - Toolbar: `.table-toolbar` class on the shared `Toolbar` atom's search/sort row. `Toolbar.jsx` merges a caller `className` onto its own layout classes so callers can opt into the tint without forking Toolbar's markup.
+- Sidebar row selection: solid `--cpt-color` fill + white text on the selected row (both themes) rather than a Bauhaus-only mechanic — a single-select nav list needs the same affordance under Default as under Bauhaus, so this isn't gated behind `[data-theme="bauhaus"]`.
+- Folder rows accept a drag-and-drop template drop (moves the template into that folder / clears `folderId` for Unfiled); `All Templates` is not a drop target. The existing Move-to `Modal` remains as the non-drag fallback.
 - Rows and tiles: unchanged `ListRow`/`TemplateTile` treatment — no per-item Module strip, same rationale as Data Tables rows above (a tool's items all belong to one Module, so per-row color would just repeat).
 
 ### 6. Mechanical Animation

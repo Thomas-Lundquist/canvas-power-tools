@@ -12,14 +12,28 @@ import PageHeader from '../../components/PageHeader.jsx'
 import FieldLabel from '../../components/FieldLabel.jsx'
 import Button from '../../components/Button.jsx'
 import TextField from '../../components/TextField.jsx'
+import Callout from '../../components/Callout.jsx'
 
 const EMPTY_DATES = { dueAt: '', unlockAt: '', lockAt: '' }
 
 const PUBLISH_OPTIONS = [
-  { value: 'unpublished', label: 'Unpublished' },
-  { value: 'published',   label: 'Published' },
-  { value: 'auto',        label: 'Auto (if due date set)' },
+  { value: 'auto', label: 'Auto (recommended)', description: 'Publishes if a due date is set, otherwise stays a draft.' },
+  { value: 'published', label: 'Force Published', description: 'Immediately visible to students in every target course.' },
+  { value: 'unpublished', label: 'Force Unpublished Draft', description: 'Saved as an unpublished draft in every target course.' },
 ]
+
+// A bordered, tinted grouping box — mirrors the settings-bar treatment used
+// throughout the Template Editor for this tool's numbered-step sub-sections.
+function SettingsBar({ className = '', children }) {
+  return (
+    <div
+      className={`rounded-[var(--radius-card)] border border-[var(--color-border)] p-4 ${className}`}
+      style={{ backgroundColor: 'var(--color-bg-page)' }}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default function DeployTemplate({ template, initialCourseId, moduleId, onDone, onBack }) {
   const toast = useToast()
@@ -31,7 +45,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   const [individualDates, setIndividualDates] = useState(false)
   const [perCourseDates, setPerCourseDates] = useState({})
   const [perCourseGroups, setPerCourseGroups] = useState({})
-  const [publishState, setPublishState] = useState('unpublished')
+  const [publishState, setPublishState] = useState(template.publishDefault ?? 'auto')
   const [deploying, setDeploying] = useState(false)
   const [results, setResults] = useState(null)
 
@@ -56,7 +70,6 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
       })
       .catch(() => {})
       .finally(() => setLoadingCourses(false))
-    getPreferences().then(p => setPublishState(p.templateDefaultPublishOnDeploy ?? 'unpublished'))
   }, [initialCourseId])
 
   function toggleCourse(id) {
@@ -164,16 +177,19 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
       <div>
         <PageHeader title="Assignments Created" back={{ label: 'Back to Library', to: onDone }} />
 
-        <div className="card p-6 space-y-4">
+        <div
+          className="card domain-accent p-6 space-y-4"
+          style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+        >
           {succeeded.length > 0 && (
             <div>
               <div className="flex items-center gap-2 text-[var(--color-success)] font-medium mb-3">
                 <CheckCircle size={16} aria-hidden="true" />
                 Successfully created: {succeeded.length} assignment{succeeded.length !== 1 ? 's' : ''}
               </div>
-              <div className="space-y-1.5">
+              <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] divide-y divide-[var(--color-border)] overflow-hidden">
                 {succeeded.map(r => (
-                  <div key={r.courseId} className="pl-6 text-sm text-[var(--color-text-body)]">
+                  <div key={r.courseId} className="px-3 py-2 text-sm text-[var(--color-text-body)]">
                     <span className="font-medium">{r.courseName}</span>
                     {r.warning && (
                       <p className="flex items-center gap-1 text-[var(--color-warning)] text-xs mt-0.5">
@@ -202,9 +218,9 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
                 <AlertCircle size={16} aria-hidden="true" />
                 Failed: {failed.length} course{failed.length !== 1 ? 's' : ''}
               </div>
-              <div className="space-y-1.5">
+              <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] divide-y divide-[var(--color-border)] overflow-hidden">
                 {failed.map(r => (
-                  <div key={r.courseId} className="pl-6 text-sm">
+                  <div key={r.courseId} className="px-3 py-2 text-sm">
                     <span className="font-medium text-[var(--color-text-body)]">{r.courseName}</span>
                     <span className="ml-2 text-[var(--color-danger)]">{r.error}</span>
                   </div>
@@ -258,75 +274,81 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
         </p>
       )}
 
-      <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
+      <div
+        className="card domain-accent p-6 space-y-6"
+        style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+      >
 
-        {/* Left: course selection + group mapping */}
-        <div className="space-y-4">
-          <div className="card p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="section-label">Courses</h3>
-              <Button variant="ghost" size="sm" onClick={() => toggleAll(!allSelected)}>
-                {allSelected ? 'Deselect all' : 'Select all'}
-              </Button>
-            </div>
-
-            {loadingCourses && (
-              <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm py-2">
-                <Loader size={14} className="animate-spin" aria-hidden="true" /> Loading courses…
-              </div>
-            )}
-
-            <div className="space-y-1">
-              {courses.map(c => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-3 cursor-pointer px-2 py-2 rounded hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-                  onClick={() => toggleCourse(c.id)}
-                >
-                  <Checkbox checked={selectedIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
-                  <span className="text-sm text-[var(--color-text-body)] min-w-0 truncate">
-                    {c.name}
-                    {c.term && <span className="text-[var(--color-text-muted)] ml-1.5 text-xs">{c.term}</span>}
-                    {moduleId && Number(c.id) === Number(initialCourseId) && (
-                      <span className="ml-2 text-xs font-medium" style={{ color: 'var(--cpt-color)' }}>→ module</span>
-                    )}
-                  </span>
-                </div>
-              ))}
-            </div>
+        {/* Step 1 — courses */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
+            <h3 className="section-label !mb-0">
+              1. Select Target Courses ({selectedIds.size} of {courses.length})
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => toggleAll(!allSelected)}>
+              {allSelected ? 'Deselect all' : 'Select all'}
+            </Button>
           </div>
 
-          {selectedCourses.length > 0 && (
-            <div className="card p-5 space-y-3">
-              <div>
-                <h3 className="section-label">Assignment Group</h3>
-                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Matched by name; created if missing.</p>
-              </div>
-              <div className="space-y-2">
-                {selectedCourses.map(c => (
-                  <div key={c.id} className="flex items-center gap-3">
-                    <span className="text-sm text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{c.name}</span>
-                    <div className="w-40 shrink-0">
-                      <TextField
-                        value={perCourseGroups[c.id] ?? defaultGroup}
-                        onChange={v => setPerCourseGroups(prev => ({ ...prev, [c.id]: v }))}
-                        placeholder="Group name"
-                        aria-label={`Assignment group for ${c.name}`}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {loadingCourses && (
+            <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm py-2">
+              <Loader size={14} className="animate-spin" aria-hidden="true" /> Loading courses…
             </div>
           )}
+
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] divide-y divide-[var(--color-border)] overflow-hidden">
+            {courses.map(c => (
+              <div
+                key={c.id}
+                onClick={() => toggleCourse(c.id)}
+                className="flex items-center gap-3 cursor-pointer px-3 py-2 hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
+              >
+                <Checkbox checked={selectedIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
+                <span className="text-sm text-[var(--color-text-body)] min-w-0 truncate">
+                  {c.name}
+                  {c.term && <span className="text-[var(--color-text-muted)] ml-1.5 text-xs">{c.term}</span>}
+                  {moduleId && Number(c.id) === Number(initialCourseId) && (
+                    <span className="ml-2 text-xs font-medium" style={{ color: 'var(--cpt-color)' }}>→ module</span>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Right: dates + publish + preview */}
-        <div className="space-y-4">
-          <div className="card p-5 space-y-4">
+        {/* Step 2 — group mapping */}
+        {selectedCourses.length > 0 && (
+          <div className="space-y-3 pt-2 border-t border-[var(--color-border)]">
+            <div>
+              <h3 className="section-label !mb-0">2. Assignment Group Mapping</h3>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                Pre-filled by name match; created in the target course if it doesn't exist.
+              </p>
+            </div>
+            <SettingsBar className="divide-y divide-[var(--color-border)]">
+              {selectedCourses.map(c => (
+                <div key={c.id} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                  <span className="text-sm text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{c.name}</span>
+                  <div className="w-44 shrink-0">
+                    <TextField
+                      value={perCourseGroups[c.id] ?? defaultGroup}
+                      onChange={v => setPerCourseGroups(prev => ({ ...prev, [c.id]: v }))}
+                      placeholder="Group name"
+                      aria-label={`Assignment group for ${c.name}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </SettingsBar>
+          </div>
+        )}
+
+        {/* Step 3 + 4 — dates & publish */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-[var(--color-border)]">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="section-label">
-                Dates <span className="normal-case font-normal text-[var(--color-text-muted)]">(optional)</span>
+              <h3 className="section-label !mb-0">
+                3. Deployment Due Date <span className="normal-case font-normal text-[var(--color-text-muted)]">(optional)</span>
               </h3>
               <div
                 className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
@@ -337,92 +359,73 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
               </div>
             </div>
 
-            {!individualDates ? (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <FieldLabel htmlFor="deploy-due">Due Date</FieldLabel>
-                  <input id="deploy-due" type="date" value={dates.dueAt} onChange={e => setSharedDate('dueAt', e.target.value)} className="input text-sm" />
+            <SettingsBar>
+              {!individualDates ? (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <FieldLabel htmlFor="deploy-due">Due</FieldLabel>
+                    <input id="deploy-due" type="date" value={dates.dueAt} onChange={e => setSharedDate('dueAt', e.target.value)} className="input text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <FieldLabel htmlFor="deploy-from">From</FieldLabel>
+                    <input id="deploy-from" type="date" value={dates.unlockAt} onChange={e => setSharedDate('unlockAt', e.target.value)} className="input text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <FieldLabel htmlFor="deploy-until">Until</FieldLabel>
+                    <input id="deploy-until" type="date" value={dates.lockAt} onChange={e => setSharedDate('lockAt', e.target.value)} className="input text-sm" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <FieldLabel htmlFor="deploy-from">Available From</FieldLabel>
-                  <input id="deploy-from" type="date" value={dates.unlockAt} onChange={e => setSharedDate('unlockAt', e.target.value)} className="input text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <FieldLabel htmlFor="deploy-until">Available Until</FieldLabel>
-                  <input id="deploy-until" type="date" value={dates.lockAt} onChange={e => setSharedDate('lockAt', e.target.value)} className="input text-sm" />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {selectedCourses.length === 0 && (
-                  <p className="text-sm text-[var(--color-text-muted)]">Select courses to set dates per course.</p>
-                )}
-                {selectedCourses.map(c => {
-                  const cd = perCourseDates[c.id] ?? EMPTY_DATES
-                  return (
-                    <div key={c.id}>
-                      <p className="text-sm font-medium text-[var(--color-text-body)] mb-2 truncate">{c.name}</p>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <FieldLabel>Due</FieldLabel>
-                          <input type="date" value={cd.dueAt} onChange={e => setCourseDate(c.id, 'dueAt', e.target.value)} className="input text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <FieldLabel>From</FieldLabel>
-                          <input type="date" value={cd.unlockAt} onChange={e => setCourseDate(c.id, 'unlockAt', e.target.value)} className="input text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <FieldLabel>Until</FieldLabel>
-                          <input type="date" value={cd.lockAt} onChange={e => setCourseDate(c.id, 'lockAt', e.target.value)} className="input text-sm" />
+              ) : (
+                <div className="space-y-4 max-h-52 overflow-y-auto pr-1">
+                  {selectedCourses.length === 0 && (
+                    <p className="text-sm text-[var(--color-text-muted)]">Select courses to set dates per course.</p>
+                  )}
+                  {selectedCourses.map(c => {
+                    const cd = perCourseDates[c.id] ?? EMPTY_DATES
+                    return (
+                      <div key={c.id}>
+                        <p className="text-sm font-medium text-[var(--color-text-body)] mb-2 truncate">{c.name}</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input type="date" value={cd.dueAt} onChange={e => setCourseDate(c.id, 'dueAt', e.target.value)} className="input text-xs" aria-label={`${c.name} due date`} />
+                          <input type="date" value={cd.unlockAt} onChange={e => setCourseDate(c.id, 'unlockAt', e.target.value)} className="input text-xs" aria-label={`${c.name} available from`} />
+                          <input type="date" value={cd.lockAt} onChange={e => setCourseDate(c.id, 'lockAt', e.target.value)} className="input text-xs" aria-label={`${c.name} available until`} />
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+                    )
+                  })}
+                </div>
+              )}
+            </SettingsBar>
           </div>
 
-          <div className="card p-5 space-y-3">
-            <FieldLabel>Publish</FieldLabel>
-            <div className="flex items-center gap-1.5">
+          <div className="space-y-3">
+            <h3 className="section-label !mb-0">4. Publish Preference</h3>
+            <SettingsBar className="space-y-2">
               {PUBLISH_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setPublishState(opt.value)}
-                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-75 ${
-                    publishState === opt.value
-                      ? 'text-white'
-                      : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
-                  }`}
-                  style={publishState === opt.value ? { backgroundColor: 'var(--cpt-color)' } : undefined}
-                >
-                  {opt.label}
-                </button>
+                <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="deploy-publish"
+                    checked={publishState === opt.value}
+                    onChange={() => setPublishState(opt.value)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <span className="block text-sm font-medium text-[var(--color-text-body)]">{opt.label}</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">{opt.description}</span>
+                  </div>
+                </label>
               ))}
-            </div>
+            </SettingsBar>
           </div>
-
-          {selectedIds.size > 0 && (
-            <div
-              className="rounded-md p-4 text-sm"
-              style={{
-                backgroundColor: 'rgba(var(--cpt-color-rgb), 0.07)',
-                border: '1px solid rgba(var(--cpt-color-rgb), 0.18)',
-              }}
-            >
-              <p className="font-medium text-[var(--color-text-body)] mb-1">
-                Creating "{template.fields?.name}" in {selectedIds.size} course{selectedIds.size !== 1 ? 's' : ''}
-              </p>
-              <p className="text-xs text-[var(--color-text-secondary)]">
-                {template.fields?.points != null ? `${template.fields.points} pts` : 'Ungraded'}
-                {' · '}Status: {resolvedPublished ? 'Published' : 'Unpublished'}
-              </p>
-            </div>
-          )}
         </div>
 
+        {selectedIds.size > 0 && (
+          <Callout tone="info" title={`Creating "${template.fields?.name}" in ${selectedIds.size} course${selectedIds.size !== 1 ? 's' : ''}`}>
+            {template.fields?.points != null ? `${template.fields.points} pts` : 'Ungraded'}
+            {' · '}Status: {resolvedPublished ? 'Published' : 'Unpublished'}
+          </Callout>
+        )}
       </div>
     </div>
   )

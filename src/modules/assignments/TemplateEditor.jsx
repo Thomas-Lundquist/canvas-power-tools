@@ -12,6 +12,8 @@ import TextField from '../../components/TextField.jsx'
 import Select from '../../components/Select.jsx'
 import NumberField from '../../components/NumberField.jsx'
 import Button from '../../components/Button.jsx'
+import SegmentedToggle from '../../components/SegmentedToggle.jsx'
+import Callout from '../../components/Callout.jsx'
 
 const GRADING_TYPES = [
   { value: 'points', label: 'Points' },
@@ -36,9 +38,22 @@ const ONLINE_FORMATS = [
   { value: 'media_recording', label: 'Media Recording' },
 ]
 
+const TYPE_OPTIONS = [
+  { value: 'assignment', label: 'Assignment' },
+  { value: 'page', label: 'Page' },
+]
+
+const PUBLISH_DEFAULT_OPTIONS = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'published', label: 'Published' },
+  { value: 'unpublished', label: 'Unpublished' },
+]
+
 const EMPTY_FORM = {
+  type: 'assignment',
   templateName: '',
   folderId: null,
+  publishDefault: 'auto',
   name: '',
   description: '',
   points: '',
@@ -50,7 +65,20 @@ const EMPTY_FORM = {
 }
 
 const FOLDER_PLACEHOLDER = { value: '', label: 'Unfiled' }
-const GROUP_NONE = { value: '', label: '— None —' }
+
+// A bordered, tinted grouping box — the recurring "settings bar" treatment
+// the mockup uses for the type/name/folder row and the submission/peer-review
+// row. Kept local since it's only ever this field-grouping shape.
+function SettingsBar({ className = '', children }) {
+  return (
+    <div
+      className={`rounded-[var(--radius-card)] border border-[var(--color-border)] p-4 ${className}`}
+      style={{ backgroundColor: 'var(--color-bg-page)' }}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default function TemplateEditor({
   template, folders, initialFolderId, initialFormOverride,
@@ -102,6 +130,7 @@ export default function TemplateEditor({
       templateName: form.templateName,
       folderId: form.folderId,
       fields: form,
+      publishDefault: form.publishDefault,
       sourceAssignmentId: template?.sourceAssignmentId ?? sourceAssignmentId ?? null,
       existingId: template?.id ?? null,
     })
@@ -115,10 +144,9 @@ export default function TemplateEditor({
   }
 
   const isEditing = !!template
+  const isPage = form.type === 'page'
   const folderOptions = [FOLDER_PLACEHOLDER, ...folders.map(f => ({ value: f.id, label: f.name }))]
-  const groupOptions = groups.length > 0
-    ? [GROUP_NONE, ...groups.map(g => ({ value: g.name, label: g.name }))]
-    : null
+  const groupSuggestions = [...new Set(groups.map(g => g.name))]
 
   return (
     <div>
@@ -132,20 +160,23 @@ export default function TemplateEditor({
         }
       />
 
-      <div className="card overflow-hidden">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] divide-x divide-[var(--color-border)]">
+      <div className="card domain-accent overflow-hidden" style={{ '--domain-color': 'var(--color-domain-assignments)' }}>
+        <div className="p-6 space-y-6">
 
-          {/* Left panel — template settings */}
-          <div className="p-6 space-y-5">
-            <h3 className="section-label">Template</h3>
+          {/* Type / Name / Folder */}
+          <SettingsBar className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <FieldLabel>Type</FieldLabel>
+              <SegmentedToggle ariaLabel="Template type" options={TYPE_OPTIONS} value={form.type} onChange={v => set('type', v)} />
+            </div>
 
             <div className="space-y-1">
-              <FieldLabel htmlFor="tpl-name" required>Name</FieldLabel>
+              <FieldLabel htmlFor="tpl-name" required>Library Template Name</FieldLabel>
               <TextField
                 id="tpl-name"
                 value={form.templateName}
                 onChange={v => set('templateName', v)}
-                placeholder="e.g. Weekly Quiz"
+                placeholder="e.g. Weekly Quiz Template"
                 className={errors.templateName ? 'border-[var(--color-danger)]' : ''}
                 autoFocus
               />
@@ -154,162 +185,154 @@ export default function TemplateEditor({
 
             <div className="space-y-1">
               <FieldLabel htmlFor="tpl-folder">Folder</FieldLabel>
-              <Select
-                id="tpl-folder"
-                value={form.folderId ?? ''}
-                onChange={v => set('folderId', v || null)}
-                options={folderOptions}
-              />
+              <Select id="tpl-folder" value={form.folderId ?? ''} onChange={v => set('folderId', v || null)} options={folderOptions} />
             </div>
+          </SettingsBar>
 
-            <hr className="border-[var(--color-border)]" />
-
-            <div className="rounded p-3 text-xs text-[var(--color-text-secondary)] space-y-1" style={{ backgroundColor: 'var(--color-bg-page)' }}>
-              <p className="font-medium text-[var(--color-text-body)]">Saved with this template</p>
-              <p>Name · Instructions · Points · Submission type · Allowed formats · Assignment group · Grading type · Peer review</p>
-              <p className="text-[var(--color-text-muted)] mt-1">Dates are set at deploy time.</p>
-            </div>
+          <div className="space-y-1">
+            <FieldLabel>Publish Default</FieldLabel>
+            <SegmentedToggle ariaLabel="Publish default" options={PUBLISH_DEFAULT_OPTIONS} value={form.publishDefault} onChange={v => set('publishDefault', v)} />
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Auto publishes if a due date is set at deploy time, otherwise stays a draft.
+            </p>
           </div>
 
-          {/* Right panel — assignment fields */}
-          <div className="p-6 space-y-5">
-            <h3 className="section-label">Assignment Fields</h3>
+          {/* Deployed item title */}
+          <div className="space-y-1">
+            <FieldLabel htmlFor="tpl-asgn-name" required>{isPage ? 'Page Title' : 'Assignment Name'}</FieldLabel>
+            <TextField
+              id="tpl-asgn-name"
+              value={form.name}
+              onChange={v => set('name', v)}
+              placeholder={isPage ? 'e.g. Week 1 Overview' : 'e.g. Weekly Quiz — Week ___'}
+              className={errors.name ? 'border-[var(--color-danger)]' : ''}
+            />
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {isPage ? 'Becomes the page title when deployed.' : 'Becomes the assignment name when deployed.'} Edit per use.
+            </p>
+            {errors.name && <FieldError msg={errors.name} />}
+          </div>
 
-            <div className="space-y-1">
-              <FieldLabel htmlFor="tpl-asgn-name" required>Assignment Name</FieldLabel>
-              <TextField
-                id="tpl-asgn-name"
-                value={form.name}
-                onChange={v => set('name', v)}
-                placeholder="e.g. Weekly Quiz — Week ___"
-                className={errors.name ? 'border-[var(--color-danger)]' : ''}
+          {/* Instructions */}
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: 'var(--color-bg-page)' }}>
+              <span className="section-label !mb-0">Instructions {!isPage && '(Canvas HTML)'}</span>
+              <button
+                type="button"
+                onClick={() => setEditingHtml(v => !v)}
+                className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-body)] transition-colors duration-75"
+              >
+                {editingHtml ? 'Show preview' : 'Edit HTML source'}
+              </button>
+            </div>
+
+            {editingHtml ? (
+              <textarea
+                id="tpl-instructions"
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                rows={8}
+                className="input resize-y font-mono text-xs w-full rounded-none border-0"
               />
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Becomes the assignment name when deployed. Edit per use.
-              </p>
-              {errors.name && <FieldError msg={errors.name} />}
-            </div>
+            ) : (
+              <div
+                id="tpl-instructions"
+                className="p-4 min-h-[8rem] prose prose-sm max-w-none overflow-auto text-[var(--color-text-body)]"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.description || '') }}
+                aria-label="Instructions preview (read-only)"
+              />
+            )}
+            {!form.description && !editingHtml && (
+              <p className="px-4 pb-3 text-xs text-[var(--color-text-muted)]">No instructions yet.</p>
+            )}
+          </div>
 
-            <div className="space-y-1">
-              <FieldLabel htmlFor="tpl-instructions">Instructions</FieldLabel>
-              {editingHtml ? (
-                <textarea
-                  id="tpl-instructions"
-                  value={form.description}
-                  onChange={e => set('description', e.target.value)}
-                  rows={8}
-                  className="input resize-y font-mono text-xs w-full"
-                />
-              ) : (
-                <div
-                  id="tpl-instructions"
-                  className="input min-h-[8rem] prose prose-sm max-w-none overflow-auto text-[var(--color-text-body)]"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.description || '') }}
-                  aria-label="Instructions preview (read-only)"
-                />
-              )}
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-body)] transition-colors duration-75"
-                  onClick={() => setEditingHtml(v => !v)}
-                >
-                  {editingHtml ? 'Show preview' : 'Edit HTML source'}
-                </button>
-                {!form.description && !editingHtml && (
-                  <span className="text-xs text-[var(--color-text-muted)]">No instructions yet.</span>
-                )}
-              </div>
-            </div>
+          {/* Assignment-only fields */}
+          {!isPage && (
+            <div className="space-y-4 pt-2 border-t border-[var(--color-border)]">
+              <SettingsBar>
+                <h3 className="section-label !mb-0">Assignment Fields</h3>
+              </SettingsBar>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <FieldLabel htmlFor="tpl-points">Points</FieldLabel>
-                <NumberField
-                  id="tpl-points"
-                  value={form.points}
-                  onChange={v => set('points', v)}
-                  min={0}
-                  placeholder="e.g. 20"
-                  className={errors.points ? 'border-[var(--color-danger)]' : ''}
-                />
-                {errors.points && <FieldError msg={errors.points} />}
-              </div>
-
-              <div className="space-y-1">
-                <FieldLabel htmlFor="tpl-group">Assignment Group</FieldLabel>
-                {groupOptions ? (
-                  <Select
-                    id="tpl-group"
-                    value={form.assignmentGroup}
-                    onChange={v => set('assignmentGroup', v)}
-                    options={groupOptions}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <FieldLabel htmlFor="tpl-points">Points</FieldLabel>
+                  <NumberField
+                    id="tpl-points"
+                    value={form.points}
+                    onChange={v => set('points', v)}
+                    min={0}
+                    placeholder="e.g. 20"
+                    className={errors.points ? 'border-[var(--color-danger)]' : ''}
                   />
-                ) : (
+                  {errors.points && <FieldError msg={errors.points} />}
+                </div>
+
+                <div className="space-y-1">
+                  <FieldLabel htmlFor="tpl-group">Assignment Group</FieldLabel>
                   <TextField
                     id="tpl-group"
+                    list="tpl-group-suggestions"
                     value={form.assignmentGroup}
                     onChange={v => set('assignmentGroup', v)}
                     placeholder="e.g. Quizzes"
                   />
-                )}
-                <p className="text-xs text-[var(--color-text-muted)]">Matched by name at deploy time.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <FieldLabel htmlFor="tpl-grading">Grading Type</FieldLabel>
-                <Select
-                  id="tpl-grading"
-                  value={form.gradingType}
-                  onChange={v => set('gradingType', v)}
-                  options={GRADING_TYPES}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <FieldLabel htmlFor="tpl-submission">Submission Type</FieldLabel>
-                <Select
-                  id="tpl-submission"
-                  value={form.submissionType}
-                  onChange={v => set('submissionType', v)}
-                  options={SUBMISSION_TYPES}
-                />
-              </div>
-            </div>
-
-            {form.submissionType === 'online' && (
-              <div className="space-y-2">
-                <FieldLabel>Allowed Formats</FieldLabel>
-                <div className="flex flex-wrap gap-x-5 gap-y-2">
-                  {ONLINE_FORMATS.map(f => (
-                    <div
-                      key={f.value}
-                      className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
-                      onClick={() => toggleFormat(f.value)}
-                    >
-                      <Checkbox
-                        checked={form.allowedFormats.includes(f.value)}
-                        onChange={() => toggleFormat(f.value)}
-                      />
-                      {f.label}
-                    </div>
-                  ))}
+                  <datalist id="tpl-group-suggestions">
+                    {groupSuggestions.map(name => <option key={name} value={name} />)}
+                  </datalist>
+                  <p className="text-xs text-[var(--color-text-muted)]">Matched by name at deploy time; created if it doesn't exist.</p>
                 </div>
-                {errors.allowedFormats && <FieldError msg={errors.allowedFormats} />}
+
+                <div className="space-y-1">
+                  <FieldLabel htmlFor="tpl-grading">Grading Type</FieldLabel>
+                  <Select id="tpl-grading" value={form.gradingType} onChange={v => set('gradingType', v)} options={GRADING_TYPES} />
+                </div>
               </div>
-            )}
 
-            <div
-              className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
-              onClick={() => set('peerReview', !form.peerReview)}
-            >
-              <Checkbox checked={form.peerReview} onChange={v => set('peerReview', v)} />
-              Enable peer review for this assignment
+              <SettingsBar className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <FieldLabel htmlFor="tpl-submission">Submission Type</FieldLabel>
+                    <Select id="tpl-submission" value={form.submissionType} onChange={v => set('submissionType', v)} options={SUBMISSION_TYPES} />
+                  </div>
+
+                  {form.submissionType === 'online' && (
+                    <div className="space-y-2">
+                      <FieldLabel>Allowed Formats</FieldLabel>
+                      <div className="flex flex-wrap gap-x-5 gap-y-2">
+                        {ONLINE_FORMATS.map(f => (
+                          <div
+                            key={f.value}
+                            className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
+                            onClick={() => toggleFormat(f.value)}
+                          >
+                            <Checkbox checked={form.allowedFormats.includes(f.value)} onChange={() => toggleFormat(f.value)} />
+                            {f.label}
+                          </div>
+                        ))}
+                      </div>
+                      {errors.allowedFormats && <FieldError msg={errors.allowedFormats} />}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="flex items-center justify-between gap-4 cursor-pointer"
+                  onClick={() => set('peerReview', !form.peerReview)}
+                >
+                  <div>
+                    <span className="block text-sm font-medium text-[var(--color-text-body)]">Peer Review</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">Require students to review each other's work.</span>
+                  </div>
+                  <Checkbox checked={form.peerReview} onChange={v => set('peerReview', v)} />
+                </div>
+              </SettingsBar>
             </div>
-          </div>
+          )}
 
+          <Callout tone="info" title="No dates stored in templates">
+            Due Date, Available From, and Available Until are set exclusively at deploy time.
+          </Callout>
         </div>
       </div>
     </div>

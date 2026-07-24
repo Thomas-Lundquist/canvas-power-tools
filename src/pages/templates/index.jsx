@@ -136,7 +136,6 @@ function App() {
               onNew={handleNew}
               onDataChange={loadData}
               skipDeleteConfirm={prefs.templateSkipDeleteConfirm ?? false}
-              autoExpandFolders={prefs.templateAutoExpandFolders ?? true}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
             />

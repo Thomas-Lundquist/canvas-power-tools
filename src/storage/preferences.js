@@ -55,7 +55,6 @@ export const DEFAULTS = {
   templatesDefaultFolder: 'last_used',  // 'last_used' | 'unfiled' | 'ask'
   templatesAfterDeploy: 'results',      // 'bulk_editor' | 'library' | 'results'
   templatesActiveCoursesOnly: true,
-  templateAutoExpandFolders: true,
   templateSkipDeleteConfirm: false,
 
   // Templates - advanced
