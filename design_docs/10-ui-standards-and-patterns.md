@@ -131,6 +131,11 @@ All colors below are defined as CSS custom properties in `src/styles/global.css`
 - Status cells: `Badge` atom + `.badge-pill` class — flat `--radius-sm` + 1px `currentColor` border under Bauhaus (soft tinted pill, no border, under Default). Used for Published/Unpublished in `AssignmentTable`.
 - Pagination footer: **not implemented** — deliberate, not a gap. `AssignmentTable` is virtualized (`@tanstack/react-virtual`, per doc 02/06), which the project chose over paginating; a stepped pagination footer would contradict that. Row-count context instead comes from the FilterBar/toolbar area.
 
+**Browse-list**
+- Grid frame: `.card` + `.domain-accent`, applied per browse-surface card rather than to one top-level container (contrast the Data Tables rule above) — `TemplateLibrary` renders several sibling cards (each folder card, the Unfiled section, and the flat search-results card), so each carries its own `--domain-color: var(--color-domain-assignments)` strip.
+- Toolbar: `.table-toolbar` class on the shared `Toolbar` atom's search/sort row. `Toolbar.jsx` merges a caller `className` onto its own layout classes so callers can opt into the tint without forking Toolbar's markup.
+- Rows and tiles: unchanged `ListRow`/`TemplateTile` treatment — no per-item Module strip, same rationale as Data Tables rows above (a tool's items all belong to one Module, so per-row color would just repeat).
+
 ### 6. Mechanical Animation
 
 - Stepped spinner: 8-tick rotation (`steps(8, end)`) — never a smooth fluid gradient spinner

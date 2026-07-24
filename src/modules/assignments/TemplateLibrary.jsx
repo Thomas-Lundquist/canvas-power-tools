@@ -190,7 +190,7 @@ export default function TemplateLibrary({
         Save assignment structures and deploy them to one or more courses instantly.
       </PageHeader>
 
-      <Toolbar>
+      <Toolbar className="table-toolbar">
         <Toolbar.Start>
           <SearchInput
             value={search}
@@ -211,7 +211,10 @@ export default function TemplateLibrary({
 
       {/* Flat search results */}
       {filtered && (
-        <div className={`card ${CARD_SHADOW} divide-y divide-[var(--color-border)]`}>
+        <div
+          className={`card domain-accent ${CARD_SHADOW} divide-y divide-[var(--color-border)]`}
+          style={{ '--domain-color': 'var(--color-domain-assignments)' }}
+        >
           {filtered.length === 0 ? (
             <EmptyState title={`No results for "${search}"`} />
           ) : (
@@ -467,7 +470,8 @@ function FolderCard({ folder, items, viewMode, defaultOpen, onNew, onRename, onD
 
   return (
     <div
-      className={`card ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
+      className={`card domain-accent ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
+      style={{ '--domain-color': 'var(--color-domain-assignments)' }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={e => e.preventDefault()}
@@ -529,7 +533,8 @@ function SectionCard({ label, count, items, viewMode, defaultOpen, renderRow, re
 
   return (
     <div
-      className={`card ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
+      className={`card domain-accent ${CARD_SHADOW}${dragOver ? ' ring-2 ring-[var(--cpt-color)] ring-inset' : ''}`}
+      style={{ '--domain-color': 'var(--color-domain-assignments)' }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={e => e.preventDefault()}

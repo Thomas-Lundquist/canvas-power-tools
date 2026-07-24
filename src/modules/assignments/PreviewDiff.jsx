@@ -55,7 +55,7 @@ function actionsToSpec(actions) {
     unlockAt: dateSpec(actions.unlockAt),
     lockAt: dateSpec(actions.lockAt),
     points: actions.points !== '' ? { value: actions.points } : null,
-    published: actions.status !== null ? { value: actions.status === 'published' } : null,
+    published: actions.status !== null ? { value: actions.status === 'publish' } : null,
   }
 }
 

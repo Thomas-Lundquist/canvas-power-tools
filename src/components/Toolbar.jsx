@@ -19,12 +19,13 @@
  *   </Toolbar>
  *
  * @param {React.ReactNode} children  Expected to be <Toolbar.Start> / <Toolbar.End>.
+ * @param {string} [className]  Appended to the wrapper's own layout classes (e.g. `table-toolbar`).
  * @param {object} [rest]  Passed to the wrapper (aria-*, data-*, etc.).
  */
-export default function Toolbar({ children, ...rest }) {
+export default function Toolbar({ children, className = '', ...rest }) {
   return (
     <div
-      className="mb-4 flex flex-wrap items-center justify-between gap-3"
+      className={`mb-4 flex flex-wrap items-center justify-between gap-3 ${className}`.trim()}
       {...rest}
     >
       {children}
