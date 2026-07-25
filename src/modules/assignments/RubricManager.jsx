@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Folder, Search, Download, Loader, Trash2, Pencil, ArrowRight, Layers, HelpCircle, X, CheckCircle, Check, Copy } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, Folder, Search, Download, Loader, Trash2, Pencil, ArrowRight, Layers, HelpCircle, X, CheckCircle, Check, Copy, CheckCircle2 } from 'lucide-react'
 import { getRubrics, saveRubric, deleteRubric as deleteLocalRubric, newRubricId, newCriterionId, newRatingId } from '../../storage/rubrics.js'
 import { getRubrics as getCanvasRubrics } from '../../api/rubrics.js'
 import { getCourses } from '../../api/courses.js'
@@ -20,6 +20,12 @@ export default function RubricManager() {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [showImport, setShowImport]       = useState(false)
   const [copiedId, setCopiedId]           = useState(null)
+  const [toast, setToast]                 = useState(null)
+
+  const showToast = useCallback((msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }, [])
 
   async function reload() {
     const data = await getRubrics()
@@ -72,6 +78,7 @@ export default function RubricManager() {
     setSelectedId(saved.id)
     setIsNewDraft(false)
     setRightPanel('view')
+    showToast(`RUBRIC "${saved.name.toUpperCase()}" SAVED SUCCESSFULLY!`)
   }
 
   function handleCancelEdit() {
@@ -85,6 +92,7 @@ export default function RubricManager() {
   }
 
   async function handleDelete(id) {
+    const target = rubrics.find(r => r.id === id)
     await deleteLocalRubric(id)
     if (selectedId === id) {
       setSelectedId(null)
@@ -92,6 +100,7 @@ export default function RubricManager() {
     }
     await reload()
     setConfirmDelete(null)
+    if (target) showToast(`DELETED RUBRIC "${target.name.toUpperCase()}"`)
   }
 
   async function handleDuplicate(rubric) {
@@ -113,6 +122,7 @@ export default function RubricManager() {
     if (saved) { setSelectedId(saved.id); setRightPanel('view') }
     setCopiedId(duped.id)
     setTimeout(() => setCopiedId(null), 2000)
+    showToast(`DUPLICATED AS "${duped.name.toUpperCase()}"!`)
   }
 
   async function handleImport(rubricData) {
@@ -128,6 +138,17 @@ export default function RubricManager() {
 
   return (
     <div className="space-y-6">
+      {/* ── Toast ───────────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className="bg-[#FEF08A] border-2 border-[#1B1C1A] p-3 rounded-[2px] font-mono text-xs font-bold text-[#1B1C1A] flex items-center justify-between">
+          <div className="flex items-center gap-2 uppercase">
+            <CheckCircle2 className="w-4 h-4 text-[#059669]" />
+            {toast}
+          </div>
+          <button onClick={() => setToast(null)} className="hover:text-[#B7102A] font-bold">✕</button>
+        </div>
+      )}
+
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="border-b border-[#1B1C1A] pb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -211,18 +232,23 @@ export default function RubricManager() {
                         : 'bg-[#FAF9F5] border-[#E3E2DF] hover:border-[#1B1C1A]'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] font-mono font-bold uppercase text-[#059669] bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded-[2px]">
-                        {r.criteria.length} {r.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'}
+                        {r.category ?? 'General'}
                       </span>
+                      <span className="text-[10px] font-mono font-bold text-gray-500">
+                        {maxPoints(r)} PTS
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-[#1B1C1A] text-sm leading-tight mb-1">{r.name}</h4>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 mt-1.5 pt-1.5 border-t border-[#E3E2DF]">
+                      <span>{r.criteria.length} {r.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'}</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-gray-500">
-                          {maxPoints(r)} PTS
-                        </span>
+                        {r.lastUsed && <span>USED {new Date(r.lastUsed).toLocaleDateString()}</span>}
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); handleDuplicate(r) }}
-                          className="p-1 rounded-[2px] hover:bg-[#EFEEEA] text-gray-400 hover:text-[#1B1C1A] transition-colors"
+                          className="p-0.5 rounded-[2px] hover:bg-[#EFEEEA] text-gray-400 hover:text-[#1B1C1A] transition-colors"
                           aria-label="Duplicate rubric"
                           title="Duplicate rubric"
                         >
@@ -233,12 +259,6 @@ export default function RubricManager() {
                         </button>
                       </div>
                     </div>
-                    <h4 className="font-bold text-[#1B1C1A] text-sm leading-tight">{r.name}</h4>
-                    {r.lastUsed && (
-                      <p className="text-[10px] font-mono text-gray-400 mt-1.5 pt-1.5 border-t border-[#E3E2DF]">
-                        DEPLOYED {new Date(r.lastUsed).toLocaleDateString()}
-                      </p>
-                    )}
                   </div>
                 )
               })}
@@ -306,7 +326,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-mono font-bold uppercase text-white bg-[#1B1C1A] px-2 py-0.5 rounded-[2px]">
-              {rubric.criteria.length} {rubric.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'}
+              {rubric.category ?? 'General'}
             </span>
             <span className="text-[10px] font-mono font-bold text-gray-500">
               TOTAL: {pts} PTS
@@ -360,17 +380,21 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
                   MAX {cPts} PTS
                 </span>
               </div>
-              <div className="p-3 bg-white">
+              <div className="p-3 bg-white space-y-2">
                 {c.longDescription && (
-                  <p className="text-xs text-gray-500 mb-2 pb-2 border-b border-[#E3E2DF]">{c.longDescription}</p>
+                  <p className="text-xs text-gray-500 pb-2 border-b border-[#E3E2DF]">{c.longDescription}</p>
                 )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div className="border border-gray-300 rounded-[2px] divide-y divide-gray-200 overflow-hidden bg-[#FAF9F5]">
                   {sorted.map(rt => (
-                    <div key={rt.id} className="p-2 bg-[#FAF9F5] border border-[#E3E2DF] rounded-[2px]">
-                      <span className="text-xs font-bold font-mono text-[#1B1C1A] block mb-1">
-                        {rt.points} PTS
-                      </span>
-                      <p className="text-[11px] text-gray-600 leading-tight">{rt.description}</p>
+                    <div key={rt.id} className="p-3 flex items-start gap-4 hover:bg-white transition-colors">
+                      <div className="w-24 shrink-0">
+                        <span className="inline-block px-2.5 py-1 bg-white border border-[#1B1C1A] text-xs font-black font-mono text-[#1B1C1A] text-center w-full rounded-[1px]">
+                          {rt.points} PTS
+                        </span>
+                      </div>
+                      <p className="flex-1 text-xs text-gray-800 pt-0.5 leading-relaxed font-sans font-medium">
+                        {rt.description}
+                      </p>
                     </div>
                   ))}
                 </div>
