@@ -198,7 +198,7 @@ export default function CopyToCoursesModal({ assignments, sourceCourseId, onClos
             <div key={r.courseId} className="card p-4">
               <div className="flex items-center gap-2">
                 {r.succeeded === r.assignments.length
-                  ? <CheckCircle size={15} className="text-green-600 shrink-0" aria-hidden="true" />
+                  ? <CheckCircle size={15} className="text-[var(--color-success)] shrink-0" aria-hidden="true" />
                   : <AlertCircle size={15} className="text-[var(--color-domain-alert)] shrink-0" aria-hidden="true" />
                 }
                 <span className="text-sm font-medium text-[var(--color-text-body)] flex-1 truncate">{r.courseName}</span>
@@ -209,7 +209,7 @@ export default function CopyToCoursesModal({ assignments, sourceCourseId, onClos
                   {r.assignments.filter(a => !a.success || a.warning).map((a, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-xs">
                       {a.success
-                        ? <AlertCircle size={12} className="text-yellow-500 mt-0.5 shrink-0" aria-hidden="true" />
+                        ? <AlertCircle size={12} className="text-[var(--color-warning)] mt-0.5 shrink-0" aria-hidden="true" />
                         : <X size={12} className="text-[var(--color-domain-alert)] mt-0.5 shrink-0" aria-hidden="true" />
                       }
                       <span className="text-[var(--color-text-secondary)]">

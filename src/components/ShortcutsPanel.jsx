@@ -18,16 +18,16 @@ export default function ShortcutsPanel({ sections = [], onClose }) {
       <div className="space-y-5">
         {allSections.map(section => (
           <div key={section.label}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-disabled)] mb-2">
               {section.label}
             </p>
             <div className="space-y-2">
               {section.shortcuts.map(sc => (
                 <div key={sc.combo} className="flex items-center justify-between gap-4">
-                  <kbd className="inline-block text-xs font-mono bg-gray-100 px-2 py-0.5 rounded border border-gray-200 whitespace-nowrap shrink-0">
+                  <kbd className="inline-block text-xs font-mono bg-[var(--color-bg-hover)] px-2 py-0.5 rounded border border-[var(--color-border)] whitespace-nowrap shrink-0">
                     {sc.combo}
                   </kbd>
-                  <span className="text-sm text-gray-600">{sc.description}</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">{sc.description}</span>
                 </div>
               ))}
             </div>

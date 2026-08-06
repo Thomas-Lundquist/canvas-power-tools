@@ -28,6 +28,8 @@ const MESSAGE =
   'e.g. text-[var(--color-text-muted)] / bg-[var(--color-bg-surface)] / ' +
   'border-[var(--color-border)] — see src/styles/global.css.'
 
+import reactHooks from 'eslint-plugin-react-hooks'
+
 export default [
   {
     files: ['src/**/*.{js,jsx}'],
@@ -36,6 +38,14 @@ export default [
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    // Registered so existing `// eslint-disable-line react-hooks/*` directives
+    // resolve; the rules themselves are intentionally left off for now (a real
+    // hooks-lint pass is a separate task, kept out of the token-guard signal).
+    plugins: { 'react-hooks': reactHooks },
+    // With the hooks rules off, those pre-existing disable directives read as
+    // "unused" — silence that so the report shows only token violations. A
+    // proper react-hooks pass will re-enable the rules (tracked separately).
+    linterOptions: { reportUnusedDisableDirectives: 'off' },
     rules: {
       'no-restricted-syntax': [
         'error',

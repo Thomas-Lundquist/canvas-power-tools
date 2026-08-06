@@ -19,7 +19,7 @@ function formatValue(field, value) {
 
 export default function PreviewDiff({ changes }) {
   if (!changes || changes.length === 0) {
-    return <p className="text-sm text-gray-500">No changes to preview.</p>
+    return <p className="text-sm text-[var(--color-text-muted)]">No changes to preview.</p>
   }
 
   const byAssignment = changes.reduce((acc, c) => {
@@ -34,22 +34,22 @@ export default function PreviewDiff({ changes }) {
     <div className="space-y-1">
       <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-2 pr-4 font-medium text-gray-500 text-xs uppercase tracking-wide">Assignment</th>
-            <th className="text-left py-2 pr-4 font-medium text-gray-500 text-xs uppercase tracking-wide">Field</th>
-            <th className="text-left py-2 pr-4 font-medium text-gray-500 text-xs uppercase tracking-wide">From</th>
-            <th className="text-left py-2 font-medium text-gray-500 text-xs uppercase tracking-wide">To</th>
+          <tr className="border-b border-[var(--color-border)]">
+            <th className="text-left py-2 pr-4 font-medium text-[var(--color-text-muted)] text-xs uppercase tracking-wide">Assignment</th>
+            <th className="text-left py-2 pr-4 font-medium text-[var(--color-text-muted)] text-xs uppercase tracking-wide">Field</th>
+            <th className="text-left py-2 pr-4 font-medium text-[var(--color-text-muted)] text-xs uppercase tracking-wide">From</th>
+            <th className="text-left py-2 font-medium text-[var(--color-text-muted)] text-xs uppercase tracking-wide">To</th>
           </tr>
         </thead>
         <tbody>
           {Object.values(byAssignment).map(({ name, changes: aChanges }) =>
             aChanges.map((c, i) => (
-              <tr key={`${c.assignmentId}-${c.field}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 pr-4 text-gray-900 font-medium">{i === 0 ? name : ''}</td>
-                <td className="py-2 pr-4 text-gray-600">{FIELD_LABELS[c.field] ?? c.field}</td>
-                <td className="py-2 pr-4 text-gray-500">{formatValue(c.field, c.previousValue)}</td>
+              <tr key={`${c.assignmentId}-${c.field}`} className="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)]">
+                <td className="py-2 pr-4 text-[var(--color-text-body)] font-medium">{i === 0 ? name : ''}</td>
+                <td className="py-2 pr-4 text-[var(--color-text-secondary)]">{FIELD_LABELS[c.field] ?? c.field}</td>
+                <td className="py-2 pr-4 text-[var(--color-text-muted)]">{formatValue(c.field, c.previousValue)}</td>
                 <td className="py-2 font-medium flex items-center gap-1" style={{ color: 'var(--cpt-color)' }}>
-                  <ArrowRight size={12} className="text-gray-400 shrink-0" />
+                  <ArrowRight size={12} className="text-[var(--color-text-disabled)] shrink-0" />
                   {formatValue(c.field, c.newValue)}
                 </td>
               </tr>
@@ -57,7 +57,7 @@ export default function PreviewDiff({ changes }) {
           )}
         </tbody>
       </table>
-      <p className="pt-3 text-sm text-gray-500">
+      <p className="pt-3 text-sm text-[var(--color-text-muted)]">
         {changes.length} change{changes.length !== 1 ? 's' : ''} across {assignmentCount} assignment{assignmentCount !== 1 ? 's' : ''}
       </p>
     </div>

@@ -75,15 +75,15 @@ export default function PinPrompt({ onVerified, onCancel }) {
     return (
       <Overlay>
         <div className="text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-            <Lock size={28} className="text-red-600" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, var(--color-bg-surface))' }}>
+            <Lock size={28} className="text-[var(--color-error)]" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Extension Locked</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-xl font-bold text-[var(--color-text-body)]">Extension Locked</h2>
+          <p className="text-sm text-[var(--color-text-secondary)]">
             Too many incorrect attempts. Try again in{' '}
-            <span className="font-semibold text-gray-900">{lockoutMinutes} minute{lockoutMinutes !== 1 ? 's' : ''}</span>.
+            <span className="font-semibold text-[var(--color-text-body)]">{lockoutMinutes} minute{lockoutMinutes !== 1 ? 's' : ''}</span>.
           </p>
-          <button onClick={() => setView('reset')} className="text-xs text-gray-400 hover:text-gray-600 underline">
+          <button onClick={() => setView('reset')} className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] underline">
             Forgot your PIN? Reset Extension
           </button>
         </div>
@@ -95,15 +95,15 @@ export default function PinPrompt({ onVerified, onCancel }) {
     return (
       <Overlay>
         <div className="text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
-            <AlertTriangle size={28} className="text-amber-600" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: 'color-mix(in srgb, var(--color-warning) 15%, var(--color-bg-surface))' }}>
+            <AlertTriangle size={28} className="text-[var(--color-warning)]" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Reset Extension</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-xl font-bold text-[var(--color-text-body)]">Reset Extension</h2>
+          <p className="text-sm text-[var(--color-text-secondary)]">
             This will permanently delete all your data — templates, change logs,
             settings, and your API token. You will need to go through setup again.
           </p>
-          <p className="text-sm font-semibold text-red-600">This cannot be undone.</p>
+          <p className="text-sm font-semibold text-[var(--color-error)]">This cannot be undone.</p>
           <div className="flex gap-3 justify-center pt-2">
             <button onClick={() => setView(attemptsLeft > 0 ? 'pin' : 'lockout')} className="btn-ghost">
               Cancel
@@ -124,8 +124,8 @@ export default function PinPrompt({ onVerified, onCancel }) {
           <ShieldAlert size={28} style={{ color: 'var(--cpt-color)' }} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Enter Your PIN</h2>
-          <p className="text-sm text-gray-500 mt-1">You are about to make changes to Canvas.</p>
+          <h2 className="text-xl font-bold text-[var(--color-text-body)]">Enter Your PIN</h2>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">You are about to make changes to Canvas.</p>
         </div>
 
         <div className="space-y-2">
@@ -142,7 +142,7 @@ export default function PinPrompt({ onVerified, onCancel }) {
             placeholder="••••"
             className="w-40 mx-auto block text-center text-2xl tracking-[0.5em] font-mono input"
           />
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-[var(--color-error)]">{error}</p>}
         </div>
 
         <div className="flex gap-3 justify-center">
@@ -156,7 +156,7 @@ export default function PinPrompt({ onVerified, onCancel }) {
           </button>
         </div>
 
-        <button onClick={() => setView('reset')} className="text-xs text-gray-400 hover:text-gray-600 underline block mx-auto">
+        <button onClick={() => setView('reset')} className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] underline block mx-auto">
           Forgot your PIN? Reset Extension
         </button>
       </div>
@@ -167,7 +167,7 @@ export default function PinPrompt({ onVerified, onCancel }) {
 function Overlay({ children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-8">
+      <div className="bg-[var(--color-bg-surface)] rounded-xl shadow-xl w-full max-w-sm p-8">
         {children}
       </div>
     </div>

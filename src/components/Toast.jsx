@@ -10,11 +10,27 @@ const ICONS = {
   info:    Info,
 }
 
-const COLORS = {
-  success: { bg: 'bg-green-50 border-green-200',   text: 'text-green-800',  icon: 'text-green-500'  },
-  error:   { bg: 'bg-red-50 border-red-200',        text: 'text-red-800',    icon: 'text-red-500'    },
-  warning: { bg: 'bg-yellow-50 border-yellow-200',  text: 'text-yellow-800', icon: 'text-yellow-500' },
-  info:    { bg: 'bg-blue-50 border-blue-200',       text: 'text-blue-800',   icon: 'text-blue-500'   },
+// Status palette → semantic tokens (was raw bg-green-50/text-red-800/etc).
+// Background/border are a tint of the status token against the current surface,
+// so the wash is pale in light mode and deepened in dark mode from one formula.
+// Text + icon use the solid token — Badge verified token-on-12%-tint reads
+// >=4.5:1, so the coloured label stays accessible in both themes.
+const STATUS_TOKEN = {
+  success: '--color-success',
+  error:   '--color-error',
+  warning: '--color-warning',
+  info:    '--color-info',
+}
+
+// N% of the status token, remainder the live surface colour.
+const tint = (token, pct) => `color-mix(in srgb, var(${token}) ${pct}%, var(--color-bg-surface))`
+
+function statusStyle(type) {
+  const token = STATUS_TOKEN[type] ?? STATUS_TOKEN.info
+  return {
+    container: { backgroundColor: tint(token, 12), borderColor: tint(token, 32) },
+    accent:    { color: `var(${token})` },
+  }
 }
 
 // success/info auto-dismiss; warning/error require manual dismissal
@@ -162,20 +178,22 @@ export function ToastProvider({ children }) {
       <div className="fixed top-6 right-6 flex flex-col gap-2 z-50 pointer-events-none">
         {[...toasts.slice(0, MAX_VISIBLE)].reverse().map(t => {
           const Icon = ICONS[t.type] ?? ICONS.info
-          const colors = COLORS[t.type] ?? COLORS.info
+          const s = statusStyle(t.type)
           return (
             <div
               key={t.id}
               onMouseEnter={() => handleMouseEnter(t.id)}
               onMouseLeave={() => handleMouseLeave(t.id)}
-              className={`flex flex-col px-4 py-3 rounded-xl border shadow-lg text-sm pointer-events-auto max-w-sm ${colors.bg} ${t.exiting ? 'toast-exit' : 'toast-enter'}`}
+              style={s.container}
+              className={`flex flex-col px-4 py-3 rounded-xl border shadow-lg text-sm pointer-events-auto max-w-sm ${t.exiting ? 'toast-exit' : 'toast-enter'}`}
             >
               <div className="flex items-start gap-3">
-                <Icon size={16} aria-hidden="true" className={`shrink-0 mt-0.5 ${colors.icon}`} />
-                <span className={`flex-1 font-medium ${colors.text}`}>{t.message}</span>
+                <Icon size={16} aria-hidden="true" style={s.accent} className="shrink-0 mt-0.5" />
+                <span className="flex-1 font-medium" style={s.accent}>{t.message}</span>
                 <button
                   onClick={() => dismiss(t.id)}
-                  className={`shrink-0 hover:opacity-70 transition-opacity ${colors.text}`}
+                  className="shrink-0 hover:opacity-70 transition-opacity"
+                  style={s.accent}
                   aria-label="Dismiss notification"
                 >
                   <X size={14} aria-hidden="true" />
@@ -187,7 +205,8 @@ export function ToastProvider({ children }) {
                     <button
                       key={action.label}
                       onClick={action.onClick}
-                      className={`text-xs font-semibold underline underline-offset-2 ${colors.text}`}
+                      className="text-xs font-semibold underline underline-offset-2"
+                      style={s.accent}
                     >
                       {action.label}
                     </button>
