@@ -3,6 +3,7 @@ import { Loader, Plus, Pencil, Trash2, Users, ChevronRight, Shuffle,
          AlertCircle, Check, Search, X } from 'lucide-react'
 import { useToast } from '../../components/Toast.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
 import AutoAssignModal from './AutoAssignModal.jsx'
 import {
   getGroupCategories, createGroupCategory, updateGroupCategory, deleteGroupCategory,
@@ -251,12 +252,9 @@ export default function GroupManager({ initialCourseId }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Student Groups</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Manage group sets, create groups, and assign students by dragging or searching by name.
-        </p>
-      </div>
+      <PageHeader title="Student Groups">
+        Manage group sets, create groups, and assign students by dragging or searching by name.
+      </PageHeader>
 
       <CourseSelector
         courses={courses}
@@ -267,7 +265,7 @@ export default function GroupManager({ initialCourseId }) {
 
       {courseId && (
         loadingCats ? (
-          <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
+          <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-12 justify-center">
             <Loader size={18} className="animate-spin" /> Loading group sets…
           </div>
         ) : activeCat ? (
@@ -331,9 +329,9 @@ function SetsView({ categories, students, editingCatId, setEditingCatId, creatin
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-700">
+        <h2 className="text-base font-semibold text-[var(--color-text-secondary)]">
           Group Sets
-          {students.length > 0 && <span className="ml-2 text-sm font-normal text-gray-400">· {students.length} students enrolled</span>}
+          {students.length > 0 && <span className="ml-2 text-sm font-normal text-[var(--color-text-disabled)]">· {students.length} students enrolled</span>}
         </h2>
         <button className="btn-primary text-sm flex items-center gap-1.5" onClick={() => setCreatingCat(true)}>
           <Plus size={15} /> New Group Set
@@ -360,9 +358,9 @@ function SetsView({ categories, students, editingCatId, setEditingCatId, creatin
 
       {categories.length === 0 && !creatingCat ? (
         <div className="text-center py-20 space-y-3">
-          <Users size={36} className="text-gray-300 mx-auto" />
-          <p className="text-gray-500 font-medium">No group sets in this course.</p>
-          <p className="text-sm text-gray-400">Create a group set to start organizing students into groups.</p>
+          <Users size={36} className="text-[var(--color-text-disabled)] mx-auto" />
+          <p className="text-[var(--color-text-muted)] font-medium">No group sets in this course.</p>
+          <p className="text-sm text-[var(--color-text-disabled)]">Create a group set to start organizing students into groups.</p>
           <button className="btn-primary text-sm inline-flex items-center gap-1.5 mx-auto" onClick={() => setCreatingCat(true)}>
             <Plus size={15} /> Create First Group Set
           </button>
@@ -380,8 +378,8 @@ function SetsView({ categories, students, editingCatId, setEditingCatId, creatin
               ) : (
                 <>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900">{cat.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="font-medium text-[var(--color-text-body)]">{cat.name}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                       {cat.groupCount} {cat.groupCount === 1 ? 'group' : 'groups'}
                       {cat.unassignedStudentsCount > 0 && ` · ${cat.unassignedStudentsCount} unassigned`}
                     </p>
@@ -391,9 +389,9 @@ function SetsView({ categories, students, editingCatId, setEditingCatId, creatin
                       View Groups <ChevronRight size={14} />
                     </button>
                     <button className="btn-ghost p-2" title="Rename" onClick={() => setEditingCatId(cat.id)}>
-                      <Pencil size={14} className="text-gray-400" />
+                      <Pencil size={14} className="text-[var(--color-text-disabled)]" />
                     </button>
-                    <button className="btn-ghost p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete" onClick={() => setConfirmDeleteCat(cat.id)}>
+                    <button className="btn-ghost p-2 text-[var(--color-error)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))] rounded-lg" title="Delete" onClick={() => setConfirmDeleteCat(cat.id)}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -406,8 +404,8 @@ function SetsView({ categories, students, editingCatId, setEditingCatId, creatin
 
       {confirmDeleteCat && (
         <ModalShell onClose={() => setConfirmDeleteCat(null)}>
-          <h3 className="font-semibold text-gray-900 mb-1">Delete Group Set?</h3>
-          <p className="text-sm text-gray-600 mb-5">All groups and student assignments within this set will be permanently removed from Canvas.</p>
+          <h3 className="font-semibold text-[var(--color-text-body)] mb-1">Delete Group Set?</h3>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-5">All groups and student assignments within this set will be permanently removed from Canvas.</p>
           <div className="flex justify-end gap-3">
             <button className="btn-secondary" onClick={() => setConfirmDeleteCat(null)}>Cancel</button>
             <button className="btn-danger" onClick={() => onDeleteCat(confirmDeleteCat)}>Delete Set</button>
@@ -433,16 +431,16 @@ function CategoryView({ cat, groups, memberships, students, unassigned, loadingG
     <div className="space-y-4">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
-        <button className="btn-ghost text-sm text-gray-500 hover:text-gray-800" onClick={onBack}>
+        <button className="btn-ghost text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-body)]" onClick={onBack}>
           ← Group Sets
         </button>
-        <span className="text-gray-300">/</span>
-        <span className="font-medium text-gray-700">{cat.name}</span>
+        <span className="text-[var(--color-text-disabled)]">/</span>
+        <span className="font-medium text-[var(--color-text-secondary)]">{cat.name}</span>
       </div>
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-[var(--color-text-muted)]">
           {students.length > 0 && (
             <span>{assignedCount}/{students.length} students assigned</span>
           )}
@@ -464,14 +462,14 @@ function CategoryView({ cat, groups, memberships, students, unassigned, loadingG
       </div>
 
       {applyResult && (
-        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+        <div className="flex items-center gap-2 text-sm text-[var(--color-success)] bg-[color-mix(in_srgb,var(--color-success)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-success)_32%,var(--color-bg-surface))] rounded-lg px-4 py-2.5">
           <Check size={15} className="shrink-0" />
           {applyResult.count} group{applyResult.count !== 1 ? 's' : ''} created and students assigned successfully.
         </div>
       )}
 
       {loadingGroups ? (
-        <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
+        <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-12 justify-center">
           <Loader size={18} className="animate-spin" /> Loading groups…
         </div>
       ) : (
@@ -495,7 +493,7 @@ function CategoryView({ cat, groups, memberships, students, unassigned, loadingG
           )}
 
           {groups.length === 0 && !creatingGroup ? (
-            <div className="text-center py-16 text-gray-400 space-y-3">
+            <div className="text-center py-16 text-[var(--color-text-disabled)] space-y-3">
               <p>No groups yet. Use Auto-assign or add groups manually.</p>
             </div>
           ) : (
@@ -531,9 +529,9 @@ function CategoryView({ cat, groups, memberships, students, unassigned, loadingG
           {unassigned.length > 0 && (
             <div className="card p-4">
               <div className="flex items-center gap-2 mb-3">
-                <AlertCircle size={15} className="text-yellow-500 shrink-0" />
-                <p className="text-sm font-semibold text-gray-700">Unassigned ({unassigned.length})</p>
-                <span className="text-xs text-gray-400">— drag to a group or use the search in each card</span>
+                <AlertCircle size={15} className="text-[var(--color-warning)] shrink-0" />
+                <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Unassigned ({unassigned.length})</p>
+                <span className="text-xs text-[var(--color-text-disabled)]">— drag to a group or use the search in each card</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {unassigned.map(s => (
@@ -548,8 +546,8 @@ function CategoryView({ cat, groups, memberships, students, unassigned, loadingG
                     onDragEnd={() => setDraggingUserId(null)}
                     className={`text-xs px-2.5 py-1 rounded-full cursor-grab select-none transition-opacity ${
                       draggingUserId === s.userId
-                        ? 'bg-gray-200 text-gray-400 opacity-50'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-[var(--color-border-subtle)] text-[var(--color-text-disabled)] opacity-50'
+                        : 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border-subtle)]'
                     }`}
                   >
                     {s.userSortableName ?? s.userName}
@@ -574,8 +572,8 @@ function CategoryView({ cat, groups, memberships, students, unassigned, loadingG
 
       {confirmDeleteGroup && (
         <ModalShell onClose={() => setConfirmDeleteGroup(null)}>
-          <h3 className="font-semibold text-gray-900 mb-1">Delete Group?</h3>
-          <p className="text-sm text-gray-600 mb-5">Students in this group will be unassigned. This cannot be undone.</p>
+          <h3 className="font-semibold text-[var(--color-text-body)] mb-1">Delete Group?</h3>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-5">Students in this group will be unassigned. This cannot be undone.</p>
           <div className="flex justify-end gap-3">
             <button className="btn-secondary" onClick={() => setConfirmDeleteGroup(null)}>Cancel</button>
             <button className="btn-danger" onClick={() => onDeleteGroup(confirmDeleteGroup)}>Delete Group</button>
@@ -657,19 +655,19 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border-b border-gray-100">
+      <div className="flex items-center gap-2 px-3 py-2.5 bg-[var(--color-bg-hover)] border-b border-[var(--color-border-subtle)]">
         {isEditing ? (
           <InlineEdit value={group.name} onSave={onRename} onCancel={onCancelEdit} />
         ) : (
           <>
-            <span className="flex-1 text-sm font-semibold text-gray-800 truncate">{group.name}</span>
-            <span className="text-xs text-gray-400 shrink-0 flex items-center gap-1">
+            <span className="flex-1 text-sm font-semibold text-[var(--color-text-body)] truncate">{group.name}</span>
+            <span className="text-xs text-[var(--color-text-disabled)] shrink-0 flex items-center gap-1">
               <Users size={11} /> {students.length}
             </span>
-            <button className="btn-ghost p-1 text-gray-400 hover:text-gray-700" onClick={onEdit} title="Rename">
+            <button className="btn-ghost p-1 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]" onClick={onEdit} title="Rename">
               <Pencil size={12} />
             </button>
-            <button className="btn-ghost p-1 text-red-400 hover:text-red-600" onClick={onDelete} title="Delete group">
+            <button className="btn-ghost p-1 text-[var(--color-error)] hover:text-[var(--color-error)]" onClick={onDelete} title="Delete group">
               <Trash2 size={12} />
             </button>
           </>
@@ -679,9 +677,9 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
       {/* Members list */}
       <div className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto max-h-40 min-h-[3rem]">
         {loadingMembers ? (
-          <p className="text-xs text-gray-400 py-2 text-center">Loading…</p>
+          <p className="text-xs text-[var(--color-text-disabled)] py-2 text-center">Loading…</p>
         ) : students.length === 0 ? (
-          <p className="text-xs text-gray-400 py-3 text-center italic">
+          <p className="text-xs text-[var(--color-text-disabled)] py-3 text-center italic">
             {isDragOver ? 'Drop to add' : 'No students — drag or search below'}
           </p>
         ) : (
@@ -696,13 +694,13 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
                 }}
                 className="flex items-center gap-1 group/mem py-0.5 cursor-grab"
               >
-                <span className="flex-1 text-xs text-gray-700 truncate">{s.userSortableName ?? s.userName}</span>
+                <span className="flex-1 text-xs text-[var(--color-text-secondary)] truncate">{s.userSortableName ?? s.userName}</span>
                 {addingId === s.userId ? (
-                  <Loader size={10} className="animate-spin text-gray-300 shrink-0" />
+                  <Loader size={10} className="animate-spin text-[var(--color-text-disabled)] shrink-0" />
                 ) : (
                   <button
                     onClick={() => onRemoveMember(s.userId)}
-                    className="opacity-0 group-hover/mem:opacity-100 transition-opacity text-red-400 hover:text-red-600 p-0.5 shrink-0"
+                    className="opacity-0 group-hover/mem:opacity-100 transition-opacity text-[var(--color-error)] hover:text-[var(--color-error)] p-0.5 shrink-0"
                     title="Remove from group"
                   >
                     <X size={11} />
@@ -720,10 +718,10 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
       </div>
 
       {/* Search-to-add */}
-      <div className="px-3 py-2 border-t border-gray-100 relative">
+      <div className="px-3 py-2 border-t border-[var(--color-border-subtle)] relative">
         <div className="relative">
-          <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
-          {addingId && <Loader size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-gray-300 pointer-events-none" />}
+          <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)] pointer-events-none" />
+          {addingId && <Loader size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-text-disabled)] pointer-events-none" />}
           <input
             ref={inputRef}
             type="text"
@@ -732,11 +730,11 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
             onFocus={() => setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
             placeholder="Add student by name…"
-            className="w-full text-xs pl-7 pr-7 py-1.5 rounded-md border border-gray-200 focus:outline-none bg-white placeholder-gray-300 focus:border-gray-400"
+            className="w-full text-xs pl-7 pr-7 py-1.5 rounded-md border border-[var(--color-border)] focus:outline-none bg-[var(--color-bg-surface)] placeholder-[var(--color-text-disabled)] focus:border-[var(--color-text-muted)]"
           />
         </div>
         {showDropdown && searchResults.length > 0 && (
-          <div className="absolute left-3 right-3 bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+          <div className="absolute left-3 right-3 bottom-full mb-1 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 overflow-hidden">
             {searchResults.map(s => {
               const fromGroupId = getStudentSourceGroupId(s.userId)
               const fromGroup = fromGroupId ? groups.find(g => g.id === fromGroupId) : null
@@ -744,11 +742,11 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
                 <button
                   key={s.userId}
                   onMouseDown={e => { e.preventDefault(); addStudent(s.userId) }}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex items-center justify-between gap-2 transition-colors"
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-bg-hover)] flex items-center justify-between gap-2 transition-colors"
                 >
-                  <span className="truncate text-gray-800">{s.userSortableName ?? s.userName}</span>
+                  <span className="truncate text-[var(--color-text-body)]">{s.userSortableName ?? s.userName}</span>
                   {fromGroup && (
-                    <span className="text-xs text-gray-400 shrink-0 italic">from {fromGroup.name}</span>
+                    <span className="text-xs text-[var(--color-text-disabled)] shrink-0 italic">from {fromGroup.name}</span>
                   )}
                 </button>
               )
@@ -756,7 +754,7 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
           </div>
         )}
         {showDropdown && search.trim() && searchResults.length === 0 && (
-          <div className="absolute left-3 right-3 bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 px-3 py-2 text-xs text-gray-400">
+          <div className="absolute left-3 right-3 bottom-full mb-1 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 px-3 py-2 text-xs text-[var(--color-text-disabled)]">
             No students found
           </div>
         )}
@@ -770,7 +768,7 @@ function GroupCard({ group, groups, students, allStudents, memberships, loadingM
 function ModalShell({ children, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+      <div className="bg-[var(--color-bg-surface)] rounded-xl shadow-xl p-6 max-w-sm w-full">
         {children}
       </div>
     </div>
@@ -791,10 +789,10 @@ function InlineEdit({ value, onSave, onCancel }) {
           if (e.key === 'Escape') onCancel()
         }}
       />
-      <button className="btn-ghost p-1 text-green-600" onClick={() => onSave(val.trim())}>
+      <button className="btn-ghost p-1 text-[var(--color-success)]" onClick={() => onSave(val.trim())}>
         <Check size={13} />
       </button>
-      <button className="btn-ghost p-1 text-gray-400" onClick={onCancel}>
+      <button className="btn-ghost p-1 text-[var(--color-text-disabled)]" onClick={onCancel}>
         <X size={13} />
       </button>
     </div>
