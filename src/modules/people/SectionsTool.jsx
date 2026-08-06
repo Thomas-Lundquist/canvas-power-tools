@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Loader } from 'lucide-react'
 import CourseSelector from '../../components/CourseSelector.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
 import { formatDate, toDateInputValue, toIsoDate } from '../../components/DateInput.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignmentsWithGradingData, getAssignmentSubmissions } from '../../api/submissions.js'
@@ -15,33 +16,33 @@ function PreviewModal({ rows, assignmentName, onConfirm, onCancel, applying, pro
   const changed = rows.filter(r => r.changed)
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h3 className="font-semibold text-gray-900">Preview Section Overrides</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{assignmentName} · {changed.length} section{changed.length !== 1 ? 's' : ''} will change</p>
+      <div className="bg-[var(--color-bg-surface)] rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
+        <div className="px-6 pt-5 pb-4 border-b border-[var(--color-border-subtle)] shrink-0">
+          <h3 className="font-semibold text-[var(--color-text-body)]">Preview Section Overrides</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{assignmentName} · {changed.length} section{changed.length !== 1 ? 's' : ''} will change</p>
         </div>
         <div className="overflow-y-auto flex-1">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
               <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Section</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current Due</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New Due</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Section</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Current Due</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">New Due</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--color-border-subtle)]">
               {rows.map(r => (
                 <tr key={r.sectionId} className={r.changed ? '' : 'opacity-40'}>
-                  <td className="px-4 py-2.5 text-gray-900">{r.sectionName}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">{r.currentDue ? formatDate(r.currentDue) : '—'}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-gray-900">{r.newDue ? formatDate(r.newDue) : '—'}</td>
+                  <td className="px-4 py-2.5 text-[var(--color-text-body)]">{r.sectionName}</td>
+                  <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{r.currentDue ? formatDate(r.currentDue) : '—'}</td>
+                  <td className="px-4 py-2.5 text-right font-medium text-[var(--color-text-body)]">{r.newDue ? formatDate(r.newDue) : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 border-t border-gray-100 shrink-0">
-          {applying && <p className="text-xs text-gray-400 mb-3">{progress}</p>}
+        <div className="px-6 py-4 border-t border-[var(--color-border-subtle)] shrink-0">
+          {applying && <p className="text-xs text-[var(--color-text-disabled)] mb-3">{progress}</p>}
           <div className="flex justify-end gap-3">
             <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
             <button className="btn-primary flex items-center gap-1.5" onClick={onConfirm} disabled={applying || changed.length === 0}>
@@ -163,9 +164,9 @@ function SetDueDates({ courseId, courseName, courses }) {
       {/* Assignment picker */}
       <div className="card p-4">
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Assignment</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Assignment</span>
           {loadingAsn ? (
-            <span className="text-sm text-gray-400 flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
+            <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
           ) : (
             <select
               className="input text-sm flex-1"
@@ -188,26 +189,26 @@ function SetDueDates({ courseId, courseName, courses }) {
       {/* Section date table */}
       {assignmentId && (
         <div className="card overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">Due Date Per Section</p>
+          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+            <p className="text-sm font-semibold text-[var(--color-text-body)]">Due Date Per Section</p>
             {selectedAssignment?.dueAt && (
-              <p className="text-xs text-gray-400 mt-0.5">Standard due: {formatDate(selectedAssignment.dueAt)}</p>
+              <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">Standard due: {formatDate(selectedAssignment.dueAt)}</p>
             )}
           </div>
           {loadingData ? (
-            <div className="flex items-center gap-2 py-8 px-4 text-gray-400 text-sm justify-center">
+            <div className="flex items-center gap-2 py-8 px-4 text-[var(--color-text-disabled)] text-sm justify-center">
               <Loader size={14} className="animate-spin" /> Loading sections…
             </div>
           ) : sections.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">No sections found in this course.</p>
+            <p className="text-sm text-[var(--color-text-disabled)] py-8 text-center">No sections found in this course.</p>
           ) : (
             <>
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-[var(--color-border-subtle)]">
                 {sections.map(sec => (
                   <div key={sec.id} className="flex items-center gap-4 px-4 py-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{sec.name}</p>
-                      <p className="text-xs text-gray-400">{sec.studentCount} student{sec.studentCount !== 1 ? 's' : ''}</p>
+                      <p className="text-sm font-medium text-[var(--color-text-body)]">{sec.name}</p>
+                      <p className="text-xs text-[var(--color-text-disabled)]">{sec.studentCount} student{sec.studentCount !== 1 ? 's' : ''}</p>
                     </div>
                     <input
                       type="date"
@@ -220,21 +221,21 @@ function SetDueDates({ courseId, courseName, courses }) {
               </div>
 
               {/* Shared unlock/lock dates */}
-              <div className="border-t border-gray-100 px-4 py-4 space-y-3 bg-gray-50/50">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Shared for all sections (optional)</p>
+              <div className="border-t border-[var(--color-border-subtle)] px-4 py-4 space-y-3 bg-[var(--color-bg-hover)]">
+                <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Shared for all sections (optional)</p>
                 <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 text-sm text-gray-600">
+                  <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                     <span className="w-28 shrink-0">Available from</span>
                     <input type="date" className="input text-sm w-40" value={unlockDate} onChange={e => setUnlockDate(e.target.value)} />
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-600">
+                  <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                     <span className="w-28 shrink-0">Available until</span>
                     <input type="date" className="input text-sm w-40" value={lockDate} onChange={e => setLockDate(e.target.value)} />
                   </label>
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 px-4 py-3 flex justify-end">
+              <div className="border-t border-[var(--color-border-subtle)] px-4 py-3 flex justify-end">
                 <button
                   className="btn-primary"
                   disabled={loadingData || previewRows.every(r => !r.changed)}
@@ -314,9 +315,9 @@ function GradeComparison({ courseId }) {
     <div className="space-y-5">
       <div className="card p-4">
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Assignment</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Assignment</span>
           {loadingAsn ? (
-            <span className="text-sm text-gray-400 flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
+            <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
           ) : (
             <select
               className="input text-sm flex-1"
@@ -332,34 +333,34 @@ function GradeComparison({ courseId }) {
 
       {assignmentId && (
         <div className="card overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">Grade Distribution by Section</p>
-            <p className="text-xs text-gray-400 mt-0.5">Read-only — no data is written</p>
+          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+            <p className="text-sm font-semibold text-[var(--color-text-body)]">Grade Distribution by Section</p>
+            <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">Read-only — no data is written</p>
           </div>
           {loading ? (
-            <div className="flex items-center gap-2 py-8 px-4 text-gray-400 text-sm justify-center">
+            <div className="flex items-center gap-2 py-8 px-4 text-[var(--color-text-disabled)] text-sm justify-center">
               <Loader size={14} className="animate-spin" /> Loading submissions…
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
                 <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Section</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Students Graded</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Avg Score</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Avg %</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Section</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Students Graded</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Avg Score</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Avg %</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
                 {sectionStats.map(sec => (
                   <tr key={sec.id}>
-                    <td className="px-4 py-3 font-medium text-gray-900">{sec.name}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{sec.count}</td>
-                    <td className="px-4 py-3 text-right text-gray-900">{sec.avg ?? '—'}</td>
+                    <td className="px-4 py-3 font-medium text-[var(--color-text-body)]">{sec.name}</td>
+                    <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">{sec.count}</td>
+                    <td className="px-4 py-3 text-right text-[var(--color-text-body)]">{sec.avg ?? '—'}</td>
                     <td className="px-4 py-3 text-right">
                       {sec.avgPct !== null
-                        ? <span className={`font-medium ${sec.avgPct >= 70 ? 'text-green-700' : sec.avgPct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>{sec.avgPct}%</span>
-                        : <span className="text-gray-400">—</span>}
+                        ? <span className={`font-medium ${sec.avgPct >= 70 ? 'text-[var(--color-success)]' : sec.avgPct >= 60 ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]'}`}>{sec.avgPct}%</span>
+                        : <span className="text-[var(--color-text-disabled)]">—</span>}
                     </td>
                   </tr>
                 ))}
@@ -403,24 +404,23 @@ export default function SectionsTool() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Section Management</h1>
-        <p className="text-sm text-gray-500 mt-1">Set per-section due dates and compare grades across sections.</p>
-      </div>
+      <PageHeader title="Section Management">
+        Set per-section due dates and compare grades across sections.
+      </PageHeader>
 
       <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
         <CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} />
       </div>
 
       {/* Sub-view toggle */}
-      <div className="flex rounded-lg border border-gray-200 bg-white overflow-hidden w-fit mb-5">
+      <div className="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] overflow-hidden w-fit mb-5">
         {VIEWS.map(v => (
           <button
             key={v.id}
             onClick={() => setView(v.id)}
-            className={`px-4 py-2 text-sm font-medium border-r border-gray-200 last:border-r-0 transition-colors ${
-              view === v.id ? 'text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+            className={`px-4 py-2 text-sm font-medium border-r border-[var(--color-border)] last:border-r-0 transition-colors ${
+              view === v.id ? 'text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
             }`}
             style={view === v.id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
           >
