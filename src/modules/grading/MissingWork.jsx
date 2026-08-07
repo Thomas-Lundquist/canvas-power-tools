@@ -15,9 +15,9 @@ function ConfirmModal({ message, onConfirm, onCancel, confirming, progress }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full space-y-4">
-        <p className="text-sm text-gray-700">{message}</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>
         {confirming && progress && (
-          <p className="text-xs text-gray-400">{progress}</p>
+          <p className="text-xs text-[var(--color-text-disabled)]">{progress}</p>
         )}
         <div className="flex justify-end gap-3">
           <button className="btn-secondary text-sm" onClick={onCancel} disabled={confirming}>Cancel</button>
@@ -34,12 +34,12 @@ function ConfirmModal({ message, onConfirm, onCancel, confirming, progress }) {
 function SkeletonRows() {
   return Array.from({ length: 5 }, (_, i) => (
     <div key={i} className="card p-4 flex items-center gap-4 animate-pulse">
-      <div className="w-5 h-5 rounded bg-gray-200" />
+      <div className="w-5 h-5 rounded bg-[var(--color-border-subtle)]" />
       <div className="flex-1 space-y-1.5">
-        <div className="h-3.5 w-40 bg-gray-200 rounded" />
-        <div className="h-3 w-24 bg-gray-100 rounded" />
+        <div className="h-3.5 w-40 bg-[var(--color-border-subtle)] rounded" />
+        <div className="h-3 w-24 bg-[var(--color-bg-hover)] rounded" />
       </div>
-      <div className="h-7 w-28 bg-gray-200 rounded" />
+      <div className="h-7 w-28 bg-[var(--color-border-subtle)] rounded" />
     </div>
   ))
 }
@@ -156,24 +156,24 @@ export default function MissingWork() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Missing Work</h1>
-        <p className="text-sm text-gray-500 mt-1">View unsubmitted assignments and grade them as zero in bulk.</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Missing Work</h1>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">View unsubmitted assignments and grade them as zero in bulk.</p>
       </div>
 
       <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
         <CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} />
       </div>
 
       {!loading && missing.length > 0 && (
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden">
             {[['by-student', 'By Student'], ['by-assignment', 'By Assignment']].map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => { setViewMode(id); setExpanded(new Set()) }}
-                className={`px-3 py-1.5 text-xs font-medium border-r border-gray-200 last:border-r-0 transition-colors ${
-                  viewMode === id ? 'text-white' : 'text-gray-500 hover:bg-gray-50'
+                className={`px-3 py-1.5 text-xs font-medium border-r border-[var(--color-border)] last:border-r-0 transition-colors ${
+                  viewMode === id ? 'text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'
                 }`}
                 style={viewMode === id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
               >
@@ -181,7 +181,7 @@ export default function MissingWork() {
               </button>
             ))}
           </div>
-          <span className="text-sm text-gray-400">{missing.length} missing submission{missing.length !== 1 ? 's' : ''}</span>
+          <span className="text-sm text-[var(--color-text-disabled)]">{missing.length} missing submission{missing.length !== 1 ? 's' : ''}</span>
         </div>
       )}
 
@@ -189,9 +189,9 @@ export default function MissingWork() {
         <div className="space-y-2"><SkeletonRows /></div>
       ) : missing.length === 0 ? (
         <div className="card p-12 text-center space-y-2">
-          <CheckCircle size={32} className="mx-auto text-green-400" />
-          <p className="font-medium text-gray-700">No missing submissions</p>
-          <p className="text-sm text-gray-400">All students have submitted their work in this course.</p>
+          <CheckCircle size={32} className="mx-auto text-[var(--color-success)]" />
+          <p className="font-medium text-[var(--color-text-secondary)]">No missing submissions</p>
+          <p className="text-sm text-[var(--color-text-disabled)]">All students have submitted their work in this course.</p>
         </div>
       ) : viewMode === 'by-student' ? (
         <div className="space-y-2">
@@ -205,9 +205,9 @@ export default function MissingWork() {
                     className="flex items-center gap-2 flex-1 min-w-0 text-left"
                     aria-expanded={open}
                   >
-                    {open ? <ChevronDown size={16} className="text-gray-400 shrink-0" /> : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
-                    <span className="font-medium text-gray-900 truncate">{group.userName ?? 'Unknown Student'}</span>
-                    <span className="text-xs text-gray-400 shrink-0">{group.rows.length} missing</span>
+                    {open ? <ChevronDown size={16} className="text-[var(--color-text-disabled)] shrink-0" /> : <ChevronRight size={16} className="text-[var(--color-text-disabled)] shrink-0" />}
+                    <span className="font-medium text-[var(--color-text-body)] truncate">{group.userName ?? 'Unknown Student'}</span>
+                    <span className="text-xs text-[var(--color-text-disabled)] shrink-0">{group.rows.length} missing</span>
                   </button>
                   <button
                     className="btn-danger text-xs shrink-0"
@@ -217,16 +217,16 @@ export default function MissingWork() {
                   </button>
                 </div>
                 {open && (
-                  <div className="border-t border-gray-100 divide-y divide-gray-50">
+                  <div className="border-t border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
                     {group.rows.map(row => {
                       const asn = assignmentMap[row.assignmentId]
                       const days = daysSince(asn?.dueAt)
                       return (
-                        <div key={row.assignmentId} className="flex items-center gap-3 px-4 py-2.5 pl-10 bg-gray-50/50">
+                        <div key={row.assignmentId} className="flex items-center gap-3 px-4 py-2.5 pl-10 bg-[var(--color-bg-hover)]">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{asn?.name ?? row.assignmentId}</p>
+                            <p className="text-sm text-[var(--color-text-body)] truncate">{asn?.name ?? row.assignmentId}</p>
                             {days !== null && (
-                              <p className="text-xs text-gray-400">{days === 0 ? 'Due today' : `${days} day${days !== 1 ? 's' : ''} past due`}</p>
+                              <p className="text-xs text-[var(--color-text-disabled)]">{days === 0 ? 'Due today' : `${days} day${days !== 1 ? 's' : ''} past due`}</p>
                             )}
                           </div>
                           <button
@@ -257,14 +257,14 @@ export default function MissingWork() {
                     className="flex items-center gap-2 flex-1 min-w-0 text-left"
                     aria-expanded={open}
                   >
-                    {open ? <ChevronDown size={16} className="text-gray-400 shrink-0" /> : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
+                    {open ? <ChevronDown size={16} className="text-[var(--color-text-disabled)] shrink-0" /> : <ChevronRight size={16} className="text-[var(--color-text-disabled)] shrink-0" />}
                     <div className="flex-1 min-w-0">
-                      <span className="font-medium text-gray-900 truncate block">{group.name}</span>
+                      <span className="font-medium text-[var(--color-text-body)] truncate block">{group.name}</span>
                       {days !== null && (
-                        <span className="text-xs text-gray-400">{days === 0 ? 'Due today' : `${days} day${days !== 1 ? 's' : ''} past due`}</span>
+                        <span className="text-xs text-[var(--color-text-disabled)]">{days === 0 ? 'Due today' : `${days} day${days !== 1 ? 's' : ''} past due`}</span>
                       )}
                     </div>
-                    <span className="text-xs text-gray-400 shrink-0">{group.rows.length} student{group.rows.length !== 1 ? 's' : ''}</span>
+                    <span className="text-xs text-[var(--color-text-disabled)] shrink-0">{group.rows.length} student{group.rows.length !== 1 ? 's' : ''}</span>
                   </button>
                   <button
                     className="btn-danger text-xs shrink-0"
@@ -274,10 +274,10 @@ export default function MissingWork() {
                   </button>
                 </div>
                 {open && (
-                  <div className="border-t border-gray-100 divide-y divide-gray-50">
+                  <div className="border-t border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
                     {group.rows.map(row => (
-                      <div key={row.userId} className="flex items-center gap-3 px-4 py-2.5 pl-10 bg-gray-50/50">
-                        <p className="text-sm text-gray-800 flex-1 truncate">{row.userName ?? 'Unknown Student'}</p>
+                      <div key={row.userId} className="flex items-center gap-3 px-4 py-2.5 pl-10 bg-[var(--color-bg-hover)]">
+                        <p className="text-sm text-[var(--color-text-body)] flex-1 truncate">{row.userName ?? 'Unknown Student'}</p>
                         <button
                           className="btn-danger text-xs shrink-0"
                           onClick={() => openConfirm([row], `${row.userName} — ${group.name}`)}
