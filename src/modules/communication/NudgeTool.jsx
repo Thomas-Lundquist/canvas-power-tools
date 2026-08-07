@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Loader, AlertTriangle, Send, Clock } from 'lucide-react'
+import { Loader, Send, Clock } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
+import Callout from '../../components/Callout.jsx'
 import { Tabs, TabPanel } from '../../components/Tabs.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
@@ -71,20 +73,19 @@ function PreviewModal({ recipients, message, assignment, course, teacherName, on
       <div className="space-y-4">
         {recipients[0] && (
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
-            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap border border-gray-200">
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
+            <div className="bg-[var(--color-bg-hover)] rounded-lg p-4 text-sm text-[var(--color-text-body)] whitespace-pre-wrap border border-[var(--color-border)]">
               {example}
             </div>
           </div>
         )}
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recipients</p>
-          <p className="text-sm text-gray-700">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
+          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Recipients</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
         </div>
-        <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-          <span>This will send {recipients.length} message{recipients.length !== 1 ? 's' : ''} via Canvas Inbox. Messages cannot be unsent.</span>
-        </div>
+        <Callout tone="warning">
+          This will send {recipients.length} message{recipients.length !== 1 ? 's' : ''} via Canvas Inbox. Messages cannot be unsent.
+        </Callout>
       </div>
     </Modal>
   )
@@ -222,15 +223,16 @@ export default function NudgeTool() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Submission Reminders</h1>
-          <p className="text-sm text-gray-500 mt-1">Message students who have not submitted an assignment.</p>
-        </div>
-        <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
-          Sent Log {sentLog.length > 0 && <span className="ml-1 text-xs text-gray-400">({sentLog.length})</span>}
-        </button>
-      </div>
+      <PageHeader
+        title="Submission Reminders"
+        actions={
+          <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
+            Sent Log {sentLog.length > 0 && <span className="ml-1 text-xs text-[var(--color-text-disabled)]">({sentLog.length})</span>}
+          </button>
+        }
+      >
+        Message students who have not submitted an assignment.
+      </PageHeader>
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
@@ -239,16 +241,16 @@ export default function NudgeTool() {
       {/* Course + Assignment */}
       <div className="card p-4 mt-5 mb-5 space-y-3">
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Course</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
             const c = courses.find(x => x.id === cId)
             loadAssignments(cId, c)
           }} loading={loadingCourses} />
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Assignment</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Assignment</span>
           {loadingAssignments ? (
-            <span className="text-sm text-gray-400 flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
+            <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
           ) : (
             <select
               className="input text-sm flex-1"
@@ -272,8 +274,8 @@ export default function NudgeTool() {
       {/* Student list */}
       {assignmentId && (
         <div className="card overflow-hidden mb-5">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">
+          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+            <p className="text-sm font-semibold text-[var(--color-text-body)]">
               {loadingSubmissions
                 ? 'Loading students…'
                 : submissions.length === 0
@@ -282,28 +284,28 @@ export default function NudgeTool() {
             </p>
           </div>
           {loadingSubmissions ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-gray-400 text-sm">
+            <div className="flex items-center justify-center gap-2 py-8 text-[var(--color-text-disabled)] text-sm">
               <Loader size={14} className="animate-spin" /> Loading submissions…
             </div>
           ) : submissions.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6 text-center">All students have submitted this assignment.</p>
+            <p className="text-sm text-[var(--color-text-disabled)] py-6 text-center">All students have submitted this assignment.</p>
           ) : (
-            <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+            <div className="divide-y divide-[var(--color-border-subtle)] max-h-64 overflow-y-auto">
               {submissions.map(s => (
                 <label
                   key={s.userId}
-                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 ${s.excused ? 'opacity-50' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--color-bg-hover)] ${s.excused ? 'opacity-50' : ''}`}
                 >
                   <Checkbox
                     checked={selected.has(s.userId)}
                     onChange={() => !s.excused && toggleStudent(s.userId)}
                     disabled={s.excused}
                   />
-                  <span className="flex-1 text-sm text-gray-800">{s.userName ?? 'Unknown Student'}</span>
+                  <span className="flex-1 text-sm text-[var(--color-text-body)]">{s.userName ?? 'Unknown Student'}</span>
                   {s.excused
-                    ? <span className="text-xs text-gray-400">Excused — skip</span>
+                    ? <span className="text-xs text-[var(--color-text-disabled)]">Excused — skip</span>
                     : selectedAssignment?.dueAt
-                      ? <span className="text-xs text-gray-400">Missing since {new Date(selectedAssignment.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      ? <span className="text-xs text-[var(--color-text-disabled)]">Missing since {new Date(selectedAssignment.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       : null}
                 </label>
               ))}
@@ -316,8 +318,8 @@ export default function NudgeTool() {
       {assignmentId && submissions.length > 0 && (
         <div className="card p-5 mb-5 space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-gray-800">Message</label>
-            <span className="text-xs text-gray-400">Sending to: {recipients.length} student{recipients.length !== 1 ? 's' : ''}</span>
+            <label className="text-sm font-semibold text-[var(--color-text-body)]">Message</label>
+            <span className="text-xs text-[var(--color-text-disabled)]">Sending to: {recipients.length} student{recipients.length !== 1 ? 's' : ''}</span>
           </div>
           <textarea
             className="input w-full text-sm font-mono resize-y"
@@ -325,7 +327,7 @@ export default function NudgeTool() {
             value={message}
             onChange={e => setMessage(e.target.value)}
           />
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-[var(--color-text-disabled)]">
             Available tokens: {TOKENS.join('  ')}
           </p>
           <div className="flex justify-end">
