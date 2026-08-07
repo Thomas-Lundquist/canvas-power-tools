@@ -44,7 +44,7 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
       size="lg"
       footer={
         <div className="w-full">
-          {applying && <p className="text-xs text-gray-400 mb-3">{progress}</p>}
+          {applying && <p className="text-xs text-[var(--color-text-disabled)] mb-3">{progress}</p>}
           <div className="flex justify-end gap-3">
             <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
             <button
@@ -61,27 +61,27 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
     >
       <div className="-mx-6 -my-4">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+          <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Assignment</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Days Late</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Penalty</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Assignment</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Student</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Days Late</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Penalty</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Current</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">New</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[var(--color-border-subtle)]">
             {rows.map((r, i) => (
               <tr key={i} className={r.penalty === null ? 'opacity-30' : ''}>
-                <td className="px-4 py-2.5 text-gray-800 max-w-[10rem] truncate" title={r.assignmentName}>{r.assignmentName}</td>
-                <td className="px-4 py-2.5 text-gray-800">{r.userName ?? 'Unknown'}</td>
-                <td className="px-4 py-2.5 text-right text-gray-500">{r.penalty ? r.penalty.daysLate : '—'}</td>
+                <td className="px-4 py-2.5 text-[var(--color-text-body)] max-w-[10rem] truncate" title={r.assignmentName}>{r.assignmentName}</td>
+                <td className="px-4 py-2.5 text-[var(--color-text-body)]">{r.userName ?? 'Unknown'}</td>
+                <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{r.penalty ? r.penalty.daysLate : '—'}</td>
                 <td className="px-4 py-2.5 text-right">
-                  {r.penalty ? <span className="text-red-500 font-medium">−{r.penalty.penaltyPct}%</span> : '—'}
+                  {r.penalty ? <span className="text-[var(--color-error)] font-medium">−{r.penalty.penaltyPct}%</span> : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-right text-gray-500">{r.currentScore ?? '—'}</td>
-                <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{r.currentScore ?? '—'}</td>
+                <td className="px-4 py-2.5 text-right font-medium text-[var(--color-text-body)]">
                   {r.penalty ? r.penalty.newScore : r.currentScore ?? '—'}
                 </td>
               </tr>
@@ -214,13 +214,13 @@ export default function LatePolicyTool() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Late Policy</h1>
-        <p className="text-sm text-gray-500 mt-1">Define a penalty formula and apply it to late submissions. Always previewed before writing.</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Late Policy</h1>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">Define a penalty formula and apply it to late submissions. Always previewed before writing.</p>
       </div>
 
       {/* Policy definition */}
       <div className="card p-5 mb-5">
-        <h2 className="text-sm font-semibold text-gray-800 mb-4">Policy Settings</h2>
+        <h2 className="text-sm font-semibold text-[var(--color-text-body)] mb-4">Policy Settings</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Penalty Type</label>
@@ -255,7 +255,7 @@ export default function LatePolicyTool() {
               onChange={e => updatePolicy({ gracePeriodHours: Number(e.target.value) })}
               min="0"
             />
-            <p className="text-xs text-gray-400 mt-1">Submissions within this window after the due date are not penalized.</p>
+            <p className="text-xs text-[var(--color-text-disabled)] mt-1">Submissions within this window after the due date are not penalized.</p>
           </div>
           <div>
             <label className="label">Maximum Penalty (%)</label>
@@ -267,14 +267,14 @@ export default function LatePolicyTool() {
               min="0"
               max="100"
             />
-            <p className="text-xs text-gray-400 mt-1">Grade never drops below this percentage of points possible.</p>
+            <p className="text-xs text-[var(--color-text-disabled)] mt-1">Grade never drops below this percentage of points possible.</p>
           </div>
         </div>
       </div>
 
       {/* Course picker */}
       <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
         <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
           const c = courses.find(x => x.id === cId)
           loadAssignments(cId, c?.name)
@@ -284,34 +284,34 @@ export default function LatePolicyTool() {
       {/* Assignment selection */}
       {courseId && (
         <div className="card overflow-hidden mb-5">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800">Select Assignments</h2>
+          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-[var(--color-text-body)]">Select Assignments</h2>
             {assignments.length > 0 && (
-              <button className="text-xs text-gray-400 hover:text-gray-600" onClick={toggleAll}>
+              <button className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]" onClick={toggleAll}>
                 {selected.size === assignments.length ? 'Deselect all' : 'Select all'}
               </button>
             )}
           </div>
           {loadingAssignments ? (
-            <div className="flex items-center gap-2 text-gray-400 py-8 justify-center text-sm">
+            <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-8 justify-center text-sm">
               <Loader size={14} className="animate-spin" /> Loading assignments…
             </div>
           ) : assignments.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">No published assignments with due dates found.</p>
+            <p className="text-sm text-[var(--color-text-disabled)] py-8 text-center">No published assignments with due dates found.</p>
           ) : (
-            <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+            <div className="divide-y divide-[var(--color-border-subtle)] max-h-64 overflow-y-auto">
               {assignments.map(a => (
                 <label
                   key={a.id}
-                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-bg-hover)] cursor-pointer"
                 >
                   <Checkbox
                     checked={selected.has(a.id)}
                     onChange={() => toggleAssignment(a.id)}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 truncate">{a.name}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-sm text-[var(--color-text-body)] truncate">{a.name}</p>
+                    <p className="text-xs text-[var(--color-text-disabled)]">
                       Due {new Date(a.dueAt).toLocaleDateString()} · {a.pointsPossible} pts
                     </p>
                   </div>
@@ -320,7 +320,7 @@ export default function LatePolicyTool() {
             </div>
           )}
           {selected.size > 0 && (
-            <div className="px-4 py-3 border-t border-gray-100 flex justify-end">
+            <div className="px-4 py-3 border-t border-[var(--color-border-subtle)] flex justify-end">
               <button
                 className="btn-primary flex items-center gap-1.5"
                 onClick={handleCalculate}
