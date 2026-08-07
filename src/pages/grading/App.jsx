@@ -29,13 +29,13 @@ export default function App({ initialCourseId }) {
       >
         <div className="overflow-y-auto flex-1">
           <div className="max-w-7xl mx-auto px-6 pt-6">
-            <div className="flex rounded-lg border border-gray-200 bg-white overflow-hidden w-fit mb-6">
+            <div className="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] overflow-hidden w-fit mb-6">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-medium border-r border-gray-200 last:border-r-0 transition-colors ${
-                activeTab === tab.id ? 'text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+              className={`px-4 py-2 text-sm font-medium border-r border-[var(--color-border)] last:border-r-0 transition-colors ${
+                activeTab === tab.id ? 'text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
               }`}
               style={activeTab === tab.id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
             >

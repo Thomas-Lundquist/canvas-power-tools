@@ -276,8 +276,8 @@ export default function GradingDashboard({ initialCourseId }) {
 
       {!loading && filtered.length > 0 && (
         <div className="flex items-center gap-4 text-xs text-[var(--color-text-disabled)]">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-green-500 inline-block" /> Graded</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-yellow-400 inline-block" /> Submitted, not graded</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-success)] inline-block" /> Graded</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-warning)] inline-block" /> Submitted, not graded</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-border)] inline-block" /> Not submitted</span>
         </div>
       )}
