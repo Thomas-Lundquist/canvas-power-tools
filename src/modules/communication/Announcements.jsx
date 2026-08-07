@@ -51,26 +51,26 @@ function PreviewModal({ subject, body, selectedCourses, schedule, onConfirm, onC
     >
       <div className="space-y-4">
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Subject</p>
-          <p className="text-sm font-medium text-gray-900">{subject}</p>
+          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Subject</p>
+          <p className="text-sm font-medium text-[var(--color-text-body)]">{subject}</p>
         </div>
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Message</p>
-          <p className="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-lg p-3">{body}</p>
+          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Message</p>
+          <p className="text-sm text-[var(--color-text-body)] whitespace-pre-wrap bg-[var(--color-bg-hover)] border border-[var(--color-border)] rounded-lg p-3">{body}</p>
         </div>
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Sending to</p>
-          <ul className="text-sm text-gray-700 space-y-0.5">
+          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Sending to</p>
+          <ul className="text-sm text-[var(--color-text-secondary)] space-y-0.5">
             {selectedCourses.map(c => <li key={c.id}>{c.name}</li>)}
           </ul>
         </div>
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Schedule</p>
-          <p className="text-sm text-gray-700">
+          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Schedule</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">
             {schedule ? `Scheduled for ${new Date(schedule).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Send immediately'}
           </p>
         </div>
-        <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+        <div className="flex items-start gap-2 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg p-3 text-xs text-[var(--color-warning)]">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>Announcements cannot be recalled once sent.</span>
         </div>
@@ -84,17 +84,17 @@ function DraftsPanel({ drafts, onLoad, onDelete, onClose }) {
     <Modal title="Saved Drafts" onClose={onClose} size="sm">
       <div className="-mx-6 -my-4">
         {drafts.length === 0 ? (
-          <p className="text-sm text-gray-400 py-10 text-center">No saved drafts.</p>
+          <p className="text-sm text-[var(--color-text-disabled)] py-10 text-center">No saved drafts.</p>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-[var(--color-border-subtle)]">
             {drafts.map(d => (
               <div key={d.id} className="flex items-center gap-3 px-5 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{d.subject || '(no subject)'}</p>
-                  <p className="text-xs text-gray-400">Saved {new Date(d.savedAt).toLocaleDateString()}</p>
+                  <p className="text-sm font-medium text-[var(--color-text-body)] truncate">{d.subject || '(no subject)'}</p>
+                  <p className="text-xs text-[var(--color-text-disabled)]">Saved {new Date(d.savedAt).toLocaleDateString()}</p>
                 </div>
                 <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(d)}>Load</button>
-                <button className="btn-ghost p-1.5 text-red-400 hover:text-red-600" onClick={() => onDelete(d.id)} aria-label="Delete draft">
+                <button className="btn-ghost p-1.5 text-[var(--color-error)] hover:text-[var(--color-error)]" onClick={() => onDelete(d.id)} aria-label="Delete draft">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -111,17 +111,17 @@ function TemplatesPanel({ templates, onLoad, onDelete, onClose }) {
     <Modal title="Announcement Templates" onClose={onClose} size="sm">
       <div className="-mx-6 -my-4">
         {templates.length === 0 ? (
-          <p className="text-sm text-gray-400 py-10 text-center">No saved templates.</p>
+          <p className="text-sm text-[var(--color-text-disabled)] py-10 text-center">No saved templates.</p>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-[var(--color-border-subtle)]">
             {templates.map(t => (
               <div key={t.id} className="flex items-center gap-3 px-5 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
-                  <p className="text-xs text-gray-400 truncate">{t.subject || '(no subject)'}</p>
+                  <p className="text-sm font-medium text-[var(--color-text-body)] truncate">{t.name}</p>
+                  <p className="text-xs text-[var(--color-text-disabled)] truncate">{t.subject || '(no subject)'}</p>
                 </div>
                 <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(t)}>Use</button>
-                <button className="btn-ghost p-1.5 text-red-400 hover:text-red-600" onClick={() => onDelete(t.id)} aria-label="Delete template">
+                <button className="btn-ghost p-1.5 text-[var(--color-error)] hover:text-[var(--color-error)]" onClick={() => onDelete(t.id)} aria-label="Delete template">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -277,12 +277,12 @@ export default function Announcements() {
     <div>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Announcements</h1>
-          <p className="text-sm text-gray-500 mt-1">Write once, send to multiple courses. Supports scheduling and drafts.</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Announcements</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">Write once, send to multiple courses. Supports scheduling and drafts.</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button className="btn-secondary text-sm relative" onClick={() => { getDrafts().then(setDrafts); setShowDrafts(true) }}>
-            Drafts {drafts.length > 0 && <span className="ml-1 text-xs text-gray-400">({drafts.length})</span>}
+            Drafts {drafts.length > 0 && <span className="ml-1 text-xs text-[var(--color-text-disabled)]">({drafts.length})</span>}
           </button>
           <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
             Sent Log
@@ -292,24 +292,24 @@ export default function Announcements() {
 
       {/* Course selection */}
       <div className="card overflow-hidden mb-5">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <p className="text-sm font-semibold text-gray-800">Send to</p>
+        <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
+          <p className="text-sm font-semibold text-[var(--color-text-body)]">Send to</p>
           {courses.length > 0 && (
-            <button className="text-xs text-gray-400 hover:text-gray-600" onClick={toggleAll}>
+            <button className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]" onClick={toggleAll}>
               {selectedCourseIds.size === courses.length ? 'Deselect all' : 'Select all'}
             </button>
           )}
         </div>
         {loadingCourses ? (
-          <div className="flex items-center gap-2 py-6 px-4 text-gray-400 text-sm">
+          <div className="flex items-center gap-2 py-6 px-4 text-[var(--color-text-disabled)] text-sm">
             <Loader size={14} className="animate-spin" /> Loading courses…
           </div>
         ) : (
-          <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
+          <div className="divide-y divide-[var(--color-border-subtle)] max-h-48 overflow-y-auto">
             {courses.map(c => (
-              <label key={c.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50">
+              <label key={c.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--color-bg-hover)]">
                 <Checkbox checked={selectedCourseIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
-                <span className="text-sm text-gray-800">{c.name}</span>
+                <span className="text-sm text-[var(--color-text-body)]">{c.name}</span>
               </label>
             ))}
           </div>
@@ -343,12 +343,12 @@ export default function Announcements() {
         <div>
           <p className="label mb-2">Schedule</p>
           <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
               <input type="radio" name="scheduleMode" value="now" checked={scheduleMode === 'now'}
                 onChange={() => setScheduleMode('now')} className="accent-[var(--cpt-color)]" />
               Send immediately
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
               <input type="radio" name="scheduleMode" value="scheduled" checked={scheduleMode === 'scheduled'}
                 onChange={() => setScheduleMode('scheduled')} className="accent-[var(--cpt-color)]" />
               Schedule for
@@ -395,7 +395,7 @@ export default function Announcements() {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-[var(--color-text-disabled)]">
               Sending to: {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''}
             </span>
             <button
