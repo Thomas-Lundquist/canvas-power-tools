@@ -72,14 +72,14 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
       footer={
         <div className="w-full">
           {beforeAvg !== null && afterAvg !== null && (
-            <p className="text-xs text-gray-400 mb-3">
-              Class average: <span className="font-medium text-gray-700">{applyRound(beforeAvg)}</span>
+            <p className="text-xs text-[var(--color-text-disabled)] mb-3">
+              Class average: <span className="font-medium text-[var(--color-text-secondary)]">{applyRound(beforeAvg)}</span>
               {' → '}
-              <span className="font-medium text-gray-700">{applyRound(afterAvg)}</span>
+              <span className="font-medium text-[var(--color-text-secondary)]">{applyRound(afterAvg)}</span>
               {max > 0 && ` (${Math.round((afterAvg / max) * 100)}%)`}
             </p>
           )}
-          {applying && <p className="text-xs text-gray-400 mb-3">{progress}</p>}
+          {applying && <p className="text-xs text-[var(--color-text-disabled)] mb-3">{progress}</p>}
           <div className="flex justify-end gap-3">
             <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
             <button
@@ -96,26 +96,26 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
     >
       <div className="-mx-6 -my-4">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+          <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Change</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Student</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Current</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">New</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Change</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[var(--color-border-subtle)]">
             {rows.map(r => {
               const delta = r.newScore !== null && r.currentScore !== null ? r.newScore - r.currentScore : null
               const unchanged = r.newScore === r.currentScore
               return (
                 <tr key={r.userId} className={unchanged ? 'opacity-40' : ''}>
-                  <td className="px-4 py-2.5 text-gray-900">{r.userName ?? 'Unknown'}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">{fmt(r.currentScore, max)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-gray-900">{fmt(r.newScore, max)}</td>
+                  <td className="px-4 py-2.5 text-[var(--color-text-body)]">{r.userName ?? 'Unknown'}</td>
+                  <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{fmt(r.currentScore, max)}</td>
+                  <td className="px-4 py-2.5 text-right font-medium text-[var(--color-text-body)]">{fmt(r.newScore, max)}</td>
                   <td className="px-4 py-2.5 text-right">
                     {delta !== null && delta !== 0 && (
-                      <span className={delta > 0 ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
+                      <span className={delta > 0 ? 'text-[var(--color-success)] font-medium' : 'text-[var(--color-error)] font-medium'}>
                         {delta > 0 ? '+' : ''}{applyRound(delta)}
                       </span>
                     )}
@@ -251,23 +251,23 @@ export default function GradeAdjustments() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Grade Adjustments</h1>
-        <p className="text-sm text-gray-500 mt-1">Apply a curve to grades on a single assignment. Preview before any changes are written.</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Grade Adjustments</h1>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">Apply a curve to grades on a single assignment. Preview before any changes are written.</p>
       </div>
 
       {/* Course + Assignment pickers */}
       <div className="card p-4 mb-5 space-y-3">
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Course</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
             const c = courses.find(x => x.id === cId)
             loadAssignments(cId, c?.name)
           }} loading={loadingCourses} />
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Assignment</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Assignment</span>
           {loadingAssignments ? (
-            <span className="text-sm text-gray-400 flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
+            <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
           ) : (
             <select
               className="input text-sm flex-1"
@@ -288,7 +288,7 @@ export default function GradeAdjustments() {
       {selectedAssignment && (
         <div className="card p-5 mb-5 space-y-5">
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Curve Type</p>
+            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Curve Type</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {CURVE_TYPES.map(ct => (
                 <button
@@ -298,12 +298,12 @@ export default function GradeAdjustments() {
                   className={`px-3 py-2.5 rounded-lg border text-sm text-left transition-colors ${
                     curveType === ct.id
                       ? 'border-transparent text-white'
-                      : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]'
                   }`}
                   style={curveType === ct.id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
                 >
                   <span className="font-medium block">{ct.label}</span>
-                  <span className={`text-xs mt-0.5 block ${curveType === ct.id ? 'text-white/80' : 'text-gray-400'}`}>{ct.hint}</span>
+                  <span className={`text-xs mt-0.5 block ${curveType === ct.id ? 'text-white/80' : 'text-[var(--color-text-disabled)]'}`}>{ct.hint}</span>
                 </button>
               ))}
             </div>
@@ -323,20 +323,20 @@ export default function GradeAdjustments() {
                   placeholder={activeCurve.placeholder}
                   min="0"
                 />
-                {activeCurve.unit && <span className="text-sm text-gray-500">{activeCurve.unit}</span>}
+                {activeCurve.unit && <span className="text-sm text-[var(--color-text-muted)]">{activeCurve.unit}</span>}
               </div>
             </div>
           )}
 
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Apply To</p>
+            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Apply To</p>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
                 <input type="radio" name="applyTo" value="all" checked={applyTo === 'all'}
                   onChange={() => setApplyTo('all')} className="accent-[var(--cpt-color)]" />
                 All graded students
               </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
                 <input type="radio" name="applyTo" value="below" checked={applyTo === 'below'}
                   onChange={() => setApplyTo('below')} className="accent-[var(--cpt-color)]" />
                 Students below
@@ -349,16 +349,16 @@ export default function GradeAdjustments() {
                   max="100"
                   disabled={applyTo !== 'below'}
                 />
-                <span className="text-gray-500">%</span>
+                <span className="text-[var(--color-text-muted)]">%</span>
               </label>
             </div>
           </div>
 
           <div className="flex items-center justify-between pt-1">
             {loadingSubmissions ? (
-              <span className="text-sm text-gray-400 flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading submissions…</span>
+              <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading submissions…</span>
             ) : (
-              <span className="text-sm text-gray-400">{submissions.length} graded submission{submissions.length !== 1 ? 's' : ''}</span>
+              <span className="text-sm text-[var(--color-text-disabled)]">{submissions.length} graded submission{submissions.length !== 1 ? 's' : ''}</span>
             )}
             <button
               className="btn-primary flex items-center gap-1.5"
