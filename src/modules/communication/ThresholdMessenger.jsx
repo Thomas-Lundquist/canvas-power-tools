@@ -77,17 +77,17 @@ function PreviewModal({ recipients, message, resolveExample, subtitle, onSend, o
       <div className="space-y-4">
         {recipients[0] && (
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
-            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap border border-gray-200">
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
+            <div className="bg-[var(--color-bg-hover)] rounded-lg p-4 text-sm text-[var(--color-text-body)] whitespace-pre-wrap border border-[var(--color-border)]">
               {example}
             </div>
           </div>
         )}
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recipients</p>
-          <p className="text-sm text-gray-700">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
+          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Recipients</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
         </div>
-        <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+        <div className="flex items-start gap-2 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg p-3 text-xs text-[var(--color-warning)]">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>This will send {recipients.length} message{recipients.length !== 1 ? 's' : ''} via Canvas Inbox. Messages cannot be unsent.</span>
         </div>
@@ -352,11 +352,11 @@ export default function ThresholdMessenger() {
     <div>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Grade Outreach</h1>
-          <p className="text-sm text-gray-500 mt-1">Message students who scored above or below a grade threshold.</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Grade Outreach</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">Message students who scored above or below a grade threshold.</p>
         </div>
         <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
-          Sent Log {sentLog.length > 0 && <span className="ml-1 text-xs text-gray-400">({sentLog.length})</span>}
+          Sent Log {sentLog.length > 0 && <span className="ml-1 text-xs text-[var(--color-text-disabled)]">({sentLog.length})</span>}
         </button>
       </div>
 
@@ -383,7 +383,7 @@ export default function ThresholdMessenger() {
           ))}
         </div>
         {pendingMode && (
-          <div className="mt-3 flex items-center gap-3 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800">
+          <div className="mt-3 flex items-center gap-3 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg px-3 py-2 text-xs text-[var(--color-warning)]">
             <AlertTriangle size={13} className="shrink-0" />
             <span>Switching modes will reset your message.</span>
             <button className="btn-secondary text-xs py-0.5 px-2" onClick={() => applyMode(pendingMode)}>Continue</button>
@@ -395,7 +395,7 @@ export default function ThresholdMessenger() {
       {/* Course + Assignment */}
       <div className="card p-4 mb-5 space-y-3">
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Course</span>
+          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
             const c = courses.find(x => x.id === cId)
             if (mode === 'assignment') {
@@ -409,9 +409,9 @@ export default function ThresholdMessenger() {
         </div>
         {mode === 'assignment' && (
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Assignment</span>
+            <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Assignment</span>
             {loadingAssignments ? (
-              <span className="text-sm text-gray-400 flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
+              <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
             ) : (
               <select
                 className="input text-sm flex-1"
@@ -429,7 +429,7 @@ export default function ThresholdMessenger() {
         )}
         {mode === 'overall' && courseId && (
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-600 shrink-0 w-24">Score type</span>
+            <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Score type</span>
             <div className="segmented-control" role="group" aria-label="Score type">
               {[
                 { value: 'current', label: 'Current' },
@@ -452,7 +452,7 @@ export default function ThresholdMessenger() {
       {/* Threshold controls */}
       {(mode === 'assignment' ? !!assignmentId : !!courseId) && (
         <div className="card p-5 mb-5">
-          <p className="text-sm font-semibold text-gray-800 mb-3">
+          <p className="text-sm font-semibold text-[var(--color-text-body)] mb-3">
             {mode === 'assignment' ? 'Send to students who scored:' : 'Send to students whose overall grade is:'}
           </p>
           <div className="flex items-center gap-4 flex-wrap">
@@ -478,9 +478,9 @@ export default function ThresholdMessenger() {
                 min="0" max="100"
                 placeholder="70"
               />
-              <span className="text-sm text-gray-500">%</span>
+              <span className="text-sm text-[var(--color-text-muted)]">%</span>
               {mode === 'assignment' && thresholdPts !== '' && selectedAssignment && (
-                <span className="text-xs text-gray-400">({thresholdPts} / {selectedAssignment.pointsPossible} pts)</span>
+                <span className="text-xs text-[var(--color-text-disabled)]">({thresholdPts} / {selectedAssignment.pointsPossible} pts)</span>
               )}
             </div>
           </div>
@@ -490,55 +490,55 @@ export default function ThresholdMessenger() {
       {/* Student list */}
       {(mode === 'assignment' ? !!assignmentId : !!courseId) && (
         <div className="card overflow-hidden mb-5">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">
+          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+            <p className="text-sm font-semibold text-[var(--color-text-body)]">
               {mode === 'assignment'
                 ? (loadingSubmissions ? 'Loading students…' : `Students matching (${matching.length} of ${submissions.length})`)
                 : (loadingEnrollments ? 'Loading students…' : `Students matching (${overallMatching.length} of ${enrollments.length} enrolled)`)}
             </p>
           </div>
           {(mode === 'assignment' ? loadingSubmissions : loadingEnrollments) ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-gray-400 text-sm">
+            <div className="flex items-center justify-center gap-2 py-8 text-[var(--color-text-disabled)] text-sm">
               <Loader size={14} className="animate-spin" />
               {mode === 'assignment' ? 'Loading submissions…' : 'Loading grades…'}
             </div>
           ) : (mode === 'assignment' ? matching : overallMatching).length === 0 ? (
-            <p className="text-sm text-gray-400 py-6 text-center">No students match this threshold.</p>
+            <p className="text-sm text-[var(--color-text-disabled)] py-6 text-center">No students match this threshold.</p>
           ) : mode === 'assignment' ? (
-            <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+            <div className="divide-y divide-[var(--color-border-subtle)] max-h-64 overflow-y-auto">
               {matching.map(s => {
                 const max = selectedAssignment?.pointsPossible ?? 0
                 const pct = max > 0 ? Math.round((s.score / max) * 100) : null
                 return (
-                  <label key={s.userId} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50">
+                  <label key={s.userId} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--color-bg-hover)]">
                     <Checkbox checked={selected.has(s.userId)} onChange={() => toggleStudent(s.userId)} />
-                    <span className="flex-1 text-sm text-gray-800">{s.userName ?? 'Unknown'}</span>
-                    <span className="text-xs text-gray-500 shrink-0">
+                    <span className="flex-1 text-sm text-[var(--color-text-body)]">{s.userName ?? 'Unknown'}</span>
+                    <span className="text-xs text-[var(--color-text-muted)] shrink-0">
                       {pct !== null ? `${pct}%` : '—'}
-                      {max > 0 && <span className="text-gray-400">  {s.score} / {max}</span>}
+                      {max > 0 && <span className="text-[var(--color-text-disabled)]">  {s.score} / {max}</span>}
                     </span>
                   </label>
                 )
               })}
             </div>
           ) : (
-            <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+            <div className="divide-y divide-[var(--color-border-subtle)] max-h-64 overflow-y-auto">
               {overallMatching.map(e => {
                 const rawScore = scoreType === 'final' ? e.finalScore : e.currentScore
                 const rawGrade = scoreType === 'final' ? e.finalGrade : e.currentGrade
                 return (
-                  <label key={e.userId} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50">
+                  <label key={e.userId} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--color-bg-hover)]">
                     <Checkbox checked={selected.has(e.userId)} onChange={() => toggleStudent(e.userId)} />
-                    <span className="flex-1 text-sm text-gray-800">{e.userName ?? 'Unknown'}</span>
-                    <span className="text-xs text-gray-500 shrink-0">
+                    <span className="flex-1 text-sm text-[var(--color-text-body)]">{e.userName ?? 'Unknown'}</span>
+                    <span className="text-xs text-[var(--color-text-muted)] shrink-0">
                       {rawScore !== null ? `${Math.round(rawScore)}%` : '—'}
-                      {rawGrade && <span className="ml-1 text-gray-400">({rawGrade})</span>}
+                      {rawGrade && <span className="ml-1 text-[var(--color-text-disabled)]">({rawGrade})</span>}
                     </span>
                   </label>
                 )
               })}
               {nullGradeCount > 0 && (
-                <p className="text-xs text-gray-400 px-4 py-2">
+                <p className="text-xs text-[var(--color-text-disabled)] px-4 py-2">
                   {nullGradeCount} student{nullGradeCount !== 1 ? 's' : ''} have no grade data and are excluded.
                 </p>
               )}
@@ -551,8 +551,8 @@ export default function ThresholdMessenger() {
       {(mode === 'assignment' ? (!!assignmentId && matching.length > 0) : (!!courseId && overallMatching.length > 0)) && (
         <div className="card p-5 mb-5 space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-gray-800">Message</label>
-            <span className="text-xs text-gray-400">
+            <label className="text-sm font-semibold text-[var(--color-text-body)]">Message</label>
+            <span className="text-xs text-[var(--color-text-disabled)]">
               Sending to: {mode === 'assignment' ? recipients.length : overallRecipients.length} student{(mode === 'assignment' ? recipients : overallRecipients).length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -562,7 +562,7 @@ export default function ThresholdMessenger() {
             value={message}
             onChange={e => setMessage(e.target.value)}
           />
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-[var(--color-text-disabled)]">
             Available tokens: {(mode === 'overall' ? OVERALL_TOKENS : TOKENS).join('  ')}
           </p>
           <div className="flex justify-end">
