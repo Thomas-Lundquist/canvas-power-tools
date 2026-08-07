@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronRight } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
+import Callout from '../../components/Callout.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { addScheduledCheck, updateScheduledCheck } from '../../storage/scheduledChecks.js'
 import { resolveTokens, resolveOverallTokens } from './tokenHelpers.js'
@@ -410,12 +411,12 @@ export default function ScheduleForm({
               <p className="text-[var(--color-text-muted)]">{summaryText()}</p>
             </div>
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <Callout tone="warning">
               {isEdit
                 ? 'Saving will verify your identity and update this recurring rule. The rule will continue to run automatically on the new schedule.'
                 : 'Clicking "Authorize & Save" will verify your identity once and authorize all future automated sends for this rule.'
               }
-            </div>
+            </Callout>
           </div>
         )}
       </div>
