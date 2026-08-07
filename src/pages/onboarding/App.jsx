@@ -77,13 +77,13 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--primary-50)] to-white flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
         {step === 'welcome' && <WelcomeScreen onStart={() => setStep('url')} />}
 
         {step === 'url' && (
           <StepCard step={1} title="Where is your Canvas?">
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               Enter your institution's Canvas URL. You'll find it in your browser's address bar when logged into Canvas.
             </p>
             <label className="label">Canvas URL</label>
@@ -96,8 +96,8 @@ export default function App() {
               className="input"
               autoFocus
             />
-            {urlError && <p className="mt-1 text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{urlError}</p>}
-            <p className="mt-3 text-xs text-gray-500">
+            {urlError && <p className="mt-1 text-sm text-[var(--color-error)] flex items-center gap-1"><AlertCircle size={14} />{urlError}</p>}
+            <p className="mt-3 text-xs text-[var(--color-text-muted)]">
               Examples: https://yourschool.instructure.com &nbsp;|&nbsp; https://canvas.yourschool.edu
             </p>
             <div className="mt-6 flex justify-end">
@@ -113,21 +113,21 @@ export default function App() {
 
         {step === 'token' && (
           <StepCard step={2} title="Connect your Canvas account">
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               Canvas Power Tools needs an API token to interact with your courses.
               This token is stored only on your device and is never shared with anyone.
             </p>
 
             <button
               onClick={() => setShowInstructions(!showInstructions)}
-              className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 mb-4 font-medium"
+              className="flex items-center gap-2 text-sm text-[var(--cpt-color)] hover:text-[var(--cpt-color-dark)] mb-4 font-medium"
             >
               {showInstructions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               How to generate your token
             </button>
 
             {showInstructions && (
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4 text-sm text-gray-700 space-y-1">
+              <div className="bg-[var(--primary-50)] border border-[var(--primary-200)] rounded-lg p-4 mb-4 text-sm text-[var(--color-text-secondary)] space-y-1">
                 <ol className="list-decimal list-inside space-y-1.5">
                   <li>Open Canvas and go to <strong>Account &gt; Settings</strong></li>
                   <li>Scroll down to <strong>Approved Integrations</strong></li>
@@ -137,19 +137,19 @@ export default function App() {
                   <li>Click <strong>Generate Token</strong></li>
                   <li>Copy the token — it is only shown once</li>
                 </ol>
-                <p className="mt-3 text-xs text-gray-500">
+                <p className="mt-3 text-xs text-[var(--color-text-muted)]">
                   Tip: Setting an expiry date limits risk if your token is ever compromised. You can regenerate it each school year in under a minute.
                 </p>
               </div>
             )}
 
             {verifyError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-700 flex items-start gap-2">
+              <div className="bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-error)_32%,var(--color-bg-surface))] rounded-lg p-3 mb-4 text-sm text-[var(--color-error)] flex items-start gap-2">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Could not verify your token</p>
-                  <p className="mt-1 text-red-600">{verifyError}</p>
-                  <p className="mt-2 text-xs text-gray-500">Common causes: token not copied completely, token expired, or incorrect Canvas URL.</p>
+                  <p className="mt-1 text-[var(--color-error)]">{verifyError}</p>
+                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">Common causes: token not copied completely, token expired, or incorrect Canvas URL.</p>
                 </div>
               </div>
             )}
@@ -169,7 +169,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowToken(!showToken)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]"
                 >
                   {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -192,17 +192,17 @@ export default function App() {
 
         {step === 'verifying' && (
           <div className="card p-12 text-center">
-            <Loader size={40} className="animate-spin text-indigo-600 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-gray-900">Verifying your token...</h2>
-            <p className="text-sm text-gray-500 mt-2">Connecting to Canvas</p>
+            <Loader size={40} className="animate-spin text-[var(--cpt-color)] mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-[var(--color-text-body)]">Verifying your token...</h2>
+            <p className="text-sm text-[var(--color-text-muted)] mt-2">Connecting to Canvas</p>
           </div>
         )}
 
         {step === 'pin-setup' && (
           <StepCard step={3} title="Protect your account">
-            <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-5">
-              <ShieldCheck size={18} className="text-indigo-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-indigo-800">
+            <div className="flex items-start gap-3 bg-[var(--primary-50)] border border-[var(--primary-200)] rounded-lg p-4 mb-5">
+              <ShieldCheck size={18} className="text-[var(--cpt-color)] shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--cpt-color-dark)]">
                 A PIN prevents anyone else on this computer from making changes to your Canvas courses through Canvas Power Tools. Recommended for shared or classroom computers.
               </p>
             </div>
@@ -234,8 +234,8 @@ export default function App() {
                   onKeyDown={e => { if (e.key === 'Enter') handleSetPin() }}
                 />
               </div>
-              {pinError && <p className="text-sm text-red-600 flex items-center gap-1"><AlertCircle size={14} />{pinError}</p>}
-              <p className="text-xs text-gray-400">
+              {pinError && <p className="text-sm text-[var(--color-error)] flex items-center gap-1"><AlertCircle size={14} />{pinError}</p>}
+              <p className="text-xs text-[var(--color-text-disabled)]">
                 If you forget your PIN, you will need to reset the extension. Your PIN cannot be recovered.
               </p>
             </div>
@@ -251,22 +251,22 @@ export default function App() {
         {step === 'success' && (
           <div className="card p-10 text-center space-y-6">
             <div>
-              <CheckCircle size={52} className="text-green-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900">
+              <CheckCircle size={52} className="text-[var(--color-success)] mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-[var(--color-text-body)]">
                 You are all set{verifiedUser?.shortName ? `, ${verifiedUser.shortName.split(' ')[0]}` : ''}.
               </h2>
-              <p className="text-gray-500 mt-2">Canvas Power Tools is ready to use.</p>
+              <p className="text-[var(--color-text-muted)] mt-2">Canvas Power Tools is ready to use.</p>
             </div>
 
             {verifiedUser && (
-              <div className="bg-gray-50 rounded-lg p-4 text-sm text-left space-y-1">
+              <div className="bg-[var(--color-bg-hover)] rounded-lg p-4 text-sm text-left space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Logged in as</span>
-                  <span className="font-medium text-gray-900">{verifiedUser.name}</span>
+                  <span className="text-[var(--color-text-muted)]">Logged in as</span>
+                  <span className="font-medium text-[var(--color-text-body)]">{verifiedUser.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Canvas URL</span>
-                  <span className="font-medium text-gray-900 text-xs">{canvasUrl}</span>
+                  <span className="text-[var(--color-text-muted)]">Canvas URL</span>
+                  <span className="font-medium text-[var(--color-text-body)] text-xs">{canvasUrl}</span>
                 </div>
               </div>
             )}
@@ -290,19 +290,19 @@ function WelcomeScreen({ onStart }) {
   return (
     <div className="card p-12 text-center space-y-8">
       <div>
-        <div className="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+        <div className="w-16 h-16 bg-[var(--cpt-color)] rounded-2xl mx-auto mb-6 flex items-center justify-center">
           <span className="text-white text-2xl font-black">C</span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Canvas Power Tools</h1>
-        <p className="text-gray-500 mt-3 text-lg">A faster way to manage your Canvas courses.</p>
+        <h1 className="text-3xl font-bold text-[var(--color-text-body)]">Canvas Power Tools</h1>
+        <p className="text-[var(--color-text-muted)] mt-3 text-lg">A faster way to manage your Canvas courses.</p>
       </div>
-      <div className="space-y-3 text-sm text-gray-600 text-left bg-gray-50 rounded-lg p-5">
+      <div className="space-y-3 text-sm text-[var(--color-text-secondary)] text-left bg-[var(--color-bg-hover)] rounded-lg p-5">
         <p>Bulk edit assignments, manage templates, and more — all in one place, without the Canvas runaround.</p>
-        <p className="font-medium text-indigo-700">Your data never leaves your browser.</p>
+        <p className="font-medium text-[var(--cpt-color-dark)]">Your data never leaves your browser.</p>
       </div>
       <div>
         <button className="btn-primary text-base px-8 py-3" onClick={onStart}>Get Started</button>
-        <p className="text-xs text-gray-400 mt-3">Takes about 2 minutes</p>
+        <p className="text-xs text-[var(--color-text-disabled)] mt-3">Takes about 2 minutes</p>
       </div>
     </div>
   )
@@ -312,9 +312,9 @@ function StepCard({ step, title, children }) {
   return (
     <div className="card p-8">
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Step {step} of 3</span>
+        <span className="text-xs font-semibold text-[var(--cpt-color)] uppercase tracking-wider">Step {step} of 3</span>
       </div>
-      <h2 className="text-xl font-bold text-gray-900 mb-6">{title}</h2>
+      <h2 className="text-xl font-bold text-[var(--color-text-body)] mb-6">{title}</h2>
       {children}
     </div>
   )
