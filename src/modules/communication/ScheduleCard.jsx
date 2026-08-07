@@ -107,7 +107,7 @@ export default function ScheduleCard({ schedule, onUpdate, onDelete, onEdit }) {
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))] transition-colors"
             aria-label="Delete schedule"
             title="Delete"
           >
@@ -134,7 +134,7 @@ export default function ScheduleCard({ schedule, onUpdate, onDelete, onEdit }) {
       </div>
 
       {schedule.lastRunResult === 'error' && schedule.lastRunError && (
-        <div className="mt-2 pl-5 flex items-start gap-1.5 text-xs text-red-600">
+        <div className="mt-2 pl-5 flex items-start gap-1.5 text-xs text-[var(--color-error)]">
           <AlertCircle size={12} className="shrink-0 mt-0.5" aria-hidden="true" />
           <span>Last run failed: {schedule.lastRunError}</span>
         </div>
@@ -145,7 +145,7 @@ export default function ScheduleCard({ schedule, onUpdate, onDelete, onEdit }) {
           <span className="text-[var(--color-text-body)]">Delete this rule? This cannot be undone.</span>
           <button
             onClick={handleDelete}
-            className="px-2.5 py-1 rounded-md bg-red-600 text-white hover:bg-red-700 font-medium transition-colors"
+            className="px-2.5 py-1 rounded-md bg-[var(--color-error)] text-white hover:bg-[color-mix(in_srgb,var(--color-error)_85%,black)] font-medium transition-colors"
           >
             Delete
           </button>
