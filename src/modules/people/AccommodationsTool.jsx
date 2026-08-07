@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { ChevronRight, ChevronDown, Plus, Loader, CheckCircle, Trash2, ArrowLeft } from 'lucide-react'
 import CourseSelector from '../../components/CourseSelector.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
 import { formatDate, toDateInputValue, toIsoDate } from '../../components/DateInput.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignmentsWithOverrides, createStudentOverride, updateOverride, deleteOverride } from '../../api/overrides.js'
@@ -51,42 +52,42 @@ function StudentDetailPanel({ student, assignments, overviewData, courseId, cour
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
         <div>
-          <p className="font-semibold text-gray-900">{student.userName}</p>
-          <p className="text-xs text-gray-400">{overrideList.length} active override{overrideList.length !== 1 ? 's' : ''}</p>
+          <p className="font-semibold text-[var(--color-text-body)]">{student.userName}</p>
+          <p className="text-xs text-[var(--color-text-disabled)]">{overrideList.length} active override{overrideList.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           <button className="btn-secondary text-xs flex items-center gap-1" onClick={onAddMore}>
             <Plus size={12} /> Add Overrides
           </button>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors" onClick={onClose} aria-label="Close">✕</button>
+          <button className="text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] transition-colors" onClick={onClose} aria-label="Close">✕</button>
         </div>
       </div>
 
       {overrideList.length === 0 ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No overrides set.</p>
+        <p className="text-sm text-[var(--color-text-disabled)] py-8 text-center">No overrides set.</p>
       ) : (
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Assignment</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Standard Due</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Override Due</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Assignment</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Standard Due</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Override Due</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Status</th>
               <th className="px-4 py-2.5 w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[var(--color-border-subtle)]">
             {overrideList.map(item => {
               const status = overrideStatus(item.overrideDueAt)
               return (
                 <tr key={item.assignmentId} className={status === 'past' ? 'opacity-50' : ''}>
-                  <td className="px-4 py-2.5 font-medium text-gray-900">{item.assignmentName}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">{formatDate(item.standardDueAt)}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-900">{formatDate(item.overrideDueAt)}</td>
+                  <td className="px-4 py-2.5 font-medium text-[var(--color-text-body)]">{item.assignmentName}</td>
+                  <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{formatDate(item.standardDueAt)}</td>
+                  <td className="px-4 py-2.5 text-right text-[var(--color-text-body)]">{formatDate(item.overrideDueAt)}</td>
                   <td className="px-4 py-2.5 text-right">
-                    <span className={`text-xs font-medium ${status === 'past' ? 'text-gray-400' : 'text-blue-600'}`}>
+                    <span className={`text-xs font-medium ${status === 'past' ? 'text-[var(--color-text-disabled)]' : 'text-[var(--color-info)]'}`}>
                       {status === 'past' ? 'Past' : 'Upcoming'}
                     </span>
                   </td>
@@ -95,7 +96,7 @@ function StudentDetailPanel({ student, assignments, overviewData, courseId, cour
                       onClick={() => handleRemove(item)}
                       disabled={removing === item.assignmentId}
                       aria-label={`Remove override for ${item.assignmentName}`}
-                      className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40"
+                      className="text-[var(--color-text-disabled)] hover:text-[var(--color-error)] transition-colors disabled:opacity-40"
                     >
                       {removing === item.assignmentId ? <Loader size={13} className="animate-spin" /> : <Trash2 size={13} />}
                     </button>
@@ -121,12 +122,12 @@ function StepSelectStudent({ enrollments, loading, selected, onSelect, onNext, o
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-        <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Step 1 of 3</p>
-        <h3 className="font-semibold text-gray-900">Select Student</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Choose the student who needs accommodation overrides.</p>
+      <div className="px-5 pt-5 pb-4 border-b border-[var(--color-border-subtle)]">
+        <p className="text-xs text-[var(--color-text-disabled)] uppercase tracking-wide font-medium mb-1">Step 1 of 3</p>
+        <h3 className="font-semibold text-[var(--color-text-body)]">Select Student</h3>
+        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Choose the student who needs accommodation overrides.</p>
       </div>
-      <div className="px-5 py-3 border-b border-gray-100">
+      <div className="px-5 py-3 border-b border-[var(--color-border-subtle)]">
         <input
           type="search"
           placeholder="Search students…"
@@ -138,15 +139,15 @@ function StepSelectStudent({ enrollments, loading, selected, onSelect, onNext, o
       </div>
       <div className="overflow-y-auto max-h-64">
         {loading ? (
-          <div className="flex items-center gap-2 py-8 justify-center text-gray-400 text-sm">
+          <div className="flex items-center gap-2 py-8 justify-center text-[var(--color-text-disabled)] text-sm">
             <Loader size={14} className="animate-spin" /> Loading students…
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 py-8 text-center">No students found.</p>
+          <p className="text-sm text-[var(--color-text-disabled)] py-8 text-center">No students found.</p>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[var(--color-border-subtle)]">
             {filtered.map(e => (
-              <label key={e.userId} className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-gray-50">
+              <label key={e.userId} className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[var(--color-bg-hover)]">
                 <input
                   type="radio"
                   name="student"
@@ -154,13 +155,13 @@ function StepSelectStudent({ enrollments, loading, selected, onSelect, onNext, o
                   onChange={() => onSelect(e)}
                   className="accent-[var(--cpt-color)]"
                 />
-                <span className="text-sm text-gray-900">{e.userSortableName ?? e.userName}</span>
+                <span className="text-sm text-[var(--color-text-body)]">{e.userSortableName ?? e.userName}</span>
               </label>
             ))}
           </div>
         )}
       </div>
-      <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-3">
+      <div className="px-5 py-4 border-t border-[var(--color-border-subtle)] flex justify-end gap-3">
         <button className="btn-secondary" onClick={onCancel}>Cancel</button>
         <button className="btn-primary" disabled={!selected} onClick={onNext}>Next</button>
       </div>
@@ -189,12 +190,12 @@ function StepSelectAssignments({ student, assignments, overviewData, selectedIds
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-        <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Step 2 of 3</p>
-        <h3 className="font-semibold text-gray-900">Select Assignments — {student.userName}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Choose which assignments to apply overrides to.</p>
+      <div className="px-5 pt-5 pb-4 border-b border-[var(--color-border-subtle)]">
+        <p className="text-xs text-[var(--color-text-disabled)] uppercase tracking-wide font-medium mb-1">Step 2 of 3</p>
+        <h3 className="font-semibold text-[var(--color-text-body)]">Select Assignments — {student.userName}</h3>
+        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Choose which assignments to apply overrides to.</p>
       </div>
-      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+      <div className="px-5 py-3 border-b border-[var(--color-border-subtle)] flex items-center gap-3">
         <input
           type="search"
           placeholder="Search assignments…"
@@ -203,18 +204,18 @@ function StepSelectAssignments({ student, assignments, overviewData, selectedIds
           onChange={e => setSearch(e.target.value)}
         />
         <button
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium shrink-0"
+          className="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-medium shrink-0"
           onClick={() => onSelectAll(filtered, !allVisible)}
         >
           {allVisible ? 'Deselect All' : 'Select All'}
         </button>
       </div>
       <div className="overflow-y-auto max-h-64">
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-[var(--color-border-subtle)]">
           {filtered.map(a => {
             const currentDue = overridesByAsn[a.id] ?? a.dueAt
             return (
-              <label key={a.id} className="flex items-start gap-3 px-5 py-3 cursor-pointer hover:bg-gray-50">
+              <label key={a.id} className="flex items-start gap-3 px-5 py-3 cursor-pointer hover:bg-[var(--color-bg-hover)]">
                 <input
                   type="checkbox"
                   checked={selectedIds.has(a.id)}
@@ -222,11 +223,11 @@ function StepSelectAssignments({ student, assignments, overviewData, selectedIds
                   className="mt-0.5 accent-[var(--cpt-color)]"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate">{a.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-sm text-[var(--color-text-body)] truncate">{a.name}</p>
+                  <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
                     Standard: {formatDate(a.dueAt)}
                     {overridesByAsn[a.id] && (
-                      <span className="ml-2 text-blue-500">Override: {formatDate(overridesByAsn[a.id])}</span>
+                      <span className="ml-2 text-[var(--color-info)]">Override: {formatDate(overridesByAsn[a.id])}</span>
                     )}
                   </p>
                 </div>
@@ -235,8 +236,8 @@ function StepSelectAssignments({ student, assignments, overviewData, selectedIds
           })}
         </div>
       </div>
-      <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-        <p className="text-xs text-gray-400">{selectedIds.size} selected</p>
+      <div className="px-5 py-4 border-t border-[var(--color-border-subtle)] flex items-center justify-between">
+        <p className="text-xs text-[var(--color-text-disabled)]">{selectedIds.size} selected</p>
         <div className="flex gap-3">
           <button className="btn-secondary flex items-center gap-1" onClick={onBack}><ArrowLeft size={13} /> Back</button>
           <button className="btn-primary" disabled={selectedIds.size === 0} onClick={onNext}>Next</button>
@@ -316,14 +317,14 @@ function StepSetDates({ student, assignments, selectedIds, overviewData, courseI
   return (
     <>
       <div className="card overflow-hidden">
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Step 3 of 3</p>
-          <h3 className="font-semibold text-gray-900">Set Override Dates — {student.userName}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{selectedAssignments.length} assignment{selectedAssignments.length !== 1 ? 's' : ''} selected</p>
+        <div className="px-5 pt-5 pb-4 border-b border-[var(--color-border-subtle)]">
+          <p className="text-xs text-[var(--color-text-disabled)] uppercase tracking-wide font-medium mb-1">Step 3 of 3</p>
+          <h3 className="font-semibold text-[var(--color-text-body)]">Set Override Dates — {student.userName}</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{selectedAssignments.length} assignment{selectedAssignments.length !== 1 ? 's' : ''} selected</p>
         </div>
 
         {/* Mode toggle */}
-        <div className="px-5 py-4 border-b border-gray-100 space-y-2">
+        <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] space-y-2">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="radio" name="dateMode" checked={dateMode === 'extend'} onChange={() => setDateMode('extend')} className="accent-[var(--cpt-color)]" />
             Extend by <input
@@ -345,18 +346,18 @@ function StepSetDates({ student, assignments, selectedIds, overviewData, courseI
         {/* Preview / individual date inputs */}
         <div className="overflow-y-auto max-h-64">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Assignment</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Current</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">New Override</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Assignment</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Current</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">New Override</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--color-border-subtle)]">
               {previewRows.map(row => (
                 <tr key={row.assignmentId}>
-                  <td className="px-4 py-2.5 font-medium text-gray-900 max-w-[12rem] truncate">{row.assignmentName}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">{formatDate(row.currentDue)}</td>
+                  <td className="px-4 py-2.5 font-medium text-[var(--color-text-body)] max-w-[12rem] truncate">{row.assignmentName}</td>
+                  <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{formatDate(row.currentDue)}</td>
                   <td className="px-4 py-2.5 text-right">
                     {dateMode === 'individual' ? (
                       <input
@@ -366,7 +367,7 @@ function StepSetDates({ student, assignments, selectedIds, overviewData, courseI
                         onChange={e => setIndivDates(prev => ({ ...prev, [row.assignmentId]: e.target.value }))}
                       />
                     ) : (
-                      <span className={`font-medium ${row.newDue ? 'text-blue-700' : 'text-gray-300'}`}>
+                      <span className={`font-medium ${row.newDue ? 'text-[var(--color-info)]' : 'text-[var(--color-text-disabled)]'}`}>
                         {row.newDue ? formatDate(row.newDue) : '—'}
                       </span>
                     )}
@@ -377,7 +378,7 @@ function StepSetDates({ student, assignments, selectedIds, overviewData, courseI
           </table>
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-between items-center">
+        <div className="px-5 py-4 border-t border-[var(--color-border-subtle)] flex justify-between items-center">
           <button className="btn-secondary flex items-center gap-1" onClick={onBack} disabled={applying}><ArrowLeft size={13} /> Back</button>
           <div className="flex gap-3">
             <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
@@ -395,33 +396,33 @@ function StepSetDates({ student, assignments, selectedIds, overviewData, courseI
       {/* Confirm modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
-            <div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-              <h3 className="font-semibold text-gray-900">Confirm Override Changes</h3>
-              <p className="text-xs text-gray-500 mt-0.5">{student.userName} · {previewRows.filter(r => r.newDue).length} overrides will be applied</p>
+          <div className="bg-[var(--color-bg-surface)] rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            <div className="px-6 pt-5 pb-4 border-b border-[var(--color-border-subtle)] shrink-0">
+              <h3 className="font-semibold text-[var(--color-text-body)]">Confirm Override Changes</h3>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{student.userName} · {previewRows.filter(r => r.newDue).length} overrides will be applied</p>
             </div>
             <div className="overflow-y-auto flex-1">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+                <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
                   <tr>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Assignment</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Standard Due</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">{student.userName}&apos;s Override</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Assignment</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Standard Due</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">{student.userName}&apos;s Override</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[var(--color-border-subtle)]">
                   {previewRows.filter(r => r.newDue).map(row => (
                     <tr key={row.assignmentId}>
-                      <td className="px-4 py-2.5 font-medium text-gray-900">{row.assignmentName}</td>
-                      <td className="px-4 py-2.5 text-right text-gray-500">{formatDate(row.standardDue)}</td>
-                      <td className="px-4 py-2.5 text-right text-blue-700 font-medium">{formatDate(row.newDue)}</td>
+                      <td className="px-4 py-2.5 font-medium text-[var(--color-text-body)]">{row.assignmentName}</td>
+                      <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{formatDate(row.standardDue)}</td>
+                      <td className="px-4 py-2.5 text-right text-[var(--color-info)] font-medium">{formatDate(row.newDue)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 shrink-0">
-              {applying && <p className="text-xs text-gray-400 mb-3">{progress}</p>}
+            <div className="px-6 py-4 border-t border-[var(--color-border-subtle)] shrink-0">
+              {applying && <p className="text-xs text-[var(--color-text-disabled)] mb-3">{progress}</p>}
               <div className="flex justify-end gap-3">
                 <button className="btn-secondary" onClick={() => setShowConfirm(false)} disabled={applying}>Back</button>
                 <button
@@ -448,10 +449,10 @@ function OverviewRow({ row, onView, onAddMore }) {
     .sort((a, b) => new Date(a.overrideDueAt) - new Date(b.overrideDueAt))[0]?.overrideDueAt ?? null
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+    <div className="flex items-center justify-between px-4 py-3 hover:bg-[var(--color-bg-hover)]">
       <div>
-        <p className="text-sm font-medium text-gray-900">{row.userName}</p>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <p className="text-sm font-medium text-[var(--color-text-body)]">{row.userName}</p>
+        <p className="text-xs text-[var(--color-text-disabled)] mt-0.5">
           {row.overrideList.length} active override{row.overrideList.length !== 1 ? 's' : ''}
           {nextDue ? <> · Next: {formatDate(nextDue)}</> : ''}
         </p>
@@ -582,20 +583,19 @@ export default function AccommodationsTool({ initialStudentId }) {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accommodations</h1>
-          <p className="text-sm text-gray-500 mt-1">Apply per-student due date overrides across multiple assignments at once.</p>
-        </div>
-        {!wizardMode && (
+      <PageHeader
+        title="Accommodations"
+        actions={!wizardMode && (
           <button className="btn-primary flex items-center gap-1.5" onClick={() => startWizard()}>
             <Plus size={14} /> New Override
           </button>
         )}
-      </div>
+      >
+        Apply per-student due date overrides across multiple assignments at once.
+      </PageHeader>
 
       <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-gray-600 shrink-0">Course</span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
         <CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} />
       </div>
 
@@ -655,22 +655,22 @@ export default function AccommodationsTool({ initialStudentId }) {
           )}
 
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-800">Students with Overrides</p>
-              <p className="text-xs text-gray-400">{overviewData.length} student{overviewData.length !== 1 ? 's' : ''}</p>
+            <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
+              <p className="text-sm font-semibold text-[var(--color-text-body)]">Students with Overrides</p>
+              <p className="text-xs text-[var(--color-text-disabled)]">{overviewData.length} student{overviewData.length !== 1 ? 's' : ''}</p>
             </div>
             {loadingData ? (
-              <div className="flex items-center gap-2 py-10 justify-center text-gray-400 text-sm">
+              <div className="flex items-center gap-2 py-10 justify-center text-[var(--color-text-disabled)] text-sm">
                 <Loader size={14} className="animate-spin" /> Loading overrides…
               </div>
             ) : overviewData.length === 0 ? (
               <div className="py-12 text-center">
-                <CheckCircle size={28} className="mx-auto mb-3 text-gray-200" />
-                <p className="text-sm font-medium text-gray-500">No accommodation overrides set</p>
-                <p className="text-xs text-gray-400 mt-1">Click "New Override" to add overrides for a student.</p>
+                <CheckCircle size={28} className="mx-auto mb-3 text-[var(--color-text-disabled)]" />
+                <p className="text-sm font-medium text-[var(--color-text-muted)]">No accommodation overrides set</p>
+                <p className="text-xs text-[var(--color-text-disabled)] mt-1">Click "New Override" to add overrides for a student.</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-[var(--color-border-subtle)]">
                 {overviewData.map(row => (
                   <OverviewRow
                     key={row.userId}
