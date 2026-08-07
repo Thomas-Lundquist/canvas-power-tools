@@ -122,7 +122,7 @@ const SETTINGS_INDEX = [
         <input type="number" min="1000" max="60000" step="1000"
           value={p.apiTimeout} onChange={e => set('apiTimeout', Math.max(1000, parseInt(e.target.value) || 10000))}
           className="input w-24 text-sm" />
-        <span className="text-xs text-gray-400">ms</span>
+        <span className="text-xs text-[var(--color-text-disabled)]">ms</span>
       </div>
     ),
   },
@@ -246,7 +246,7 @@ const SETTINGS_INDEX = [
           value={p.bulkEditorDefaultDateShiftDays}
           onChange={e => set('bulkEditorDefaultDateShiftDays', Math.max(1, parseInt(e.target.value) || 7))}
           className="input w-20 text-sm" />
-        <span className="text-xs text-gray-400">days</span>
+        <span className="text-xs text-[var(--color-text-disabled)]">days</span>
       </div>
     ),
   },
@@ -449,7 +449,7 @@ const SETTINGS_INDEX = [
           value={p.copyDefaultShiftDays}
           onChange={e => set('copyDefaultShiftDays', Math.max(1, parseInt(e.target.value) || 7))}
           className="input w-20 text-sm" />
-        <span className="text-xs text-gray-400">days</span>
+        <span className="text-xs text-[var(--color-text-disabled)]">days</span>
       </div>
     ),
   },
@@ -525,7 +525,7 @@ const SETTINGS_INDEX = [
           placeholder="Off"
           onChange={e => set('changeLogAutoClearOlderThan', e.target.value ? Math.max(1, parseInt(e.target.value)) : null)}
           className="input w-24 text-sm" />
-        <span className="text-xs text-gray-400">days</span>
+        <span className="text-xs text-[var(--color-text-disabled)]">days</span>
       </div>
     ),
   },
@@ -596,7 +596,7 @@ function Toggle({ checked, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${checked ? '' : 'bg-gray-300'}`}
+      className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${checked ? '' : 'bg-[var(--color-border)]'}`}
       style={checked ? { backgroundColor: 'var(--cpt-color)' } : undefined}
     >
       <span
@@ -612,8 +612,8 @@ function PrefRow({ title, description, children }) {
   return (
     <div className="flex items-center justify-between py-2.5 gap-6">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900">{title}</p>
-        {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
+        <p className="text-sm font-medium text-[var(--color-text-body)]">{title}</p>
+        {description && <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{description}</p>}
       </div>
       <div className="shrink-0">{children}</div>
     </div>
@@ -623,7 +623,7 @@ function PrefRow({ title, description, children }) {
 function StyledCheck({ checked }) {
   return (
     <span
-      className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0 ${checked ? '' : 'bg-white border-gray-300'}`}
+      className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0 ${checked ? '' : 'bg-white border-[var(--color-border)]'}`}
       style={checked ? { backgroundColor: 'var(--cpt-color)', borderColor: 'var(--cpt-color)' } : undefined}
     >
       {checked && (
@@ -643,32 +643,32 @@ function SectionCard({ id, title, advancedOpen, onToggleAdvanced, resetConfirm, 
         <div className="flex items-center gap-2">
           {resetConfirm ? (
             <>
-              <span className="text-xs text-gray-600">Reset {title} to defaults?</span>
+              <span className="text-xs text-[var(--color-text-secondary)]">Reset {title} to defaults?</span>
               <button onClick={onResetConfirm} className="btn-danger text-xs px-2 py-1">Reset</button>
               <button onClick={onResetCancel} className="btn-ghost text-xs px-2 py-1">Cancel</button>
             </>
           ) : (
-            <button onClick={onResetRequest} className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
+            <button onClick={onResetRequest} className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] transition-colors flex items-center gap-1">
               <RotateCcw size={11} /> Reset to defaults
             </button>
           )}
         </div>
       </div>
-      <div className="space-y-0 divide-y divide-gray-100">
+      <div className="space-y-0 divide-y divide-[var(--color-border-subtle)]">
         {children}
       </div>
       {hasAdvanced && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-[var(--color-border-subtle)]">
           <button
             onClick={onToggleAdvanced}
             aria-expanded={advancedOpen}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)] transition-colors"
           >
             <ChevronRight size={12} className={`transition-transform ${advancedOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
             Advanced
           </button>
           {advancedOpen && (
-            <div className="mt-3 space-y-0 divide-y divide-gray-100">
+            <div className="mt-3 space-y-0 divide-y divide-[var(--color-border-subtle)]">
               {advancedChildren}
             </div>
           )}
@@ -934,13 +934,13 @@ function App() {
 
   if (!account || !prefs) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-hover)] flex items-center justify-center">
         <Loader size={32} className="animate-spin" style={{ color: 'var(--cpt-color)' }} />
       </div>
     )
   }
 
-  const statusColor = account.verificationStatus === 'valid' ? 'text-green-600' : 'text-red-600'
+  const statusColor = account.verificationStatus === 'valid' ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'
   const StatusIcon  = account.verificationStatus === 'valid' ? CheckCircle : AlertCircle
   const version     = chrome.runtime.getManifest().version
 
@@ -953,10 +953,10 @@ function App() {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[var(--color-bg-hover)]">
       <SkipLink />
       {/* Topbar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="bg-white border-b border-[var(--color-border)] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <BrandLogo />
           <AppNav current={null} />
@@ -967,7 +967,7 @@ function App() {
 
         {/* Search bar */}
         <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)]" />
           <input
             type="text"
             value={search}
@@ -976,7 +976,7 @@ function App() {
             className="input pl-9 text-sm w-full"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]">
               <X size={14} />
             </button>
           )}
@@ -985,18 +985,18 @@ function App() {
         {/* ── Search results ── */}
         {searchResults ? (
           searchResults.length === 0 ? (
-            <div className="card p-8 text-center text-sm text-gray-400">
+            <div className="card p-8 text-center text-sm text-[var(--color-text-disabled)]">
               No settings match "{search}"
             </div>
           ) : (
-            <div className="card p-6 space-y-0 divide-y divide-gray-100">
+            <div className="card p-6 space-y-0 divide-y divide-[var(--color-border-subtle)]">
               <p className="section-title pb-3">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}</p>
               {searchResults.map((item, i) => {
                 const showSection = i === 0 || searchResults[i - 1].sectionTitle !== item.sectionTitle
                 return (
                   <div key={`${item.section}-${item.label}`}>
                     {showSection && (
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-3 pb-1 first:pt-0">
+                      <p className="text-xs font-semibold text-[var(--color-text-disabled)] uppercase tracking-wider pt-3 pb-1 first:pt-0">
                         {item.sectionTitle}
                       </p>
                     )}
@@ -1015,13 +1015,13 @@ function App() {
         <SectionCard {...sectionProps('account')} title="Account" hasAdvanced>
           {/* Canvas URL — read only */}
           <PrefRow title="Canvas URL" description="Your institution's Canvas domain.">
-            <p className="text-sm text-gray-700 max-w-xs truncate">{account.canvasUrl}</p>
+            <p className="text-sm text-[var(--color-text-secondary)] max-w-xs truncate">{account.canvasUrl}</p>
           </PrefRow>
 
           {/* API Token */}
           <PrefRow title="API Token" description="Your personal Canvas API token. Used for all requests.">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-mono text-gray-700 tracking-wider">
+              <span className="text-sm font-mono text-[var(--color-text-secondary)] tracking-wider">
                 {showToken && decryptedToken ? decryptedToken.slice(0, 20) + '…' : '••••••••••••••••'}
               </span>
               <button className="btn-secondary text-xs px-2 py-1" onClick={revealToken}>
@@ -1046,8 +1046,8 @@ function App() {
               </button>
             </div>
           </PrefRow>
-          {verifyStatus === 'valid' && <p className="text-xs text-green-600 flex items-center gap-1 py-1"><CheckCircle size={12} /> Verified successfully.</p>}
-          {verifyStatus === 'failed' && <p className="text-xs text-red-600 flex items-center gap-1 py-1"><AlertCircle size={12} /> Token is invalid or expired.</p>}
+          {verifyStatus === 'valid' && <p className="text-xs text-[var(--color-success)] flex items-center gap-1 py-1"><CheckCircle size={12} /> Verified successfully.</p>}
+          {verifyStatus === 'failed' && <p className="text-xs text-[var(--color-error)] flex items-center gap-1 py-1"><AlertCircle size={12} /> Token is invalid or expired.</p>}
 
           {renderIndexItems('account', 'standard')}
 
@@ -1065,7 +1065,7 @@ function App() {
         {secSettings && (
           <section className="card p-6">
             <h2 className="section-title mb-4">Security</h2>
-            <div className="space-y-0 divide-y divide-gray-100">
+            <div className="space-y-0 divide-y divide-[var(--color-border-subtle)]">
 
               {/* PIN enable/disable */}
               <PrefRow
@@ -1087,11 +1087,11 @@ function App() {
               {/* Disable confirmation */}
               {confirmDisablePin && (
                 <div className="py-3">
-                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <ShieldOff size={15} className="text-amber-600 mt-0.5 shrink-0" />
+                  <div className="flex items-start gap-3 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg p-3">
+                    <ShieldOff size={15} className="text-[var(--color-warning)] mt-0.5 shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm text-amber-800 font-medium">Disable PIN protection?</p>
-                      <p className="text-xs text-amber-700 mt-0.5">Anyone who opens this extension will be able to make changes to your Canvas courses.</p>
+                      <p className="text-sm text-[var(--color-warning)] font-medium">Disable PIN protection?</p>
+                      <p className="text-xs text-[var(--color-warning)] mt-0.5">Anyone who opens this extension will be able to make changes to your Canvas courses.</p>
                       <div className="flex gap-2 mt-2">
                         <button className="btn-danger text-xs px-2 py-1 flex items-center gap-1" onClick={handleDisablePin}>
                           <ShieldOff size={11} /> Disable PIN
@@ -1136,7 +1136,7 @@ function App() {
               {/* Change PIN inline form */}
               {changePinOpen && (
                 <div className="py-4 space-y-3">
-                  <p className="text-sm font-medium text-gray-900">{secSettings.pinEnabled && secSettings.pinHash ? 'Change PIN' : 'Set PIN'}</p>
+                  <p className="text-sm font-medium text-[var(--color-text-body)]">{secSettings.pinEnabled && secSettings.pinHash ? 'Change PIN' : 'Set PIN'}</p>
                   {secSettings.pinEnabled && secSettings.pinHash && (
                     <div>
                       <label className="label">Current PIN</label>
@@ -1176,7 +1176,7 @@ function App() {
                     />
                   </div>
                   {changePinError && (
-                    <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} />{changePinError}</p>
+                    <p className="text-xs text-[var(--color-error)] flex items-center gap-1"><AlertCircle size={12} />{changePinError}</p>
                   )}
                   <div className="flex gap-2">
                     <button
@@ -1197,7 +1197,7 @@ function App() {
               {/* Audit Log */}
               <div className="pt-4 pb-2">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-900">Audit Log</p>
+                  <p className="text-sm font-medium text-[var(--color-text-body)]">Audit Log</p>
                   <div className="flex items-center gap-2">
                     <button
                       className="btn-secondary text-xs flex items-center gap-1"
@@ -1208,13 +1208,13 @@ function App() {
                     </button>
                     {confirmClearAudit ? (
                       <>
-                        <span className="text-xs text-gray-600">Clear all entries?</span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">Clear all entries?</span>
                         <button className="btn-danger text-xs px-2 py-1" onClick={handleClearAuditLog}>Clear</button>
                         <button className="btn-ghost text-xs px-2 py-1" onClick={() => setConfirmClearAudit(false)}>Cancel</button>
                       </>
                     ) : (
                       <button
-                        className="text-xs text-gray-400 hover:text-gray-600"
+                        className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]"
                         onClick={() => setConfirmClearAudit(true)}
                         disabled={auditEntries.length === 0}
                       >
@@ -1224,16 +1224,16 @@ function App() {
                   </div>
                 </div>
                 {auditEntries.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-2">No activity logged yet.</p>
+                  <p className="text-xs text-[var(--color-text-disabled)] py-2">No activity logged yet.</p>
                 ) : (
                   <div className="space-y-1">
                     {auditEntries.map(entry => (
-                      <div key={entry.id} className="flex items-start gap-3 text-xs py-1.5 border-b border-gray-50 last:border-0">
-                        <span className="text-gray-400 shrink-0 w-32">
+                      <div key={entry.id} className="flex items-start gap-3 text-xs py-1.5 border-b border-[var(--color-border-subtle)] last:border-0">
+                        <span className="text-[var(--color-text-disabled)] shrink-0 w-32">
                           {new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                         </span>
-                        <span className="text-gray-700 flex-1">{entry.summary}</span>
-                        <span className={`shrink-0 ${entry.pinVerified === true ? 'text-green-600' : 'text-gray-400'}`}>
+                        <span className="text-[var(--color-text-secondary)] flex-1">{entry.summary}</span>
+                        <span className={`shrink-0 ${entry.pinVerified === true ? 'text-[var(--color-success)]' : 'text-[var(--color-text-disabled)]'}`}>
                           {entry.pinVerified === true ? 'PIN ✓' : 'No PIN'}
                         </span>
                       </div>
@@ -1262,7 +1262,7 @@ function App() {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
                     (prefs.themeMode ?? 'system') === value
                       ? 'text-white border-transparent'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
                   }`}
                   style={(prefs.themeMode ?? 'system') === value
                     ? { backgroundColor: 'var(--cpt-color)', borderColor: 'var(--cpt-color)' }
@@ -1288,7 +1288,7 @@ function App() {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
                     (prefs.homepageDisplayMode ?? 'tiles') === value
                       ? 'text-white border-transparent'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
                   }`}
                   style={(prefs.homepageDisplayMode ?? 'tiles') === value
                     ? { backgroundColor: 'var(--cpt-color)', borderColor: 'var(--cpt-color)' }
@@ -1315,7 +1315,7 @@ function App() {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
                     (prefs.palette ?? 'bauhaus') === value
                       ? 'text-white border-transparent'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
                   }`}
                   style={(prefs.palette ?? 'bauhaus') === value
                     ? { backgroundColor: 'var(--cpt-color)', borderColor: 'var(--cpt-color)' }
@@ -1340,18 +1340,18 @@ function App() {
               {renderIndexItems('bulkEditor', 'advanced')}
               {/* Visible columns (complex object — inline) */}
               <div className="py-2.5">
-                <p className="text-sm font-medium text-gray-900 mb-2">Visible columns</p>
-                <p className="text-xs text-gray-500 mb-3">Choose which columns appear in the Bulk Editor table.</p>
+                <p className="text-sm font-medium text-[var(--color-text-body)] mb-2">Visible columns</p>
+                <p className="text-xs text-[var(--color-text-muted)] mb-3">Choose which columns appear in the Bulk Editor table.</p>
                 <div className="grid grid-cols-2 gap-1">
                   {Object.entries(prefs.bulkEditorVisibleColumns ?? DEFAULTS.bulkEditorVisibleColumns).map(([col, visible]) => (
                     <button
                       key={col}
                       type="button"
                       onClick={() => setPref('bulkEditorVisibleColumns', { ...(prefs.bulkEditorVisibleColumns ?? DEFAULTS.bulkEditorVisibleColumns), [col]: !visible })}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors text-left"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--color-bg-hover)] transition-colors text-left"
                     >
                       <StyledCheck checked={visible} />
-                      <span className="text-sm text-gray-700 capitalize">{col === 'dueAt' ? 'Due date' : col === 'unlockAt' ? 'Available from' : col === 'lockAt' ? 'Available until' : col}</span>
+                      <span className="text-sm text-[var(--color-text-secondary)] capitalize">{col === 'dueAt' ? 'Due date' : col === 'unlockAt' ? 'Available from' : col === 'lockAt' ? 'Available until' : col}</span>
                     </button>
                   ))}
                 </div>
@@ -1363,7 +1363,7 @@ function App() {
 
           {/* Shift null dates warning */}
           {prefs.bulkEditorShiftNullDates === 'set' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800 mt-1">
+            <div className="bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg px-3 py-2 text-xs text-[var(--color-warning)] mt-1">
               Warning: "Set a new date" will create due dates on assignments that currently have none. This may affect teacher workflows or Canvas visibility. Default is Skip.
             </div>
           )}
@@ -1394,8 +1394,8 @@ function App() {
         <SectionCard {...sectionProps('popup')} title="Popup" hasAdvanced={false}>
           {/* Pinned tools */}
           <div className="py-2.5">
-            <p className="text-sm font-medium text-gray-900 mb-0.5">Pinned tools</p>
-            <p className="text-xs text-gray-500 mb-2">Deselecting all shows every tool.</p>
+            <p className="text-sm font-medium text-[var(--color-text-body)] mb-0.5">Pinned tools</p>
+            <p className="text-xs text-[var(--color-text-muted)] mb-2">Deselecting all shows every tool.</p>
             <div className="space-y-0.5">
               {TOOLS.map(tool => {
                 const pinnedIds = prefs.popupPinnedTools
@@ -1411,11 +1411,11 @@ function App() {
                         : [...current, tool.id]
                       setPref('popupPinnedTools', next.length === TOOLS.length ? null : next)
                     }}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors"
                   >
                     <StyledCheck checked={isChecked} />
-                    <tool.Icon size={14} className="text-gray-400 shrink-0" />
-                    <span className="text-sm text-gray-700">{tool.label}</span>
+                    <tool.Icon size={14} className="text-[var(--color-text-disabled)] shrink-0" />
+                    <span className="text-sm text-[var(--color-text-secondary)]">{tool.label}</span>
                   </button>
                 )
               })}
@@ -1423,11 +1423,11 @@ function App() {
           </div>
 
           {/* Course shortcuts */}
-          <div className="pt-3 mt-1 border-t border-gray-100">
-            <p className="text-sm font-medium text-gray-900 mb-0.5">Course shortcuts</p>
-            <p className="text-xs text-gray-500 mb-3">Selected courses appear as quick-launch buttons in the popup.</p>
+          <div className="pt-3 mt-1 border-t border-[var(--color-border-subtle)]">
+            <p className="text-sm font-medium text-[var(--color-text-body)] mb-0.5">Course shortcuts</p>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">Selected courses appear as quick-launch buttons in the popup.</p>
             <div className="relative mb-2">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)]" />
               <input
                 type="text"
                 value={courseSearch}
@@ -1438,7 +1438,7 @@ function App() {
             </div>
             <div className="space-y-0.5 max-h-52 overflow-y-auto">
               {filteredCourses.length === 0 ? (
-                <p className="text-xs text-gray-400 px-3 py-2">
+                <p className="text-xs text-[var(--color-text-disabled)] px-3 py-2">
                   {courses.length === 0 ? 'Loading courses…' : 'No courses match your search.'}
                 </p>
               ) : filteredCourses.map(course => {
@@ -1448,11 +1448,11 @@ function App() {
                     key={course.id}
                     type="button"
                     onClick={() => toggleCourseShortcut(course)}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors"
                   >
                     <StyledCheck checked={isChecked} />
-                    <span className="text-sm text-gray-700 text-left truncate">{course.name}</span>
-                    {course.term && <span className="text-xs text-gray-400 shrink-0 ml-auto">{course.term}</span>}
+                    <span className="text-sm text-[var(--color-text-secondary)] text-left truncate">{course.name}</span>
+                    {course.term && <span className="text-xs text-[var(--color-text-disabled)] shrink-0 ml-auto">{course.term}</span>}
                   </button>
                 )
               })}
@@ -1473,17 +1473,17 @@ function App() {
           {/* Storage usage */}
           {storageUsage && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-900">Storage usage</p>
+              <p className="text-sm font-medium text-[var(--color-text-body)]">Storage usage</p>
               <StorageBar label="Local cache" used={storageUsage.local} max={5 * 1024 * 1024} />
               <StorageBar label="Synced data" used={storageUsage.sync} max={100 * 1024} />
             </div>
           )}
 
           {/* Export / Import settings */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
             <div>
-              <p className="text-sm font-medium text-gray-900">Settings backup</p>
-              <p className="text-xs text-gray-500 mt-0.5">Export your preferences or restore from a backup file.</p>
+              <p className="text-sm font-medium text-[var(--color-text-body)]">Settings backup</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Export your preferences or restore from a backup file.</p>
             </div>
             <div className="flex gap-2">
               <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={handleExportSettings}>
@@ -1496,44 +1496,44 @@ function App() {
             </div>
           </div>
           {importError && (
-            <p role="alert" className="text-xs text-red-600 flex items-center gap-1 -mt-2">
+            <p role="alert" className="text-xs text-[var(--color-error)] flex items-center gap-1 -mt-2">
               <AlertCircle size={12} aria-hidden="true" /> {importError}
             </p>
           )}
 
           {/* Clear change logs */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
             <div>
-              <p className="text-sm font-medium text-gray-900">Change logs</p>
-              <p className="text-xs text-gray-500 mt-0.5">All bulk edit history across all courses.</p>
+              <p className="text-sm font-medium text-[var(--color-text-body)]">Change logs</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">All bulk edit history across all courses.</p>
             </div>
             {confirmClearLogs ? (
               <div role="alert" className="flex items-center gap-2">
-                <span className="text-xs text-gray-600">Clear all logs?</span>
+                <span className="text-xs text-[var(--color-text-secondary)]">Clear all logs?</span>
                 <button className="btn-danger text-xs px-2 py-1" onClick={clearLogs}>Clear</button>
                 <button className="btn-ghost text-xs" onClick={() => setConfirmClearLogs(false)}>Cancel</button>
               </div>
             ) : (
-              <button className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50" onClick={() => setConfirmClearLogs(true)}>
+              <button className="btn-secondary text-sm text-[var(--color-error)] border-[color-mix(in_srgb,var(--color-error)_32%,var(--color-bg-surface))] hover:bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))]" onClick={() => setConfirmClearLogs(true)}>
                 Clear All Logs
               </button>
             )}
           </div>
 
           {/* Clear templates */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
             <div>
-              <p className="text-sm font-medium text-gray-900">Templates</p>
-              <p className="text-xs text-gray-500 mt-0.5">All saved templates and folders.</p>
+              <p className="text-sm font-medium text-[var(--color-text-body)]">Templates</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">All saved templates and folders.</p>
             </div>
             {confirmClearTemplates ? (
               <div role="alert" className="flex items-center gap-2">
-                <span className="text-xs text-gray-600">Delete all templates?</span>
+                <span className="text-xs text-[var(--color-text-secondary)]">Delete all templates?</span>
                 <button className="btn-danger text-xs px-2 py-1" onClick={clearTemplates}>Delete</button>
                 <button className="btn-ghost text-xs" onClick={() => setConfirmClearTemplates(false)}>Cancel</button>
               </div>
             ) : (
-              <button className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50" onClick={() => setConfirmClearTemplates(true)}>
+              <button className="btn-secondary text-sm text-[var(--color-error)] border-[color-mix(in_srgb,var(--color-error)_32%,var(--color-bg-surface))] hover:bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))]" onClick={() => setConfirmClearTemplates(true)}>
                 Clear All Templates
               </button>
             )}
@@ -1543,18 +1543,18 @@ function App() {
         {/* ── About ── */}
         <section className="card p-6 space-y-3">
           <h2 className="section-title">About</h2>
-          <div className="space-y-2 text-sm text-gray-600">
+          <div className="space-y-2 text-sm text-[var(--color-text-secondary)]">
             <div className="flex justify-between items-center">
               <span>Version</span>
               <button
                 onClick={handleVersionClick}
-                className="text-gray-900 font-medium select-none focus:outline-none"
+                className="text-[var(--color-text-body)] font-medium select-none focus:outline-none"
                 title={devUnlocked ? 'Developer mode active' : undefined}
               >
                 {version}{devUnlocked ? ' [dev]' : ''}
               </button>
             </div>
-            <div className="flex justify-between"><span>License</span><span className="text-gray-900">MIT Open Source</span></div>
+            <div className="flex justify-between"><span>License</span><span className="text-[var(--color-text-body)]">MIT Open Source</span></div>
             <div className="flex justify-between items-center">
               <span>Source code</span>
               <a
@@ -1568,7 +1568,7 @@ function App() {
             </div>
             <div className="flex justify-between items-center">
               <span>Privacy policy</span>
-              <span className="text-xs text-gray-400">Coming soon</span>
+              <span className="text-xs text-[var(--color-text-disabled)]">Coming soon</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Help &amp; tutorials</span>
@@ -1583,7 +1583,7 @@ function App() {
             </div>
           </div>
           {!devUnlocked && devClickCount > 0 && devClickCount < 7 && (
-            <p className="text-xs text-gray-400 text-right">{7 - devClickCount} more click{7 - devClickCount !== 1 ? 's' : ''}…</p>
+            <p className="text-xs text-[var(--color-text-disabled)] text-right">{7 - devClickCount} more click{7 - devClickCount !== 1 ? 's' : ''}…</p>
           )}
         </section>
 
@@ -1594,7 +1594,7 @@ function App() {
               <h2 className="section-title" style={{ color: 'var(--cpt-color)' }}>Developer</h2>
               <span className="text-xs px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: 'var(--cpt-color)' }}>Unlocked</span>
             </div>
-            <div className="space-y-0 divide-y divide-gray-100">
+            <div className="space-y-0 divide-y divide-[var(--color-border-subtle)]">
               {renderIndexItems('developer', 'standard')}
               {/* Simulate selector failure */}
               <PrefRow title="Simulate selector failure" description="Force a specific selector key to fail so the resilience cascade can be tested.">
@@ -1712,7 +1712,7 @@ function ReconnectModal({ account, onClose, onSuccess }) {
                 type="button"
                 aria-label={showToken ? 'Hide token' : 'Reveal token'}
                 onClick={() => setShowToken(!showToken)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]"
               >
                 {showToken ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
               </button>
@@ -1722,12 +1722,12 @@ function ReconnectModal({ account, onClose, onSuccess }) {
         </div>
 
         {error && (
-          <div role="alert" className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+          <div role="alert" className="flex items-start gap-2 text-sm text-[var(--color-error)] bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-error)_32%,var(--color-bg-surface))] rounded-lg p-3">
             <AlertCircle size={15} className="shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <p className="font-medium">Could not verify token</p>
-              <p className="mt-0.5 text-xs text-red-600">{error}</p>
-              <p className="mt-1 text-xs text-gray-500">Common causes: token not fully copied, token expired, or incorrect Canvas URL.</p>
+              <p className="mt-0.5 text-xs text-[var(--color-error)]">{error}</p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">Common causes: token not fully copied, token expired, or incorrect Canvas URL.</p>
             </div>
           </div>
         )}
@@ -1748,7 +1748,7 @@ function ReconnectModal({ account, onClose, onSuccess }) {
             Need help finding your token?
           </button>
           {showInstructions && (
-            <ol className="mt-3 space-y-1.5 text-sm text-gray-700 list-decimal list-inside bg-gray-50 rounded-lg p-4">
+            <ol className="mt-3 space-y-1.5 text-sm text-[var(--color-text-secondary)] list-decimal list-inside bg-[var(--color-bg-hover)] rounded-lg p-4">
               {[
                 'Open Canvas and go to Account > Settings',
                 'Scroll down to Approved Integrations',
@@ -1771,11 +1771,11 @@ function StorageBar({ label, used, max }) {
   const maxKb = max >= 1024 * 1024 ? `${(max / 1024 / 1024).toFixed(0)} MB` : `${(max / 1024).toFixed(0)} KB`
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-xs text-gray-500">
+      <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
         <span>{label}</span>
         <span>{kb} KB of {maxKb}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-[var(--color-bg-hover)] overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: 'var(--cpt-color)' }} />
       </div>
     </div>
