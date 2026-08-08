@@ -25,7 +25,7 @@ function criterionMaxPoints(crit) {
   return crit.ratings.reduce((m, r) => Math.max(m, r.points), 0)
 }
 
-const inputCls = 'w-full bg-white border border-[#1B1C1A] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[#2563EB]'
+const inputCls = 'w-full bg-white border border-[var(--color-stroke)] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[var(--color-bauhaus-blue-bright)]'
 
 export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null }) {
   const [name, setName]         = useState(rubric?.name ?? '')
@@ -103,19 +103,19 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
   return (
     <div className="space-y-6">
       {/* ── Edit mode header bar (bleeds to panel edges) ─────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1B1C1A] pb-4 bg-[#FEF08A]/40 -m-6 p-6 mb-2 rounded-t-[2px]">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-stroke)] pb-4 bg-[color-mix(in_srgb,var(--color-bauhaus-ochre-light)_40%,transparent)] -m-6 p-6 mb-2 rounded-t-[2px]">
         <div>
-          <span className="px-2 py-0.5 bg-[#1B1C1A] text-[#FEF08A] font-mono font-bold text-[10px] uppercase">
+          <span className="px-2 py-0.5 bg-[var(--color-stroke)] text-[var(--color-bauhaus-ochre-light)] font-mono font-bold text-[10px] uppercase">
             EDIT MODE ACTIVE
           </span>
-          <h2 className="text-2xl font-black text-[#1B1C1A] uppercase tracking-tight mt-1">
+          <h2 className="text-2xl font-black text-[var(--color-stroke)] uppercase tracking-tight mt-1">
             {rubric ? `EDITING: ${name || 'UNTITLED RUBRIC'}` : 'NEW RUBRIC'}
           </h2>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-2 bg-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA] flex items-center gap-1.5"
+            className="px-3 py-2 bg-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[var(--color-container-inset)] flex items-center gap-1.5"
           >
             <X className="w-3.5 h-3.5" />
             CANCEL
@@ -123,7 +123,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="px-5 py-2 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#047857] disabled:opacity-40 flex items-center gap-1.5"
+            className="px-5 py-2 bg-[var(--color-domain-grading)] text-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-grading)_85%,black)] disabled:opacity-40 flex items-center gap-1.5"
           >
             <Save className="w-3.5 h-3.5" />
             SAVE RUBRIC
@@ -132,7 +132,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
       </div>
 
       {/* ── Name + Category ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F5] p-4 border border-[#1B1C1A] rounded-[2px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[var(--color-canvas-paper)] p-4 border border-[var(--color-stroke)] rounded-[2px]">
         <div>
           <label className="block text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1">
             Rubric Title
@@ -160,15 +160,15 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
 
       {/* ── Criteria ─────────────────────────────────────────────────────── */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between border-b border-[#1B1C1A] pb-2">
-          <h3 className="font-mono font-extrabold uppercase text-[#1B1C1A] flex items-center gap-2 text-xs">
-            <Layers className="w-4 h-4 text-[#059669]" />
+        <div className="flex items-center justify-between border-b border-[var(--color-stroke)] pb-2">
+          <h3 className="font-mono font-extrabold uppercase text-[var(--color-stroke)] flex items-center gap-2 text-xs">
+            <Layers className="w-4 h-4 text-[var(--color-domain-grading)]" />
             CRITERIA & RATING LEVELS ({criteria.length})
           </h3>
           <button
             type="button"
             onClick={addCriterion}
-            className="px-3 py-1.5 bg-[#2563EB] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#1D4ED8] flex items-center gap-1"
+            className="px-3 py-1.5 bg-[var(--color-bauhaus-blue-bright)] text-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-bauhaus-blue-bright)_85%,black)] flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
             ADD CRITERION
@@ -179,27 +179,27 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           const maxPts = criterionMaxPoints(crit)
           const open = expanded.has(crit.id)
           return (
-            <div key={crit.id} className="border-2 border-[#1B1C1A] rounded-[2px] overflow-hidden">
+            <div key={crit.id} className="border-2 border-[var(--color-stroke)] rounded-[2px] overflow-hidden">
               {/* Criterion header */}
-              <div className="bg-[#EFEEEA] flex items-center gap-2 px-3 py-2">
+              <div className="bg-[var(--color-container-inset)] flex items-center gap-2 px-3 py-2">
                 <button
                   type="button"
                   onClick={() => toggleExpand(crit.id)}
-                  className="text-[var(--color-text-muted)] hover:text-[#1B1C1A] shrink-0"
+                  className="text-[var(--color-text-muted)] hover:text-[var(--color-stroke)] shrink-0"
                   aria-label={open ? 'Collapse' : 'Expand'}
                 >
                   {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
-                <span className="px-1.5 py-0.5 bg-[#1B1C1A] text-white font-mono font-bold text-[10px] uppercase shrink-0">
+                <span className="px-1.5 py-0.5 bg-[var(--color-stroke)] text-white font-mono font-bold text-[10px] uppercase shrink-0">
                   CRITERION #{idx + 1}
                 </span>
                 <input
-                  className="flex-1 bg-transparent border-0 text-xs font-mono font-bold text-[#1B1C1A] placeholder-[var(--color-text-disabled)] focus:outline-none min-w-0"
+                  className="flex-1 bg-transparent border-0 text-xs font-mono font-bold text-[var(--color-stroke)] placeholder-[var(--color-text-disabled)] focus:outline-none min-w-0"
                   placeholder={`Criterion title…`}
                   value={crit.description}
                   onChange={e => updateCriterion(crit.id, 'description', e.target.value)}
                 />
-                <span className="text-[10px] font-mono text-[#2563EB] font-bold shrink-0">
+                <span className="text-[10px] font-mono text-[var(--color-bauhaus-blue-bright)] font-bold shrink-0">
                   {maxPts} PTS
                 </span>
                 <div className="flex items-center gap-0.5 shrink-0">
@@ -207,7 +207,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                     type="button"
                     disabled={idx === 0}
                     onClick={() => moveCriterion(crit.id, -1)}
-                    className="p-0.5 text-[var(--color-text-disabled)] hover:text-[#1B1C1A] disabled:opacity-25"
+                    className="p-0.5 text-[var(--color-text-disabled)] hover:text-[var(--color-stroke)] disabled:opacity-25"
                     aria-label="Move up"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
@@ -216,7 +216,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                     type="button"
                     disabled={idx === criteria.length - 1}
                     onClick={() => moveCriterion(crit.id, 1)}
-                    className="p-0.5 text-[var(--color-text-disabled)] hover:text-[#1B1C1A] disabled:opacity-25"
+                    className="p-0.5 text-[var(--color-text-disabled)] hover:text-[var(--color-stroke)] disabled:opacity-25"
                     aria-label="Move down"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
@@ -225,7 +225,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                     type="button"
                     onClick={() => removeCriterion(crit.id)}
                     disabled={criteria.length === 1}
-                    className="text-[#B7102A] hover:text-[#991B1B] disabled:opacity-25 text-[11px] font-mono font-bold uppercase flex items-center gap-1 ml-1"
+                    className="text-[var(--color-domain-alert)] hover:text-[color-mix(in_srgb,var(--color-domain-alert)_85%,black)] disabled:opacity-25 text-[11px] font-mono font-bold uppercase flex items-center gap-1 ml-1"
                     aria-label="Remove criterion"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -235,7 +235,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
 
               {/* Criterion body */}
               {open && (
-                <div className="bg-white px-3 py-3 space-y-3 border-t border-[#E3E2DF]">
+                <div className="bg-white px-3 py-3 space-y-3 border-t border-[var(--color-grid-divider)]">
                   <textarea
                     className={`${inputCls} resize-none`}
                     rows={2}
@@ -253,17 +253,17 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                       <button
                         type="button"
                         onClick={() => addRating(crit.id)}
-                        className="text-[10px] font-mono font-bold uppercase text-[#059669] flex items-center gap-1 hover:underline"
+                        className="text-[10px] font-mono font-bold uppercase text-[var(--color-domain-grading)] flex items-center gap-1 hover:underline"
                       >
                         <Plus className="w-3 h-3" /> ADD RATING LEVEL
                       </button>
                     </div>
 
-                    <div className="border border-[#1B1C1A] rounded-[2px] divide-y divide-[#1B1C1A] overflow-hidden bg-white">
+                    <div className="border border-[var(--color-stroke)] rounded-[2px] divide-y divide-[var(--color-stroke)] overflow-hidden bg-white">
                       {[...crit.ratings]
                         .sort((a, b) => b.points - a.points)
                         .map(r => (
-                          <div key={r.id} className="flex items-center gap-3 p-2.5 bg-[#FAF9F5] hover:bg-white transition-colors">
+                          <div key={r.id} className="flex items-center gap-3 p-2.5 bg-[var(--color-canvas-paper)] hover:bg-white transition-colors">
                             {/* Points on left */}
                             <div className="w-28 shrink-0 flex items-center gap-1.5">
                               <span className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)]">PTS:</span>
@@ -271,7 +271,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                                 type="number"
                                 min="0"
                                 step="0.5"
-                                className="w-full p-1.5 bg-white border border-[#1B1C1A] font-bold text-xs font-mono rounded-[2px] text-[#059669] text-center focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                                className="w-full p-1.5 bg-white border border-[var(--color-stroke)] font-bold text-xs font-mono rounded-[2px] text-[var(--color-domain-grading)] text-center focus:outline-none focus:ring-1 focus:ring-[var(--color-domain-grading)]"
                                 value={r.points}
                                 onChange={e => updateRating(crit.id, r.id, 'points', parseFloat(e.target.value) || 0)}
                                 aria-label="Points"
@@ -280,7 +280,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                             {/* Description on right */}
                             <div className="flex-1">
                               <input
-                                className="w-full p-1.5 bg-white border border-[var(--color-border)] font-mono text-xs text-[#1B1C1A] rounded-[2px] focus:outline-none focus:border-[#1B1C1A]"
+                                className="w-full p-1.5 bg-white border border-[var(--color-border)] font-mono text-xs text-[var(--color-stroke)] rounded-[2px] focus:outline-none focus:border-[var(--color-stroke)]"
                                 placeholder="Rating level description…"
                                 value={r.description}
                                 onChange={e => updateRating(crit.id, r.id, 'description', e.target.value)}
@@ -290,7 +290,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                               type="button"
                               disabled={crit.ratings.length === 1}
                               onClick={() => removeRating(crit.id, r.id)}
-                              className="p-1.5 text-[var(--color-text-disabled)] hover:text-[#B7102A] disabled:opacity-25 shrink-0 transition-colors"
+                              className="p-1.5 text-[var(--color-text-disabled)] hover:text-[var(--color-domain-alert)] disabled:opacity-25 shrink-0 transition-colors"
                               aria-label="Remove rating"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -307,12 +307,12 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
       </div>
 
       {/* ── Bottom action bar ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between pt-4 border-t-2 border-[#1B1C1A]">
+      <div className="flex items-center justify-between pt-4 border-t-2 border-[var(--color-stroke)]">
         {onDelete ? (
           <button
             type="button"
             onClick={onDelete}
-            className="px-3 py-2 bg-white border border-[#B7102A] text-[#B7102A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#FEF2F2] flex items-center gap-1.5"
+            className="px-3 py-2 bg-white border border-[var(--color-domain-alert)] text-[var(--color-domain-alert)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-alert)_6%,white)] flex items-center gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5" />
             DELETE THIS RUBRIC
@@ -321,14 +321,14 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
         <div className="flex items-center gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA]"
+            className="px-4 py-2 bg-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[var(--color-container-inset)]"
           >
             {rubric ? 'CANCEL' : 'DISCARD'}
           </button>
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="px-6 py-2 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-extrabold text-xs uppercase rounded-[2px] hover:bg-[#047857] disabled:opacity-40 flex items-center gap-2"
+            className="px-6 py-2 bg-[var(--color-domain-grading)] text-white border border-[var(--color-stroke)] font-mono font-extrabold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-grading)_85%,black)] disabled:opacity-40 flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             SAVE RUBRIC
