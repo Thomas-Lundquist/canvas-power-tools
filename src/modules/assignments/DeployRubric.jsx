@@ -13,12 +13,12 @@ function Toggle({ checked, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex w-12 h-6 border border-[#1B1C1A] rounded-[2px] transition-colors shrink-0 ${
-        checked ? 'bg-[#059669]' : 'bg-[#FAF9F5]'
+      className={`relative inline-flex w-12 h-6 border border-[var(--color-stroke)] rounded-[2px] transition-colors shrink-0 ${
+        checked ? 'bg-[var(--color-domain-grading)]' : 'bg-[var(--color-canvas-paper)]'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 bg-white border border-[#1B1C1A] rounded-[2px] transition-all ${
+        className={`absolute top-0.5 h-5 w-5 bg-white border border-[var(--color-stroke)] rounded-[2px] transition-all ${
           checked ? 'left-[calc(100%-1.375rem)]' : 'left-0.5'
         }`}
       />
@@ -28,7 +28,7 @@ function Toggle({ checked, onChange }) {
 }
 
 const labelCls = 'block text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1'
-const selectCls = 'w-full bg-white border border-[#1B1C1A] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[#2563EB]'
+const selectCls = 'w-full bg-white border border-[var(--color-stroke)] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[var(--color-bauhaus-blue-bright)]'
 
 export default function DeployRubric({ rubric, onDone, onBack }) {
   const { requirePin } = usePinGate()
@@ -112,16 +112,16 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
   if (result) {
     return (
       <div className="space-y-5">
-        <div className="border-b border-[#E3E2DF] pb-3">
+        <div className="border-b border-[var(--color-grid-divider)] pb-3">
           <span className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-disabled)]">
             {result.success ? 'DEPLOY COMPLETE' : 'DEPLOY FAILED'}
           </span>
         </div>
 
-        <div className={`border border-[#1B1C1A] rounded-[2px] p-4 ${result.success ? 'bg-[#ECFDF5]' : 'bg-[#FEF2F2]'}`}>
+        <div className={`border border-[var(--color-stroke)] rounded-[2px] p-4 ${result.success ? 'bg-[color-mix(in_srgb,var(--color-domain-grading)_8%,white)]' : 'bg-[color-mix(in_srgb,var(--color-domain-alert)_6%,white)]'}`}>
           {result.success ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[#059669] font-mono font-bold text-xs uppercase">
+              <div className="flex items-center gap-2 text-[var(--color-domain-grading)] font-mono font-bold text-xs uppercase">
                 <CheckCircle className="w-4 h-4 shrink-0" />
                 RUBRIC CREATED IN {result.course?.name}
               </div>
@@ -137,7 +137,7 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-[#B7102A] font-mono text-xs">
+            <div className="flex items-center gap-2 text-[var(--color-domain-alert)] font-mono text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {result.error}
             </div>
@@ -148,14 +148,14 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
           {result.success && (
             <button
               onClick={() => setResult(null)}
-              className="px-3 py-1.5 bg-[#FAF9F5] border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA]"
+              className="px-3 py-1.5 bg-[var(--color-canvas-paper)] border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[var(--color-container-inset)]"
             >
               DEPLOY AGAIN
             </button>
           )}
           <button
             onClick={onDone}
-            className="px-4 py-1.5 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#047857]"
+            className="px-4 py-1.5 bg-[var(--color-domain-grading)] text-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-grading)_85%,black)]"
           >
             DONE
           </button>
@@ -167,9 +167,9 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
   return (
     <div className="space-y-5">
       {/* ── Deploy header ──────────────────────────────────────────────── */}
-      <div className="border-b border-[#E3E2DF] pb-3">
+      <div className="border-b border-[var(--color-grid-divider)] pb-3">
         <span className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-disabled)]">DEPLOY TO CANVAS</span>
-        <h2 className="text-xl font-black text-[#1B1C1A] uppercase tracking-tight mt-0.5">
+        <h2 className="text-xl font-black text-[var(--color-stroke)] uppercase tracking-tight mt-0.5">
           {rubric.name}
         </h2>
         <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5">
@@ -178,7 +178,7 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
       </div>
 
       {/* ── Form ───────────────────────────────────────────────────────── */}
-      <div className="bg-[#EFEEEA] border border-[#1B1C1A] rounded-[2px] p-4 space-y-4">
+      <div className="bg-[var(--color-container-inset)] border border-[var(--color-stroke)] rounded-[2px] p-4 space-y-4">
         <div>
           <label className={labelCls}>Target course</label>
           <select
@@ -213,10 +213,10 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
         </div>
 
         {selectedAssignmentId && (
-          <div className="flex items-center gap-3 pt-3 border-t border-[#E3E2DF]">
+          <div className="flex items-center gap-3 pt-3 border-t border-[var(--color-grid-divider)]">
             <Toggle checked={useForGrading} onChange={setUseForGrading} />
             <div>
-              <p className="text-xs font-mono font-bold uppercase text-[#1B1C1A]">Use for grading</p>
+              <p className="text-xs font-mono font-bold uppercase text-[var(--color-stroke)]">Use for grading</p>
               <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5">
                 {useForGrading
                   ? 'Rubric scores feed into the assignment grade.'
@@ -228,22 +228,22 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
       </div>
 
       {/* ── Criteria preview ───────────────────────────────────────────── */}
-      <div className="border border-[#E3E2DF] rounded-[2px] p-3 space-y-1.5">
+      <div className="border border-[var(--color-grid-divider)] rounded-[2px] p-3 space-y-1.5">
         <p className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-disabled)] mb-2">Criteria preview</p>
         {rubric.criteria.map(crit => {
           const maxPts = crit.ratings.reduce((m, r) => Math.max(m, r.points), 0)
           return (
             <div key={crit.id} className="flex items-baseline justify-between text-xs font-mono">
-              <span className="text-[#1B1C1A] truncate mr-3">
+              <span className="text-[var(--color-stroke)] truncate mr-3">
                 {crit.description || <em className="text-[var(--color-text-disabled)]">Unnamed criterion</em>}
               </span>
               <span className="text-[var(--color-text-disabled)] shrink-0">{maxPts} pts</span>
             </div>
           )
         })}
-        <div className="pt-2 border-t border-[#E3E2DF] flex justify-between text-xs font-mono font-bold">
+        <div className="pt-2 border-t border-[var(--color-grid-divider)] flex justify-between text-xs font-mono font-bold">
           <span className="text-[var(--color-text-muted)] uppercase">Total</span>
-          <span className="text-[#1B1C1A]">{totalPoints} pts</span>
+          <span className="text-[var(--color-stroke)]">{totalPoints} pts</span>
         </div>
       </div>
 
@@ -251,14 +251,14 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
       <div className="flex justify-between">
         <button
           onClick={onBack}
-          className="px-3 py-1.5 bg-[#FAF9F5] border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA]"
+          className="px-3 py-1.5 bg-[var(--color-canvas-paper)] border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[var(--color-container-inset)]"
         >
           ← BACK
         </button>
         <button
           disabled={!selectedCourseId || deploying}
           onClick={deploy}
-          className="px-4 py-1.5 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#047857] disabled:opacity-40 flex items-center gap-2"
+          className="px-4 py-1.5 bg-[var(--color-domain-grading)] text-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-grading)_85%,black)] disabled:opacity-40 flex items-center gap-2"
         >
           {deploying
             ? <><Loader className="w-3.5 h-3.5 animate-spin" /> CREATING…</>
