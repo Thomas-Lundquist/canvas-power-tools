@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { X, Loader, Users } from 'lucide-react'
+import Callout from '../../components/Callout.jsx'
 
 // ── Assignment algorithms ──────────────────────────────────────────────────
 
@@ -87,7 +88,7 @@ export default function AutoAssignModal({ students, categoryName, existingGroupC
         type="button"
         onClick={() => setMethod(value)}
         className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
-          active ? 'border-transparent' : 'border-gray-200 hover:border-gray-300'
+          active ? 'border-transparent' : 'border-[var(--color-border)] hover:border-[var(--color-border)]'
         }`}
         style={active ? { borderColor: 'var(--cpt-color)', backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)' } : undefined}
       >
@@ -100,21 +101,21 @@ export default function AutoAssignModal({ students, categoryName, existingGroupC
           >
             {active && <span className="w-1.5 h-1.5 rounded-full block" style={{ backgroundColor: 'white' }} />}
           </span>
-          <span className={`text-sm font-medium ${active ? 'text-gray-900' : 'text-gray-700'}`}>{label}</span>
+          <span className={`text-sm font-medium ${active ? 'text-[var(--color-text-body)]' : 'text-[var(--color-text-secondary)]'}`}>{label}</span>
         </div>
-        <p className="text-xs text-gray-500 mt-1 pl-6">{description}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-1 pl-6">{description}</p>
       </button>
     )
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-[var(--color-bg-surface)] rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[var(--color-border-subtle)] sticky top-0 bg-[var(--color-bg-surface)]">
           <div>
-            <h3 className="font-semibold text-gray-900">Auto-assign Students</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <h3 className="font-semibold text-[var(--color-text-body)]">Auto-assign Students</h3>
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
               {students.length} students in "{categoryName}"
               {existingGroupCount > 0 && ` · ${existingGroupCount} existing groups`}
             </p>
@@ -133,37 +134,37 @@ export default function AutoAssignModal({ students, categoryName, existingGroupC
               {/* Config inputs */}
               {method !== 'equalCount' ? (
                 <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium text-gray-700 shrink-0">Number of groups</label>
+                  <label className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Number of groups</label>
                   <input
                     type="number" min="2" max={Math.max(2, students.length)}
                     value={numGroups}
                     onChange={e => setNumGroups(Math.max(2, parseInt(e.target.value) || 2))}
                     className="input w-20 text-sm"
                   />
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-[var(--color-text-disabled)]">
                     ~{Math.round(students.length / numGroups)} students each
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium text-gray-700 shrink-0">Students per group</label>
+                  <label className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Students per group</label>
                   <input
                     type="number" min="1" max={students.length}
                     value={perGroup}
                     onChange={e => setPerGroup(Math.max(1, parseInt(e.target.value) || 1))}
                     className="input w-20 text-sm"
                   />
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-[var(--color-text-disabled)]">
                     → {Math.ceil(students.length / perGroup)} groups
                   </span>
                 </div>
               )}
 
               {existingGroupCount > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+                <Callout tone="warning">
                   This will add new groups alongside the {existingGroupCount} existing group{existingGroupCount !== 1 ? 's' : ''}.
                   Remove old groups manually if needed.
-                </div>
+                </Callout>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
@@ -182,23 +183,23 @@ export default function AutoAssignModal({ students, categoryName, existingGroupC
               {/* Preview */}
               <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                 {preview.map((group, i) => (
-                  <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-gray-50">
-                      <span className="text-sm font-semibold text-gray-800">{group.name}</span>
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <div key={i} className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-bg-hover)]">
+                      <span className="text-sm font-semibold text-[var(--color-text-body)]">{group.name}</span>
+                      <span className="text-xs text-[var(--color-text-disabled)] flex items-center gap-1">
                         <Users size={12} /> {group.students.length}
                       </span>
                     </div>
                     <div className="px-3 py-2 space-y-0.5 max-h-32 overflow-y-auto">
                       {group.students.map(s => (
-                        <p key={s.userId} className="text-xs text-gray-700">{s.userSortableName ?? s.userName}</p>
+                        <p key={s.userId} className="text-xs text-[var(--color-text-secondary)]">{s.userSortableName ?? s.userName}</p>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between pt-2 border-t border-gray-100">
+              <div className="flex justify-between pt-2 border-t border-[var(--color-border-subtle)]">
                 <button className="btn-secondary" onClick={() => setStep('config')}>← Back</button>
                 <button
                   className="btn-primary"
