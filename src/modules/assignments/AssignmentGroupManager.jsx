@@ -302,10 +302,10 @@ export default function AssignmentGroupManager({ courseId, courses }) {
       {/* Right column: error, group accordion, weight footer */}
       <div>
         {error && (
-          <div className="mb-4 border border-[var(--color-domain-alert)] bg-red-50 rounded-[2px] p-3 flex items-center gap-2 text-sm text-red-700">
+          <div className="mb-4 border border-[var(--color-domain-alert)] bg-[color-mix(in_srgb,var(--color-domain-alert)_12%,var(--color-bg-surface))] rounded-[2px] p-3 flex items-center gap-2 text-sm text-[var(--color-domain-alert)]">
             <AlertCircle size={14} className="shrink-0" />
             {error}
-            <button className="ml-auto text-red-400 hover:text-red-600" onClick={() => setError(null)}>
+            <button className="ml-auto text-[var(--color-domain-alert)] hover:text-[color-mix(in_srgb,var(--color-domain-alert)_80%,black)]" onClick={() => setError(null)}>
               <X size={14} />
             </button>
           </div>
@@ -361,11 +361,11 @@ export default function AssignmentGroupManager({ courseId, courses }) {
         {!loadingGroups && weightNonZero && (
           <div className="mt-4 flex items-center gap-2 text-xs font-mono text-[var(--color-text-muted)]">
             <span className="uppercase tracking-wide">Total weight:</span>
-            <span className={`font-bold ${weightOk ? 'text-green-600' : 'text-yellow-600'}`}>
+            <span className={`font-bold ${weightOk ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}`}>
               {weightDisplay}%
             </span>
             {!weightOk && (
-              <span className="text-yellow-500">— should total 100% when weighting is enabled</span>
+              <span className="text-[var(--color-warning)]">— should total 100% when weighting is enabled</span>
             )}
           </div>
         )}
@@ -628,7 +628,7 @@ function ToolbarBtn({ onClick, icon, label, disabled, danger }) {
         'rounded-[1px] flex items-center gap-1 transition-colors',
         'disabled:opacity-30 disabled:cursor-not-allowed',
         danger
-          ? 'border-[var(--color-domain-alert)] text-[var(--color-domain-alert)] hover:bg-red-50'
+          ? 'border-[var(--color-domain-alert)] text-[var(--color-domain-alert)] hover:bg-[color-mix(in_srgb,var(--color-domain-alert)_12%,var(--color-bg-surface))]'
           : 'border-[var(--color-stroke)] text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]',
       ].join(' ')}
     >
