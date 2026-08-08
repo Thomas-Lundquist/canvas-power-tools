@@ -115,7 +115,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
         <div className="flex items-center gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-2 bg-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-gray-100 flex items-center gap-1.5"
+            className="px-3 py-2 bg-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#EFEEEA] flex items-center gap-1.5"
           >
             <X className="w-3.5 h-3.5" />
             CANCEL
@@ -123,7 +123,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="px-5 py-2 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-emerald-700 disabled:opacity-40 flex items-center gap-1.5"
+            className="px-5 py-2 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#047857] disabled:opacity-40 flex items-center gap-1.5"
           >
             <Save className="w-3.5 h-3.5" />
             SAVE RUBRIC
@@ -134,7 +134,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
       {/* ── Name + Category ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F5] p-4 border border-[#1B1C1A] rounded-[2px]">
         <div>
-          <label className="block text-[10px] font-mono font-bold uppercase text-gray-500 mb-1">
+          <label className="block text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1">
             Rubric Title
           </label>
           <input
@@ -145,7 +145,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           />
         </div>
         <div>
-          <label className="block text-[10px] font-mono font-bold uppercase text-gray-500 mb-1">
+          <label className="block text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1">
             Category / Grouping
           </label>
           <select
@@ -168,7 +168,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           <button
             type="button"
             onClick={addCriterion}
-            className="px-3 py-1.5 bg-[#2563EB] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-blue-700 flex items-center gap-1"
+            className="px-3 py-1.5 bg-[#2563EB] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#1D4ED8] flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
             ADD CRITERION
@@ -185,7 +185,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                 <button
                   type="button"
                   onClick={() => toggleExpand(crit.id)}
-                  className="text-gray-500 hover:text-[#1B1C1A] shrink-0"
+                  className="text-[var(--color-text-muted)] hover:text-[#1B1C1A] shrink-0"
                   aria-label={open ? 'Collapse' : 'Expand'}
                 >
                   {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -194,7 +194,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                   CRITERION #{idx + 1}
                 </span>
                 <input
-                  className="flex-1 bg-transparent border-0 text-xs font-mono font-bold text-[#1B1C1A] placeholder-gray-400 focus:outline-none min-w-0"
+                  className="flex-1 bg-transparent border-0 text-xs font-mono font-bold text-[#1B1C1A] placeholder-[var(--color-text-disabled)] focus:outline-none min-w-0"
                   placeholder={`Criterion title…`}
                   value={crit.description}
                   onChange={e => updateCriterion(crit.id, 'description', e.target.value)}
@@ -207,7 +207,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                     type="button"
                     disabled={idx === 0}
                     onClick={() => moveCriterion(crit.id, -1)}
-                    className="p-0.5 text-gray-400 hover:text-[#1B1C1A] disabled:opacity-25"
+                    className="p-0.5 text-[var(--color-text-disabled)] hover:text-[#1B1C1A] disabled:opacity-25"
                     aria-label="Move up"
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
@@ -216,7 +216,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                     type="button"
                     disabled={idx === criteria.length - 1}
                     onClick={() => moveCriterion(crit.id, 1)}
-                    className="p-0.5 text-gray-400 hover:text-[#1B1C1A] disabled:opacity-25"
+                    className="p-0.5 text-[var(--color-text-disabled)] hover:text-[#1B1C1A] disabled:opacity-25"
                     aria-label="Move down"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
@@ -225,7 +225,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                     type="button"
                     onClick={() => removeCriterion(crit.id)}
                     disabled={criteria.length === 1}
-                    className="text-[#B7102A] hover:text-red-800 disabled:opacity-25 text-[11px] font-mono font-bold uppercase flex items-center gap-1 ml-1"
+                    className="text-[#B7102A] hover:text-[#991B1B] disabled:opacity-25 text-[11px] font-mono font-bold uppercase flex items-center gap-1 ml-1"
                     aria-label="Remove criterion"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -247,7 +247,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                   {/* Ratings */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-mono font-bold uppercase text-gray-500">
+                      <p className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)]">
                         RATING LEVELS FOR THIS CRITERION:
                       </p>
                       <button
@@ -266,7 +266,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                           <div key={r.id} className="flex items-center gap-3 p-2.5 bg-[#FAF9F5] hover:bg-white transition-colors">
                             {/* Points on left */}
                             <div className="w-28 shrink-0 flex items-center gap-1.5">
-                              <span className="text-[10px] font-mono font-bold uppercase text-gray-500">PTS:</span>
+                              <span className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)]">PTS:</span>
                               <input
                                 type="number"
                                 min="0"
@@ -280,7 +280,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                             {/* Description on right */}
                             <div className="flex-1">
                               <input
-                                className="w-full p-1.5 bg-white border border-gray-300 font-mono text-xs text-[#1B1C1A] rounded-[2px] focus:outline-none focus:border-[#1B1C1A]"
+                                className="w-full p-1.5 bg-white border border-[var(--color-border)] font-mono text-xs text-[#1B1C1A] rounded-[2px] focus:outline-none focus:border-[#1B1C1A]"
                                 placeholder="Rating level description…"
                                 value={r.description}
                                 onChange={e => updateRating(crit.id, r.id, 'description', e.target.value)}
@@ -290,7 +290,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
                               type="button"
                               disabled={crit.ratings.length === 1}
                               onClick={() => removeRating(crit.id, r.id)}
-                              className="p-1.5 text-gray-400 hover:text-[#B7102A] disabled:opacity-25 shrink-0 transition-colors"
+                              className="p-1.5 text-[var(--color-text-disabled)] hover:text-[#B7102A] disabled:opacity-25 shrink-0 transition-colors"
                               aria-label="Remove rating"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -312,7 +312,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           <button
             type="button"
             onClick={onDelete}
-            className="px-3 py-2 bg-white border border-[#B7102A] text-[#B7102A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-red-50 flex items-center gap-1.5"
+            className="px-3 py-2 bg-white border border-[#B7102A] text-[#B7102A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#FEF2F2] flex items-center gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5" />
             DELETE THIS RUBRIC
@@ -328,7 +328,7 @@ export default function RubricEditor({ rubric, onSave, onCancel, onDelete = null
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="px-6 py-2 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-extrabold text-xs uppercase rounded-[2px] hover:bg-emerald-700 disabled:opacity-40 flex items-center gap-2"
+            className="px-6 py-2 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-extrabold text-xs uppercase rounded-[2px] hover:bg-[#047857] disabled:opacity-40 flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             SAVE RUBRIC
