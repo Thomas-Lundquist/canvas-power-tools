@@ -158,7 +158,7 @@ export default function RubricManager() {
           <h1 className="text-3xl font-black tracking-tight text-[#1B1C1A] uppercase mt-1">
             RUBRIC MANAGER & LIBRARY
           </h1>
-          <p className="text-xs text-gray-600 font-mono mt-0.5">
+          <p className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5">
             Build, save, and deploy rubrics across Canvas courses.
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function RubricManager() {
           </button>
           <button
             onClick={startNew}
-            className="px-4 py-2 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-2 hover:bg-emerald-700"
+            className="px-4 py-2 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-2 hover:bg-[#047857]"
           >
             <Plus className="w-4 h-4" />
             BUILD NEW RUBRIC
@@ -186,7 +186,7 @@ export default function RubricManager() {
         {/* ── Left: Rubric List ──────────────────────────────────────────── */}
         <div className="lg:col-span-4 space-y-3">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-disabled)]" />
             <input
               className="w-full bg-white border border-[#1B1C1A] rounded-[2px] text-xs font-mono p-2 pl-8 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
               placeholder="SEARCH RUBRICS…"
@@ -201,12 +201,12 @@ export default function RubricManager() {
           </div>
 
           {loading ? (
-            <div className="flex items-center gap-2 text-gray-400 py-12 justify-center font-mono text-xs">
+            <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-12 justify-center font-mono text-xs">
               <Loader className="w-4 h-4 animate-spin" /> LOADING…
             </div>
           ) : filtered.length === 0 ? (
             <div className="border border-[#E3E2DF] rounded-[2px] p-6 text-center space-y-2">
-              <p className="text-xs font-mono font-bold uppercase text-gray-500">
+              <p className="text-xs font-mono font-bold uppercase text-[var(--color-text-muted)]">
                 {search.trim() ? 'No rubrics match' : 'No rubrics yet'}
               </p>
               {!search.trim() && (
@@ -233,22 +233,22 @@ export default function RubricManager() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-mono font-bold uppercase text-[#059669] bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 rounded-[2px]">
+                      <span className="text-[10px] font-mono font-bold uppercase text-[#059669] bg-[#ECFDF5] px-1.5 py-0.5 border border-[#A7F3D0] rounded-[2px]">
                         {r.category ?? 'General'}
                       </span>
-                      <span className="text-[10px] font-mono font-bold text-gray-500">
+                      <span className="text-[10px] font-mono font-bold text-[var(--color-text-muted)]">
                         {maxPoints(r)} PTS
                       </span>
                     </div>
                     <h4 className="font-bold text-[#1B1C1A] text-sm leading-tight mb-1">{r.name}</h4>
-                    <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 mt-1.5 pt-1.5 border-t border-[#E3E2DF]">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-text-disabled)] mt-1.5 pt-1.5 border-t border-[#E3E2DF]">
                       <span>{r.criteria.length} {r.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'}</span>
                       <div className="flex items-center gap-1.5">
                         {r.lastUsed && <span>USED {new Date(r.lastUsed).toLocaleDateString()}</span>}
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); handleDuplicate(r) }}
-                          className="p-0.5 rounded-[2px] hover:bg-[#EFEEEA] text-gray-400 hover:text-[#1B1C1A] transition-colors"
+                          className="p-0.5 rounded-[2px] hover:bg-[#EFEEEA] text-[var(--color-text-disabled)] hover:text-[#1B1C1A] transition-colors"
                           aria-label="Duplicate rubric"
                           title="Duplicate rubric"
                         >
@@ -328,7 +328,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
             <span className="text-[10px] font-mono font-bold uppercase text-white bg-[#1B1C1A] px-2 py-0.5 rounded-[2px]">
               {rubric.category ?? 'General'}
             </span>
-            <span className="text-[10px] font-mono font-bold text-gray-500">
+            <span className="text-[10px] font-mono font-bold text-[var(--color-text-muted)]">
               TOTAL: {pts} PTS
             </span>
           </div>
@@ -339,7 +339,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onDeploy}
-            className="px-3 py-1.5 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-1.5 hover:bg-emerald-700"
+            className="px-3 py-1.5 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-1.5 hover:bg-[#047857]"
           >
             <ArrowRight className="w-3.5 h-3.5" />
             DEPLOY
@@ -353,7 +353,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 bg-[#FAF9F5] border border-[#1B1C1A] rounded-[2px] hover:bg-red-50 text-[#B7102A]"
+            className="p-1.5 bg-[#FAF9F5] border border-[#1B1C1A] rounded-[2px] hover:bg-[#FEF2F2] text-[#B7102A]"
             aria-label="Delete rubric"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -362,7 +362,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+        <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-disabled)] flex items-center gap-2">
           <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
           CRITERIA & RATING BREAKDOWN
         </h3>
@@ -374,7 +374,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
             <div key={c.id} className="border border-[#1B1C1A] rounded-[2px] overflow-hidden">
               <div className="bg-[#EFEEEA] p-2.5 border-b border-[#1B1C1A] flex items-center justify-between font-mono text-xs">
                 <span className="font-bold text-[#1B1C1A]">
-                  {idx + 1}. {c.description || <em className="font-normal text-gray-400">Unnamed</em>}
+                  {idx + 1}. {c.description || <em className="font-normal text-[var(--color-text-disabled)]">Unnamed</em>}
                 </span>
                 <span className="font-bold text-[#2563EB] bg-white px-2 py-0.5 border border-[#1B1C1A] rounded-[2px] shrink-0 ml-2">
                   MAX {cPts} PTS
@@ -382,9 +382,9 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
               </div>
               <div className="p-3 bg-white space-y-2">
                 {c.longDescription && (
-                  <p className="text-xs text-gray-500 pb-2 border-b border-[#E3E2DF]">{c.longDescription}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] pb-2 border-b border-[#E3E2DF]">{c.longDescription}</p>
                 )}
-                <div className="border border-gray-300 rounded-[2px] divide-y divide-gray-200 overflow-hidden bg-[#FAF9F5]">
+                <div className="border border-[var(--color-border)] rounded-[2px] divide-y divide-[var(--color-border)] overflow-hidden bg-[#FAF9F5]">
                   {sorted.map(rt => (
                     <div key={rt.id} className="p-3 flex items-start gap-4 hover:bg-white transition-colors">
                       <div className="w-24 shrink-0">
@@ -392,7 +392,7 @@ function RubricDetailView({ rubric, onEdit, onDeploy, onDelete }) {
                           {rt.points} PTS
                         </span>
                       </div>
-                      <p className="flex-1 text-xs text-gray-800 pt-0.5 leading-relaxed font-sans font-medium">
+                      <p className="flex-1 text-xs text-[var(--color-text-body)] pt-0.5 leading-relaxed font-sans font-medium">
                         {rt.description}
                       </p>
                     </div>
@@ -424,11 +424,11 @@ function EmptyPanel({ onNew }) {
       </div>
       <div>
         <p className="font-mono font-black uppercase text-[#1B1C1A] text-sm">NO RUBRIC SELECTED</p>
-        <p className="text-xs text-gray-500 font-mono mt-1">Select from the list or build a new one.</p>
+        <p className="text-xs text-[var(--color-text-muted)] font-mono mt-1">Select from the list or build a new one.</p>
       </div>
       <button
         onClick={onNew}
-        className="px-4 py-2 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-2 hover:bg-emerald-700"
+        className="px-4 py-2 bg-[#059669] text-white font-mono font-bold text-xs uppercase border border-[#1B1C1A] rounded-[2px] flex items-center gap-2 hover:bg-[#047857]"
       >
         <Plus className="w-4 h-4" />
         BUILD FIRST RUBRIC
@@ -452,7 +452,7 @@ function DeleteModal({ onConfirm, onCancel }) {
         <h2 id="rubric-del-title" className="font-mono font-black uppercase text-[#1B1C1A]">
           DELETE RUBRIC?
         </h2>
-        <p className="text-xs text-gray-600 font-mono leading-relaxed">
+        <p className="text-xs text-[var(--color-text-secondary)] font-mono leading-relaxed">
           Removes the local template only. Rubrics already deployed to Canvas are not affected.
         </p>
         <div className="flex justify-end gap-3 pt-2">
@@ -464,7 +464,7 @@ function DeleteModal({ onConfirm, onCancel }) {
           </button>
           <button
             onClick={onConfirm}
-            className="px-3 py-1.5 bg-[#B7102A] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-red-800"
+            className="px-3 py-1.5 bg-[#B7102A] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#991B1B]"
           >
             DELETE
           </button>
@@ -559,7 +559,7 @@ function ImportFromCanvas({ onImport, onClose }) {
           ) : (
             <>
               <div>
-                <label className="block text-[10px] font-mono font-bold uppercase text-gray-500 mb-1">
+                <label className="block text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1">
                   Course
                 </label>
                 <select
@@ -573,15 +573,15 @@ function ImportFromCanvas({ onImport, onClose }) {
               </div>
 
               <div>
-                <p className="text-[10px] font-mono font-bold uppercase text-gray-500 mb-1">
+                <p className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1">
                   Rubrics in this course
                 </p>
                 {loadingRubrics ? (
-                  <div className="flex items-center gap-2 text-gray-400 py-4 text-xs font-mono justify-center">
+                  <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-4 text-xs font-mono justify-center">
                     <Loader className="w-4 h-4 animate-spin" /> LOADING…
                   </div>
                 ) : rubrics.length === 0 ? (
-                  <p className="text-xs font-mono text-gray-400 py-4 text-center uppercase">
+                  <p className="text-xs font-mono text-[var(--color-text-disabled)] py-4 text-center uppercase">
                     No rubrics in this course
                   </p>
                 ) : (
@@ -603,7 +603,7 @@ function ImportFromCanvas({ onImport, onClose }) {
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-[#1B1C1A] truncate font-mono">{r.title}</p>
-                          <p className="text-[10px] text-gray-400 font-mono">
+                          <p className="text-[10px] text-[var(--color-text-disabled)] font-mono">
                             {r.criteria.length} CRITERIA · {r.pointsPossible} PTS
                           </p>
                         </div>
@@ -627,7 +627,7 @@ function ImportFromCanvas({ onImport, onClose }) {
             <button
               onClick={doImport}
               disabled={selectedIds.size === 0 || importing}
-              className="px-4 py-1.5 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-emerald-700 disabled:opacity-40 flex items-center gap-2"
+              className="px-4 py-1.5 bg-[#059669] text-white border border-[#1B1C1A] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[#047857] disabled:opacity-40 flex items-center gap-2"
             >
               {importing
                 ? <><Loader className="w-3.5 h-3.5 animate-spin" /> IMPORTING…</>
