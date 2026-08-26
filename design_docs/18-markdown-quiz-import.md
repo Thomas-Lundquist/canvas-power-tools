@@ -14,6 +14,17 @@ with assignments instead if that proves cleaner.
 
 **Status: proposed — no implementation yet.**
 
+**2026-08-26 addendum:** v1 shipped with CSV as the import entry point instead
+of the Markdown format below, per explicit product decision — everything
+else on this page (internal question model, New Quizzes API target, deploy
+pipeline, unpublished-only rule) is unchanged and was implemented as
+designed. The CSV format lives in the Quiz Authoring plan and produces the
+same internal question-list model described here, so Markdown import and the
+built-in form editor remain valid future entry points into the same
+pipeline — nothing about their design needs to change to add them later. See
+`src/utils/csvQuizParser.js`, `src/api/newQuizzes.js`, and
+`src/modules/content/` for the shipped v1.
+
 ---
 
 ## What It Does

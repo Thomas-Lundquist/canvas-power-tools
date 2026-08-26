@@ -55,6 +55,7 @@ export default defineConfig({
         grading:    resolve(__dirname, 'src/pages/grading/index.html'),
         groups:     resolve(__dirname, 'src/pages/groups/index.html'),
         rubrics:         resolve(__dirname, 'src/pages/rubrics/index.html'),
+        quizAuthoring:   resolve(__dirname, 'src/pages/quiz-authoring/index.html'),
         studentGroups:   resolve(__dirname, 'src/pages/student-groups/index.html'),
         submissionReminders: resolve(__dirname, 'src/pages/submission-reminders/index.html'),
         gradeOutreach:       resolve(__dirname, 'src/pages/grade-outreach/index.html'),

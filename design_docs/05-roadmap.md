@@ -69,7 +69,7 @@ Composer). Tool rows below are annotated `[archetype]` where decided.
 | Rubrics | Built | Build and save rubrics in a cleaner interface than Canvas's native builder. Organize into categories. Attach to any assignment across any course. Copy-as-new for rubrics already used in grading, which Canvas locks against editing. |
 | Assignment Groups | Built | Create and manage Canvas assignment groups. Adjust grade weights. Live preview showing how weight changes affect the class average. |
 | Copy / Duplicate | Built | Copy any assignment from one course to another. Arrives unpublished with no due date. |
-| QTI Import | Planned | Convert a structured spreadsheet into valid QTI XML and import it as a Canvas quiz. Supports multiple choice, true/false, short answer, fill-in-the-blank, and matching. Faster than Canvas's quiz builder for question-heavy assessments. |
+| Quiz Authoring | In Progress | Superseded the old CSV → QTI XML → Classic Quiz plan (see doc 18): writes directly to the New Quizzes REST API instead. v1 imports questions from CSV and creates an unpublished New Quiz with every v1 question type; the in-extension form editor and Markdown import from doc 18 remain future phases. |
 | Peer Review | Planned | Auto-assign peer reviewers. Track review completion status across the class. Send reminders to students who have not completed reviews. |
 
 ---
@@ -184,7 +184,7 @@ scheduled.
 | Extra Credit Handling | Clean interface for marking assignments as extra credit and visualizing the effect on student grades. Lower priority than core grading tools. |
 | Recurring Announcements | Send the same announcement on a repeating schedule. Canvas's API supports one-time scheduled posts only; a reliable recurring system would require local scheduling infrastructure that is fragile if the browser is closed. Requires further design work. |
 | Differentiated Assignments | Assign different work to different groups within the same section. Uses Canvas's assign-to field per group. |
-| Graded Surveys | Include Canvas surveys in QTI Import and template workflows. |
+| Graded Surveys | Include Canvas surveys in Quiz Authoring and template workflows. |
 | Department-Wide Templates | Share template libraries across a department or institution. |
 
 ---

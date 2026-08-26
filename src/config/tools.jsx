@@ -1,7 +1,7 @@
 import {
   LayoutList, BarChart2, Layers, BookTemplate,
   ClipboardList, Users, SplitSquareVertical, Clock,
-  Bell, TrendingDown, Megaphone,
+  Bell, TrendingDown, Megaphone, FileQuestion,
 } from 'lucide-react'
 
 // Single source of truth for all tool pages.
@@ -43,6 +43,15 @@ export const TOOLS = [
     description: 'Edit due dates, availability, points, and publish status across all assignments at once.',
     Icon:        LayoutList,
     path:        'src/pages/bulk-editor/index.html',
+  },
+  {
+    id:          'quiz-authoring',
+    module:      'assignments',
+    label:       'Quiz Authoring',
+    shortLabel:  'Quiz Authoring',
+    description: 'Import a CSV of questions and create a new Canvas quiz in one step.',
+    Icon:        FileQuestion,
+    path:        'src/pages/quiz-authoring/index.html',
   },
   {
     id:          'rubrics',
