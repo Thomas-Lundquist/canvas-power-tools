@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react'
+import { useState, useLayoutEffect, useRef, useMemo } from 'react'
 import {
   Plus, FolderPlus, FileText, ClipboardList, Folder, Layers, ChevronDown,
   MoreHorizontal, Pencil, Trash2, LayoutList, LayoutGrid,
@@ -15,6 +15,7 @@ import Button from '../../components/Button.jsx'
 import IconButton from '../../components/IconButton.jsx'
 import EmptyState from '../../components/EmptyState.jsx'
 import Modal from '../../components/Modal.jsx'
+import Menu from '../../components/Menu.jsx'
 
 const SORT_OPTIONS = [
   { key: 'lastUsed', label: 'Last Used' },
@@ -167,7 +168,7 @@ export default function TemplateLibrary({
             <Button variant="primary" size="sm" onClick={() => onUse(t)}>Use</Button>
           }
           overflow={
-            <OverflowMenu onEdit={() => onEdit(t)} onDelete={() => requestDeleteTemplate(t)} onMove={() => setMovingTemplate(t)} />
+            <TemplateActionsMenu onEdit={() => onEdit(t)} onMove={() => setMovingTemplate(t)} onDelete={() => requestDeleteTemplate(t)} />
           }
         />
       </div>
@@ -229,8 +230,9 @@ export default function TemplateLibrary({
           className="card domain-accent shadow-[var(--shadow-sm)] overflow-hidden"
           style={{ '--domain-color': 'var(--color-domain-assignments)' }}
         >
-          <div className="px-3 py-2.5 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
-            Folders
+          <div className="card-titlebar">
+            <span>Folders</span>
+            <span className="tabular-nums text-[var(--color-text-muted)]">{folders.length}</span>
           </div>
           <div className="p-1.5 space-y-0.5">
             {sidebarFolders.map(f => (
@@ -260,15 +262,21 @@ export default function TemplateLibrary({
               title={isSearching ? `No results for "${search}"` : 'No templates in this folder'}
             />
           ) : viewMode === 'tile' ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4">
               {visibleTemplates.map(renderTile)}
             </div>
           ) : (
             <div
-              className="card domain-accent shadow-[var(--shadow-md)] divide-y divide-[var(--color-border)]"
+              className="card domain-accent shadow-[var(--shadow-md)]"
               style={{ '--domain-color': 'var(--color-domain-assignments)' }}
             >
-              {visibleTemplates.map(renderRow)}
+              <div className="card-titlebar">
+                <span>{isSearching ? 'Results' : 'Templates'}</span>
+                <span className="tabular-nums text-[var(--color-text-muted)]">{visibleTemplates.length}</span>
+              </div>
+              <div className="divide-y divide-[var(--color-border)]">
+                {visibleTemplates.map(renderRow)}
+              </div>
             </div>
           )}
         </div>
@@ -387,43 +395,18 @@ export default function TemplateLibrary({
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function NewDropdown({ onNewTemplate, onNewFolder }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', handle)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', handle)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   return (
-    <div className="relative" ref={ref}>
-      <Button variant="primary" onClick={() => setOpen(v => !v)} aria-haspopup="true" aria-expanded={open}>
-        <Plus size={15} aria-hidden="true" /> New <ChevronDown size={13} aria-hidden="true" />
-      </Button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[10rem]">
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onNewTemplate() }}
-          >
-            <ClipboardList size={14} aria-hidden="true" /> New Template
-          </button>
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onNewFolder() }}
-          >
-            <FolderPlus size={14} aria-hidden="true" /> New Folder
-          </button>
-        </div>
+    <Menu
+      width="10rem"
+      trigger={p => (
+        <Button variant="primary" {...p}>
+          <Plus size={15} aria-hidden="true" /> New <ChevronDown size={13} aria-hidden="true" />
+        </Button>
       )}
-    </div>
+    >
+      <Menu.Item icon={ClipboardList} onSelect={onNewTemplate}>New Template</Menu.Item>
+      <Menu.Item icon={FolderPlus} onSelect={onNewFolder}>New Folder</Menu.Item>
+    </Menu>
   )
 }
 
@@ -510,49 +493,22 @@ function SidebarFolderRow({ folder, selected, onSelect, onRename, onDelete, onDr
 }
 
 function FolderMenu({ folderName, onRename, onDelete, light = false }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', handle)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', handle)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   return (
-    <div className="relative" ref={ref}>
-      <IconButton
-        icon={MoreHorizontal}
-        label={`Options for ${folderName}`}
-        size="sm"
-        className={light ? 'text-white hover:bg-white/20' : ''}
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="true"
-        aria-expanded={open}
-      />
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[9rem]">
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onRename() }}
-          >
-            <Pencil size={13} aria-hidden="true" /> Rename
-          </button>
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onDelete() }}
-          >
-            <Trash2 size={13} aria-hidden="true" /> Delete Folder
-          </button>
-        </div>
+    <Menu
+      width="9rem"
+      trigger={p => (
+        <IconButton
+          icon={MoreHorizontal}
+          label={`Options for ${folderName}`}
+          size="sm"
+          className={light ? 'text-white hover:bg-white/20' : ''}
+          {...p}
+        />
       )}
-    </div>
+    >
+      <Menu.Item icon={Pencil} onSelect={onRename}>Rename</Menu.Item>
+      <Menu.Item icon={Trash2} danger onSelect={onDelete}>Delete Folder</Menu.Item>
+    </Menu>
   )
 }
 
@@ -608,7 +564,6 @@ function DescriptionPreview({ html, Icon }) {
 }
 
 function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, onDragEnd }) {
-  const [hovered, setHovered] = useState(false)
   const isPage = template.type === 'page'
   const Icon = isPage ? FileText : ClipboardList
 
@@ -617,164 +572,62 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
       draggable="true"
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="relative rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-sm)] flex flex-col cursor-grab"
-      style={{ aspectRatio: '3 / 4' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="card overflow-hidden flex flex-col cursor-grab transition-colors hover:border-[var(--cpt-color)]"
       title="Drag to move to a different folder"
     >
-      {/* Type accent strip */}
-      <div
-        className="rounded-t-[var(--radius-card)] shrink-0"
-        style={{
-          height: '4px',
-          backgroundColor: isPage ? 'var(--color-text-muted)' : 'var(--cpt-color)',
-        }}
-      />
-
-      {/* Content preview or icon fallback */}
-      <DescriptionPreview html={template.fields?.description} Icon={Icon} />
-
-      {/* Hover overlay — visual affordance for mouse users; decorative duplicate of footer Use */}
-      {hovered && (
-        <div
-          className="absolute inset-0 rounded-[var(--radius-card)] bg-black/40 flex items-center justify-center"
-          aria-hidden="true"
-        >
-          <button
-            type="button"
-            onClick={onUse}
-            tabIndex={-1}
-            className="btn-primary text-xs px-3 py-1.5"
-            aria-hidden="true"
+      {/* Header — type badge + name + actions */}
+      <div className="card-titlebar">
+        <span className="flex min-w-0 items-center gap-2">
+          <Badge tone="muted" icon={Icon}>{isPage ? 'Page' : 'Assignment'}</Badge>
+          <span
+            className="truncate normal-case font-medium text-[var(--color-text-body)]"
+            title={template.name}
           >
-            Use
-          </button>
-        </div>
-      )}
-
-      {/* Footer — always visible; z-10 + opaque bg paint over the overlay in this region */}
-      <div className="relative z-10 px-2 pt-1.5 pb-2 border-t border-[var(--color-border)] shrink-0 bg-[var(--color-bg-surface)]">
-        <p className="truncate text-xs font-medium text-[var(--color-text-body)] leading-tight mb-1">
-          {template.name}
-        </p>
-        <div className="flex items-center gap-1">
-          <span className="flex-1 truncate text-xs text-[var(--color-text-muted)] leading-tight">
-            {!isPage && template.fields?.points != null ? `${template.fields.points} pts` : ''}
+            {template.name}
           </span>
-          <Button variant="primary" size="sm" onClick={onUse}>Use</Button>
-          <TileMenu
-            templateName={template.name}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onMove={onMove}
-          />
-        </div>
+        </span>
+        <TemplateActionsMenu
+          templateName={template.name}
+          onEdit={onEdit}
+          onMove={onMove}
+          onDelete={onDelete}
+          z={30}
+        />
+      </div>
+
+      {/* Scaled, sanitized instructions thumbnail (icon fallback when empty) */}
+      <div className="flex h-32 overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-bg-page)]">
+        <DescriptionPreview html={template.fields?.description} Icon={Icon} />
+      </div>
+
+      {/* Footer — metadata + primary Use action */}
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
+        <span className="truncate text-xs text-[var(--color-text-muted)]">
+          {formatMeta(template)}
+        </span>
+        <Button variant="primary" size="sm" onClick={onUse}>Use</Button>
       </div>
     </div>
   )
 }
 
-function TileMenu({ templateName, onEdit, onDelete, onMove }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', handle)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', handle)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
+function TemplateActionsMenu({ templateName, onEdit, onMove, onDelete, z = 20 }) {
   return (
-    <div ref={ref} className="relative">
-      <IconButton
-        icon={MoreHorizontal}
-        label={`More actions for ${templateName}`}
-        size="sm"
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="true"
-        aria-expanded={open}
-      />
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[7rem]">
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onEdit() }}
-          >
-            <Pencil size={13} aria-hidden="true" /> Edit
-          </button>
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onMove() }}
-          >
-            <Folder size={13} aria-hidden="true" /> Move To
-          </button>
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onDelete() }}
-          >
-            <Trash2 size={13} aria-hidden="true" /> Delete
-          </button>
-        </div>
+    <Menu
+      width="7rem"
+      z={z}
+      trigger={p => (
+        <IconButton
+          icon={MoreHorizontal}
+          label={templateName ? `More actions for ${templateName}` : 'More actions'}
+          size="sm"
+          {...p}
+        />
       )}
-    </div>
-  )
-}
-
-function OverflowMenu({ onEdit, onDelete, onMove }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onOutsideClick(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', onOutsideClick)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onOutsideClick)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  return (
-    <div className="relative" ref={ref}>
-      <IconButton
-        icon={MoreHorizontal}
-        label="More actions"
-        size="sm"
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="true"
-        aria-expanded={open}
-      />
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[7rem]">
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onEdit() }}
-          >
-            <Pencil size={13} aria-hidden="true" /> Edit
-          </button>
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onMove() }}
-          >
-            <Folder size={13} aria-hidden="true" /> Move To
-          </button>
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
-            onClick={() => { setOpen(false); onDelete() }}
-          >
-            <Trash2 size={13} aria-hidden="true" /> Delete
-          </button>
-        </div>
-      )}
-    </div>
+    >
+      <Menu.Item icon={Pencil} onSelect={onEdit}>Edit</Menu.Item>
+      <Menu.Item icon={Folder} onSelect={onMove}>Move To</Menu.Item>
+      <Menu.Item icon={Trash2} danger onSelect={onDelete}>Delete</Menu.Item>
+    </Menu>
   )
 }

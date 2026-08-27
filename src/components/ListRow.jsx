@@ -74,7 +74,7 @@ export default function ListRow({
           )}
 
           {meta && (
-            <div className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
+            <div className="list-row-meta mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
               {meta}
             </div>
           )}

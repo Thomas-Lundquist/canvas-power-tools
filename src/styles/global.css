@@ -327,6 +327,23 @@
     border-radius: 9999px;
     border: 0 solid currentColor;
   }
+  /* Card title bar (design_docs/10 § Component Taxonomy) — the header strip a
+     titled .card carries. Default: a clean muted uppercase label on a 1px
+     bottom rule. Bauhaus override below turns it into the signature inset-fill
+     monospace bar. Reusable across Library sidebar, list, editor, deploy. */
+  .card-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+  }
   /* section-title kept as alias for backwards compatibility; use section-label going forward */
   .section-title {
     @apply text-xs font-medium uppercase tracking-widest mb-3;
@@ -464,6 +481,20 @@
 [data-theme="bauhaus"] .badge-pill {
   border-radius: var(--radius-sm);
   border-width: 1px;
+}
+[data-theme="bauhaus"] .card-titlebar {
+  background-color: var(--color-container-inset);
+  color: var(--color-stroke);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+/* Bauhaus metadata treatment (design_docs/10 § Typography) — monospace,
+   uppercase secondary line on browse rows. No-op under Default (sans). */
+[data-theme="bauhaus"] .list-row-meta {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────
