@@ -348,7 +348,7 @@ export default function TemplateLibrary({
         <Modal onClose={() => setMovingTemplate(null)} title={`Move "${movingTemplate.name}"`}>
           <div className="space-y-1">
             <button
-              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-75 ${
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-[var(--radius-control)] transition-colors duration-75 ${
                 !movingTemplate.folderId
                   ? 'bg-[rgba(var(--cpt-color-rgb),0.08)] text-[var(--color-text-body)]'
                   : 'text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]'
@@ -362,7 +362,7 @@ export default function TemplateLibrary({
             {folders.map(f => (
               <button
                 key={f.id}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-75 ${
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-[var(--radius-control)] transition-colors duration-75 ${
                   movingTemplate.folderId === f.id
                     ? 'bg-[rgba(var(--cpt-color-rgb),0.08)] text-[var(--color-text-body)]'
                     : 'text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]'
@@ -408,7 +408,7 @@ function NewDropdown({ onNewTemplate, onNewFolder }) {
         <Plus size={15} aria-hidden="true" /> New <ChevronDown size={13} aria-hidden="true" />
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md shadow-md py-1 min-w-[10rem]">
+        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[10rem]">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
             onClick={() => { setOpen(false); onNewTemplate() }}
@@ -438,7 +438,7 @@ function ViewToggle({ value, onChange }) {
     <div
       role="group"
       aria-label="View mode"
-      className="flex items-center rounded-md border border-[var(--color-border)] p-0.5 gap-0.5"
+      className="flex items-center rounded-[var(--radius-control)] border border-[var(--color-border)] p-0.5 gap-0.5"
     >
       <button
         type="button"
@@ -537,7 +537,7 @@ function FolderMenu({ folderName, onRename, onDelete, light = false }) {
         aria-expanded={open}
       />
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md shadow-md py-1 min-w-[9rem]">
+        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[9rem]">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
             onClick={() => { setOpen(false); onRename() }}
@@ -617,7 +617,7 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
       draggable="true"
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="relative rounded-md border border-[var(--color-border)] bg-[var(--color-bg-surface)] shadow-sm flex flex-col cursor-grab"
+      className="relative rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-sm)] flex flex-col cursor-grab"
       style={{ aspectRatio: '3 / 4' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -625,7 +625,7 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
     >
       {/* Type accent strip */}
       <div
-        className="rounded-t-md shrink-0"
+        className="rounded-t-[var(--radius-card)] shrink-0"
         style={{
           height: '4px',
           backgroundColor: isPage ? 'var(--color-text-muted)' : 'var(--cpt-color)',
@@ -638,14 +638,14 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
       {/* Hover overlay — visual affordance for mouse users; decorative duplicate of footer Use */}
       {hovered && (
         <div
-          className="absolute inset-0 rounded-md bg-black/40 flex items-center justify-center"
+          className="absolute inset-0 rounded-[var(--radius-card)] bg-black/40 flex items-center justify-center"
           aria-hidden="true"
         >
           <button
             type="button"
             onClick={onUse}
             tabIndex={-1}
-            className="btn-primary text-xs px-3 py-1.5 rounded-lg"
+            className="btn-primary text-xs px-3 py-1.5"
             aria-hidden="true"
           >
             Use
@@ -702,7 +702,7 @@ function TileMenu({ templateName, onEdit, onDelete, onMove }) {
         aria-expanded={open}
       />
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md shadow-md py-1 min-w-[7rem]">
+        <div className="absolute right-0 top-full mt-1 z-30 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[7rem]">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
             onClick={() => { setOpen(false); onEdit() }}
@@ -754,7 +754,7 @@ function OverflowMenu({ onEdit, onDelete, onMove }) {
         aria-expanded={open}
       />
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md shadow-md py-1 min-w-[7rem]">
+        <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-card)] shadow-[var(--shadow-md)] py-1 min-w-[7rem]">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors duration-75"
             onClick={() => { setOpen(false); onEdit() }}
