@@ -8,6 +8,10 @@ import NudgeTool from '../../modules/communication/NudgeTool.jsx'
 
 export default function App() {
   const { showPanel, setShowPanel } = useKeyboardShortcuts([])
+  const params = new URLSearchParams(window.location.search)
+  const initialCourseId = params.get('courseId') ?? null
+  const initialAssignmentId = params.get('assignmentId') ?? null
+  const initialStudentIds = params.getAll('studentId')
 
   return (
     <>
@@ -18,7 +22,11 @@ export default function App() {
       >
         <div className="overflow-y-auto flex-1">
           <div className="max-w-4xl mx-auto px-6 pt-6">
-            <NudgeTool />
+            <NudgeTool
+              initialCourseId={initialCourseId}
+              initialAssignmentId={initialAssignmentId}
+              initialStudentIds={initialStudentIds.length > 0 ? initialStudentIds : null}
+            />
           </div>
         </div>
       </ToolShell>

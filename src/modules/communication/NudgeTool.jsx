@@ -91,7 +91,7 @@ function PreviewModal({ recipients, message, assignment, course, teacherName, on
   )
 }
 
-export default function NudgeTool() {
+export default function NudgeTool({ initialCourseId, initialAssignmentId, initialStudentIds } = {}) {
   const toast = useToast()
   const { requirePin } = usePinGate()
 
@@ -122,13 +122,16 @@ export default function NudgeTool() {
     getCourses()
       .then(list => {
         setCourses(list)
-        if (list.length > 0) loadAssignments(list[0].id, list[0])
+        const start = initialCourseId && list.find(c => c.id === String(initialCourseId))
+          ? list.find(c => c.id === String(initialCourseId))
+          : list[0]
+        if (start) loadAssignments(start.id, start, initialAssignmentId, initialStudentIds)
       })
       .finally(() => setLoadingCourses(false))
     getSentLog().then(setSentLog)
   }, [])
 
-  async function loadAssignments(cId, cObj) {
+  async function loadAssignments(cId, cObj, preferredAssignmentId, preferredStudentIds) {
     setCourseId(cId)
     setCourse(cObj ?? courses.find(c => c.id === cId) ?? null)
     setAssignments([])
@@ -140,13 +143,16 @@ export default function NudgeTool() {
       const data = await getAssignmentsWithGradingData(cId)
       const withMissing = data.filter(a => (a.submissionSummary?.notSubmitted ?? 0) > 0)
       setAssignments(withMissing)
-      if (withMissing.length > 0) await loadSubmissions(cId, withMissing[0].id)
+      const start = preferredAssignmentId && withMissing.find(a => a.id === String(preferredAssignmentId))
+        ? String(preferredAssignmentId)
+        : withMissing[0]?.id
+      if (start) await loadSubmissions(cId, start, preferredStudentIds)
     } finally {
       setLoadingAssignments(false)
     }
   }
 
-  async function loadSubmissions(cId, aId) {
+  async function loadSubmissions(cId, aId, preferredStudentIds) {
     setAssignmentId(aId)
     setSubmissions([])
     setSelected(new Set())
@@ -155,8 +161,13 @@ export default function NudgeTool() {
       const subs = await getAssignmentSubmissions(cId, aId)
       const missing = subs.filter(s => s.missing || s.workflowState === 'unsubmitted')
       setSubmissions(missing)
-      // Auto-select all except excused
-      setSelected(new Set(missing.filter(s => !s.excused).map(s => s.userId)))
+      const eligible = missing.filter(s => !s.excused).map(s => s.userId)
+      const preferred = preferredStudentIds
+        ? eligible.filter(id => preferredStudentIds.includes(id))
+        : []
+      // Auto-select all except excused, unless a specific preferred subset (e.g. from a
+      // Missing Work "Nudge" deep link) actually matches — then narrow to just that.
+      setSelected(new Set(preferred.length > 0 ? preferred : eligible))
     } finally {
       setLoadingSubmissions(false)
     }
