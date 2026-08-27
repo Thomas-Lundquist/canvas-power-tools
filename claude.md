@@ -32,41 +32,6 @@ Read the relevant doc before writing any feature code. Never guess at a document
 
 ---
 
-## Architecture
-
-```
-Canvas Power Tools (Chrome MV3 Extension)
-├── Homepage (src/shell/)           Tool picker grid
-├── Tool pages (src/pages/<tool>/)  Separate extension page per Tool; own React root
-├── Tool components (src/modules/<module>/) React components imported by pages/
-├── Shared components (src/components/)     AppNav, CourseSelector, Toast, Modal, etc.
-├── Content scripts                 Inject trigger buttons only — no API calls
-├── SpeedGrader (src/speedgrader/)  Injected into Canvas SpeedGrader page
-└── Chrome storage
-    ├── chrome.storage.local        Primary data store (5MB limit)
-    └── chrome.storage.sync         Settings and indexes only (100KB total, 8KB/item)
-```
-
----
-
-## Context Mode — Hard Rules
-
-**`Read` is only legal immediately before an `Edit` of that exact file.** Every other file read — one file or many — uses `ctx_batch_execute` or `ctx_execute_file`. Raw bytes stay in the sandbox; only what your code prints enters conversation context.
-
-**`WebFetch` is never permitted.** Use `ctx_fetch_and_index` to fetch and index a URL, then `ctx_search` to query it. Raw page bytes never enter the conversation.
-
-| Need | Correct tool | Never use |
-|---|---|---|
-| Read 1+ files to analyze | `ctx_batch_execute` / `ctx_execute_file` | `Read`, `Bash cat` |
-| Fetch a URL for research | `ctx_fetch_and_index` + `ctx_search` | `WebFetch` |
-| Derive/filter/count from data | `ctx_execute` | Read → reason |
-| File you will immediately Edit | `Read` (only this case) | — |
-| State-mutating shell commands | `Bash` | — |
-
-These are **hard rules**, not guidelines. The PreToolUse hook fires on every violation — follow it immediately, do not proceed with the original tool call.
-
----
-
 ## Terminology
 
 Never substitute page/screen/section/view for these terms.
@@ -83,38 +48,14 @@ Never substitute page/screen/section/view for these terms.
 |---|---|
 | JavaScript ES6+ | **No TypeScript** — do not introduce without discussion |
 | React | Functional components + hooks only |
-| Tailwind CSS | Utility classes only; CSS custom properties for design tokens |
-| Vite + CRXJS | Build tool + Chrome extension plugin |
-| @tanstack/react-virtual | Virtual scrolling for large tables |
-| Lucide React | Icons |
 
 Do not introduce new dependencies without discussion.
 
 ---
 
-## File Structure
+## Naming Conventions
 
-```
-src/
-├── shell/           Homepage (tool picker)
-├── pages/           One subfolder per Tool (standalone extension page)
-├── modules/         Tool components, one subfolder per Module
-├── components/      Shared Components
-├── api/             Canvas API modules (one file per resource)
-├── storage/         Encryption, preferences, change logs
-├── security/        PIN system and audit log
-├── dom/             DOM resilience
-├── config/          tools.jsx — single source of truth for Tool registry
-├── styles/          Global CSS and design tokens
-├── utils/           Shared utilities
-├── background/      MV3 service worker
-├── content_scripts/ Canvas page injection scripts
-├── speedgrader/     SpeedGrader injection components
-├── settings/        Settings page
-└── popup/           Extension popup
-```
 
-**Naming:**
 - React components: PascalCase, filename matches (`BulkEdit.jsx`)
 - Utility modules: camelCase (`auth.js`, `request.js`)
 - CSS custom properties: `--color-`, `--space-`, `--text-` prefixes
@@ -124,11 +65,7 @@ src/
 
 ## Coding Standards
 
-- Functions do one thing; decompose anything over ~40 lines
-- No magic numbers — use named constants
 - No `console.log` in production — use the logging utility
-- No commented-out code in commits
-- Keys in lists: stable IDs, never array indexes
 - Default exports for React components; named exports for utilities
 
 **Tailwind / CSS:** Use CSS custom properties for all colors, text sizes, and spacing — not raw Tailwind color classes.
@@ -166,13 +103,6 @@ Scopes: `assignments` `grading` `communication` `people` `content` `setup` `shel
 
 **Pushing:** `main` is pushed to `origin` at the **end of each work session** — offered once the work is done and verified, as the GitHub backup. Nothing is pushed without explicit approval.
 
-**Task & issue tracking — Beads (`bd`) only:**
-- Create a Beads issue **before** starting any work: `bd create --title="..." --description="..." --type=task|bug|feature --priority=2`
-- Claim it when starting: `bd update <id> --claim`
-- Close it only when the work is fully complete: `bd close <id>`
-- Nothing is considered done until its Beads issue is closed
-- Do not use `gh issue`, TodoWrite, TaskCreate, or markdown TODO lists
-
 ---
 
 ## Security (non-negotiable)
@@ -208,15 +138,6 @@ Scopes: `assignments` `grading` `communication` `people` `content` `setup` `shel
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
-```
 
 ### Rules
 
