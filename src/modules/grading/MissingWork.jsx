@@ -1,98 +1,93 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ChevronDown, ChevronRight, AlertCircle, Loader, CheckCircle } from 'lucide-react'
-import CourseSelector from '../../components/CourseSelector.jsx'
-import { getCourses } from '../../api/courses.js'
+import { ChevronDown, ChevronRight, Search, X, Send, Loader, CheckCircle } from 'lucide-react'
+import Card from '../../components/Card.jsx'
+import Badge from '../../components/Badge.jsx'
+import Button from '../../components/Button.jsx'
+import SegmentedToggle from '../../components/SegmentedToggle.jsx'
+import Callout from '../../components/Callout.jsx'
 import { getCourseSubmissions, getAssignmentsWithGradingData, updateSubmissionGrade } from '../../api/submissions.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
+
+const VIEW_MODES = [
+  { value: 'by-assignment', label: 'By Assignment' },
+  { value: 'by-student',    label: 'By Student' },
+]
 
 function daysSince(isoDate) {
   if (!isoDate) return null
   return Math.floor((Date.now() - new Date(isoDate)) / 86400000)
 }
 
+function nudgeUrl({ courseId, assignmentId, studentIds }) {
+  const params = new URLSearchParams({ courseId, assignmentId })
+  for (const id of studentIds) params.append('studentId', id)
+  return chrome.runtime.getURL(`src/pages/submission-reminders/index.html?${params.toString()}`)
+}
+
 function ConfirmModal({ message, onConfirm, onCancel, confirming, progress }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full space-y-4">
+      <Card padding="lg" className="max-w-sm w-full space-y-4">
         <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>
         {confirming && progress && (
           <p className="text-xs text-[var(--color-text-disabled)]">{progress}</p>
         )}
         <div className="flex justify-end gap-3">
-          <button className="btn-secondary text-sm" onClick={onCancel} disabled={confirming}>Cancel</button>
-          <button className="btn-danger text-sm flex items-center gap-1.5" onClick={onConfirm} disabled={confirming}>
-            {confirming && <Loader size={13} className="animate-spin" />}
-            Grade as Zero
-          </button>
+          <Button variant="secondary" onClick={onCancel} disabled={confirming}>Cancel</Button>
+          <Button variant="danger" onClick={onConfirm} disabled={confirming}>
+            <span className="flex items-center gap-1.5">
+              {confirming && <Loader size={13} className="animate-spin" />}
+              Grade as Zero
+            </span>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
 
 function SkeletonRows() {
   return Array.from({ length: 5 }, (_, i) => (
-    <div key={i} className="card p-4 flex items-center gap-4 animate-pulse">
+    <Card key={i} className="flex items-center gap-4 animate-pulse">
       <div className="w-5 h-5 rounded bg-[var(--color-border-subtle)]" />
       <div className="flex-1 space-y-1.5">
         <div className="h-3.5 w-40 bg-[var(--color-border-subtle)] rounded" />
-        <div className="h-3 w-24 bg-[var(--color-bg-hover)] rounded" />
+        <div className="h-3 w-24 bg-[var(--color-border-subtle)] rounded" />
       </div>
       <div className="h-7 w-28 bg-[var(--color-border-subtle)] rounded" />
-    </div>
+    </Card>
   ))
 }
 
-export default function MissingWork() {
+export default function MissingWork({ courseId, courseName, loadingCourse }) {
   const toast = useToast()
   const { requirePin } = usePinGate()
 
-  const [courses, setCourses]               = useState([])
-  const [loadingCourses, setLoadingCourses] = useState(true)
-  const [courseId, setCourseId]             = useState(null)
-  const [courseName, setCourseName]         = useState('')
   const [assignments, setAssignments]       = useState([])
-  const [missing, setMissing]               = useState([])   // filtered submissions
+  const [missing, setMissing]               = useState([])
   const [loading, setLoading]               = useState(false)
-  const [viewMode, setViewMode]             = useState('by-student')
+  const [viewMode, setViewMode]             = useState('by-assignment')
+  const [search, setSearch]                 = useState('')
   const [expanded, setExpanded]             = useState(new Set())
-  const [confirm, setConfirm]               = useState(null)  // { message, rows }
+  const [confirm, setConfirm]               = useState(null)
   const [confirming, setConfirming]         = useState(false)
   const [progress, setProgress]             = useState('')
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
-        setCourses(list)
-        if (list.length > 0) loadData(list[0].id, list[0].name)
-      })
-      .finally(() => setLoadingCourses(false))
-  }, [])
-
-  async function loadData(cId, cName) {
-    setCourseId(cId)
-    setCourseName(cName ?? courses.find(c => c.id === cId)?.name ?? '')
+    if (!courseId) { setMissing([]); setAssignments([]); return }
     setMissing([])
     setAssignments([])
     setExpanded(new Set())
     setLoading(true)
-    try {
-      const [subs, asns] = await Promise.all([
-        getCourseSubmissions(cId),
-        getAssignmentsWithGradingData(cId),
-      ])
+    Promise.all([
+      getCourseSubmissions(courseId),
+      getAssignmentsWithGradingData(courseId),
+    ]).then(([subs, asns]) => {
       setAssignments(asns)
       setMissing(subs.filter(s => s.missing))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function handleCourseChange(cId) {
-    const course = courses.find(c => c.id === cId)
-    loadData(cId, course?.name ?? '')
-  }
+    }).finally(() => setLoading(false))
+  }, [courseId])
 
   function toggleExpand(id) {
     setExpanded(prev => {
@@ -115,7 +110,10 @@ export default function MissingWork() {
       setConfirm(null)
       setProgress('')
       toast(`Graded ${rows.length === 1 ? 'submission' : `${rows.length} submissions`} as zero`, 'success')
-      loadData(courseId, courseName)
+      setLoading(true)
+      Promise.all([getCourseSubmissions(courseId), getAssignmentsWithGradingData(courseId)])
+        .then(([subs, asns]) => { setAssignments(asns); setMissing(subs.filter(s => s.missing)) })
+        .finally(() => setLoading(false))
     })
   }
 
@@ -126,7 +124,10 @@ export default function MissingWork() {
     })
   }
 
-  // --- Grouped data ---
+  function goNudge(assignmentId, studentIds) {
+    window.location.href = nudgeUrl({ courseId, assignmentId, studentIds })
+  }
+
   const assignmentMap = useMemo(() => {
     const m = {}
     for (const a of assignments) m[a.id] = a
@@ -153,142 +154,146 @@ export default function MissingWork() {
     return Object.values(m).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
   }, [missing, assignmentMap])
 
+  const q = search.trim().toLowerCase()
+  const filteredByAssignment = q
+    ? byAssignment.filter(g => g.name.toLowerCase().includes(q) || g.rows.some(r => (r.userName ?? '').toLowerCase().includes(q)))
+    : byAssignment
+  const filteredByStudent = q
+    ? byStudent.filter(g => (g.userName ?? '').toLowerCase().includes(q) || g.rows.some(r => (assignmentMap[r.assignmentId]?.name ?? '').toLowerCase().includes(q)))
+    : byStudent
+
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-5">
+      <div>
         <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Missing Work</h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">View unsubmitted assignments and grade them as zero in bulk.</p>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">Identify outstanding submissions and nudge or grade them as zero in bulk.</p>
       </div>
 
-      <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
-        <CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} />
-      </div>
-
-      {!loading && missing.length > 0 && (
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden">
-            {[['by-student', 'By Student'], ['by-assignment', 'By Assignment']].map(([id, label]) => (
-              <button
-                key={id}
-                onClick={() => { setViewMode(id); setExpanded(new Set()) }}
-                className={`px-3 py-1.5 text-xs font-medium border-r border-[var(--color-border)] last:border-r-0 transition-colors ${
-                  viewMode === id ? 'text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'
-                }`}
-                style={viewMode === id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <span className="text-sm text-[var(--color-text-disabled)]">{missing.length} missing submission{missing.length !== 1 ? 's' : ''}</span>
+      <div className="flex items-center gap-3 flex-wrap">
+        <SegmentedToggle options={VIEW_MODES} value={viewMode} onChange={v => { setViewMode(v); setExpanded(new Set()) }} ariaLabel="Missing work view" />
+        <div className="relative flex-1 max-w-sm">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)]" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Filter by assignment or student..."
+            className="input pl-9"
+          />
+          {search && (
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]" onClick={() => setSearch('')}>
+              <X size={14} />
+            </button>
+          )}
         </div>
-      )}
+        {!loading && missing.length > 0 && (
+          <span className="text-sm text-[var(--color-text-disabled)] shrink-0">
+            {missing.length} missing submission{missing.length !== 1 ? 's' : ''} · {byAssignment.length} assignment{byAssignment.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
 
-      {loading ? (
+      {loading || loadingCourse ? (
         <div className="space-y-2"><SkeletonRows /></div>
       ) : missing.length === 0 ? (
-        <div className="card p-12 text-center space-y-2">
-          <CheckCircle size={32} className="mx-auto text-[var(--color-success)]" />
-          <p className="font-medium text-[var(--color-text-secondary)]">No missing submissions</p>
-          <p className="text-sm text-[var(--color-text-disabled)]">All students have submitted their work in this course.</p>
+        <Card padding="lg" className="text-center space-y-2 py-12">
+          <CheckCircle size={32} className="mx-auto" style={{ color: 'var(--color-success)' }} />
+          <p className="font-medium text-[var(--color-text-body)]">No missing submissions</p>
+          <p className="text-sm text-[var(--color-text-muted)]">All students have submitted their work in this course.</p>
+        </Card>
+      ) : viewMode === 'by-assignment' ? (
+        <div className="space-y-3">
+          {filteredByAssignment.map(group => {
+            const open = expanded.has(group.assignmentId)
+            const days = daysSince(group.dueAt)
+            return (
+              <Card key={group.assignmentId} padding="none" className="overflow-hidden">
+                <div className="p-4 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border-subtle)]">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="warning">{group.rows.length} missing</Badge>
+                      {days !== null && <Badge tone="danger">{days === 0 ? 'Due today' : `${days}d overdue`}</Badge>}
+                    </div>
+                    <h3 className="font-semibold text-[var(--color-text-body)] truncate">{group.name}</h3>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button size="sm" icon={Send} onClick={() => goNudge(group.assignmentId, group.rows.map(r => r.userId))}>
+                      Nudge All ({group.rows.length})
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={() => openConfirm(group.rows, group.name)}>
+                      Grade All as Zero
+                    </Button>
+                    <button
+                      onClick={() => toggleExpand(group.assignmentId)}
+                      className="p-2 rounded-[var(--radius-control)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]"
+                      aria-expanded={open}
+                      aria-label="Toggle missing students"
+                    >
+                      {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                  </div>
+                </div>
+                {open && (
+                  <div className="divide-y divide-[var(--color-border-subtle)] bg-[var(--color-bg-page)]">
+                    {group.rows.map(row => (
+                      <div key={row.userId} className="flex items-center gap-3 px-4 py-2.5">
+                        <p className="text-sm text-[var(--color-text-body)] flex-1 truncate">{row.userName ?? 'Unknown Student'}</p>
+                        <Button size="sm" variant="secondary" icon={Send} onClick={() => goNudge(group.assignmentId, [row.userId])}>
+                          Nudge
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => openConfirm([row], `${row.userName} — ${group.name}`)}>
+                          Zero
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )
+          })}
         </div>
-      ) : viewMode === 'by-student' ? (
-        <div className="space-y-2">
-          {byStudent.map(group => {
+      ) : (
+        <div className="space-y-3">
+          <Callout tone="info">
+            Grade as Zero is performed from the By Assignment view. Nudge here sends a reminder for one assignment at a time.
+          </Callout>
+          {filteredByStudent.map(group => {
             const open = expanded.has(group.userId)
             return (
-              <div key={group.userId} className="card overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3">
+              <Card key={group.userId} padding="none" className="overflow-hidden">
+                <div className="p-4 flex items-center gap-3 border-b border-[var(--color-border-subtle)]">
                   <button
                     onClick={() => toggleExpand(group.userId)}
                     className="flex items-center gap-2 flex-1 min-w-0 text-left"
                     aria-expanded={open}
                   >
-                    {open ? <ChevronDown size={16} className="text-[var(--color-text-disabled)] shrink-0" /> : <ChevronRight size={16} className="text-[var(--color-text-disabled)] shrink-0" />}
-                    <span className="font-medium text-[var(--color-text-body)] truncate">{group.userName ?? 'Unknown Student'}</span>
-                    <span className="text-xs text-[var(--color-text-disabled)] shrink-0">{group.rows.length} missing</span>
-                  </button>
-                  <button
-                    className="btn-danger text-xs shrink-0"
-                    onClick={() => openConfirm(group.rows, group.userName)}
-                  >
-                    Grade All as Zero
+                    {open ? <ChevronDown size={16} className="text-[var(--color-text-muted)] shrink-0" /> : <ChevronRight size={16} className="text-[var(--color-text-muted)] shrink-0" />}
+                    <span className="font-semibold text-[var(--color-text-body)] truncate">{group.userName ?? 'Unknown Student'}</span>
+                    <Badge tone="warning">{group.rows.length} missing</Badge>
                   </button>
                 </div>
                 {open && (
-                  <div className="border-t border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
+                  <div className="divide-y divide-[var(--color-border-subtle)] bg-[var(--color-bg-page)]">
                     {group.rows.map(row => {
                       const asn = assignmentMap[row.assignmentId]
                       const days = daysSince(asn?.dueAt)
                       return (
-                        <div key={row.assignmentId} className="flex items-center gap-3 px-4 py-2.5 pl-10 bg-[var(--color-bg-hover)]">
+                        <div key={row.assignmentId} className="flex items-center gap-3 px-4 py-2.5">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-[var(--color-text-body)] truncate">{asn?.name ?? row.assignmentId}</p>
                             {days !== null && (
                               <p className="text-xs text-[var(--color-text-disabled)]">{days === 0 ? 'Due today' : `${days} day${days !== 1 ? 's' : ''} past due`}</p>
                             )}
                           </div>
-                          <button
-                            className="btn-danger text-xs shrink-0"
-                            onClick={() => openConfirm([row], `${group.userName} — ${asn?.name}`)}
-                          >
-                            Grade as Zero
-                          </button>
+                          <Button size="sm" variant="secondary" icon={Send} onClick={() => goNudge(row.assignmentId, [row.userId])}>
+                            Nudge
+                          </Button>
                         </div>
                       )
                     })}
                   </div>
                 )}
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {byAssignment.map(group => {
-            const open = expanded.has(group.assignmentId)
-            const days = daysSince(group.dueAt)
-            return (
-              <div key={group.assignmentId} className="card overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <button
-                    onClick={() => toggleExpand(group.assignmentId)}
-                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
-                    aria-expanded={open}
-                  >
-                    {open ? <ChevronDown size={16} className="text-[var(--color-text-disabled)] shrink-0" /> : <ChevronRight size={16} className="text-[var(--color-text-disabled)] shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-[var(--color-text-body)] truncate block">{group.name}</span>
-                      {days !== null && (
-                        <span className="text-xs text-[var(--color-text-disabled)]">{days === 0 ? 'Due today' : `${days} day${days !== 1 ? 's' : ''} past due`}</span>
-                      )}
-                    </div>
-                    <span className="text-xs text-[var(--color-text-disabled)] shrink-0">{group.rows.length} student{group.rows.length !== 1 ? 's' : ''}</span>
-                  </button>
-                  <button
-                    className="btn-danger text-xs shrink-0"
-                    onClick={() => openConfirm(group.rows, group.name)}
-                  >
-                    Grade All as Zero
-                  </button>
-                </div>
-                {open && (
-                  <div className="border-t border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
-                    {group.rows.map(row => (
-                      <div key={row.userId} className="flex items-center gap-3 px-4 py-2.5 pl-10 bg-[var(--color-bg-hover)]">
-                        <p className="text-sm text-[var(--color-text-body)] flex-1 truncate">{row.userName ?? 'Unknown Student'}</p>
-                        <button
-                          className="btn-danger text-xs shrink-0"
-                          onClick={() => openConfirm([row], `${row.userName} — ${group.name}`)}
-                        >
-                          Grade as Zero
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              </Card>
             )
           })}
         </div>

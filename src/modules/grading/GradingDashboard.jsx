@@ -1,16 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
-import CourseSelector from '../../components/CourseSelector.jsx'
+import { Search, X, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Send, AlertTriangle, Clock } from 'lucide-react'
+import Card from '../../components/Card.jsx'
+import StatCard from '../../components/StatCard.jsx'
+import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import ProgressBar from '../../components/ProgressBar.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
-import { getCourses } from '../../api/courses.js'
 import { getAssignmentsWithGradingData } from '../../api/submissions.js'
 
 const FILTERS = [
-  { id: 'all',           label: 'All' },
-  { id: 'needs-grading', label: 'Needs Grading' },
-  { id: 'fully-graded',  label: 'Fully Graded' },
-  { id: 'has-missing',   label: 'Has Missing' },
+  { value: 'all',           label: 'All' },
+  { value: 'needs-grading', label: 'Needs Grading' },
+  { value: 'fully-graded',  label: 'Fully Graded' },
+  { value: 'has-missing',   label: 'Has Missing' },
 ]
 
 const COLUMNS = [
@@ -37,7 +38,7 @@ function SkeletonRow({ widths }) {
     <tr className="border-b border-[var(--color-border-subtle)]">
       {widths.map((w, i) => (
         <td key={i} className="px-3 py-3.5">
-          <div className={`h-3.5 ${w} rounded bg-[var(--color-border)] animate-pulse`} />
+          <div className={`h-3.5 ${w} rounded bg-[var(--color-border-subtle)] animate-pulse`} />
         </td>
       ))}
     </tr>
@@ -56,40 +57,21 @@ function sortRows(rows, key, dir) {
   })
 }
 
-export default function GradingDashboard({ initialCourseId }) {
-  const [courses, setCourses]               = useState([])
-  const [loadingCourses, setLoadingCourses] = useState(true)
-  const [courseId, setCourseId]             = useState(null)
-  const [assignments, setAssignments]       = useState([])
-  const [loading, setLoading]               = useState(false)
-  const [search, setSearch]                 = useState('')
-  const [filter, setFilter]                 = useState('all')
-  const [sortKey, setSortKey]               = useState('position')
-  const [sortDir, setSortDir]               = useState('asc')
+export default function GradingDashboard({ courseId, loadingCourse }) {
+  const [assignments, setAssignments] = useState([])
+  const [loading, setLoading]         = useState(false)
+  const [search, setSearch]           = useState('')
+  const [filter, setFilter]           = useState('all')
+  const [sortKey, setSortKey]         = useState('position')
+  const [sortDir, setSortDir]         = useState('asc')
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
-        setCourses(list)
-        const start = initialCourseId && list.find(c => c.id === String(initialCourseId))
-          ? String(initialCourseId)
-          : list[0]?.id ?? null
-        if (start) loadData(start)
-      })
-      .finally(() => setLoadingCourses(false))
-  }, [])
-
-  async function loadData(cId) {
-    setCourseId(cId)
-    setAssignments([])
+    if (!courseId) { setAssignments([]); return }
     setLoading(true)
-    try {
-      const data = await getAssignmentsWithGradingData(cId)
-      setAssignments(data)
-    } finally {
-      setLoading(false)
-    }
-  }
+    getAssignmentsWithGradingData(courseId)
+      .then(setAssignments)
+      .finally(() => setLoading(false))
+  }, [courseId])
 
   function handleSort(key) {
     if (key === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -113,63 +95,41 @@ export default function GradingDashboard({ initialCourseId }) {
     return sortRows(rows, sortKey, sortDir)
   }, [assignments, search, filter, sortKey, sortDir])
 
-  // Summary stats derived from first assignment's submission summary
-  const totalStudents = useMemo(() => {
-    const s = assignments.find(a => a.submissionSummary)?.submissionSummary
-    return s ? s.graded + s.ungraded + s.notSubmitted : null
+  const totals = useMemo(() => {
+    let graded = 0, submitted = 0, missing = 0
+    for (const a of assignments) {
+      const s = a.submissionSummary
+      if (!s) continue
+      graded += s.graded
+      submitted += s.graded + s.ungraded
+      missing += s.notSubmitted
+    }
+    const dueSoon = assignments.filter(a => {
+      if (!a.dueAt) return false
+      const hrs = (new Date(a.dueAt) - Date.now()) / 3600000
+      return hrs > 0 && hrs <= 48
+    }).length
+    return { graded, submitted, missing, dueSoon }
   }, [assignments])
 
-  const needsGradingCount = useMemo(
-    () => assignments.filter(a => (a.submissionSummary?.ungraded ?? 0) > 0).length,
-    [assignments],
-  )
-
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Grading Dashboard</h1>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Overview</h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">Track submission and grading progress across all assignments.</p>
       </div>
 
-      <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
-        <CourseSelector courses={courses} selectedId={courseId} onChange={loadData} loading={loadingCourses} />
-      </div>
-
-      {/* Summary stats */}
-      {!loading && assignments.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-5">
-          <StatCard label="Total Assignments" value={assignments.length} />
-          <StatCard
-            label="Need Grading"
-            value={needsGradingCount}
-            accent={needsGradingCount > 0}
-          />
-          <StatCard label="Enrolled Students" value={totalStudents ?? '—'} />
+      {!loadingCourse && courseId && !loading && assignments.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard label="Graded" value={totals.graded} icon={CheckCircle2} style={{ borderTop: '4px solid var(--color-success)' }} />
+          <StatCard label="Submitted" value={totals.submitted} icon={Send} style={{ borderTop: '4px solid var(--color-info)' }} />
+          <StatCard label="Missing" value={totals.missing} icon={AlertTriangle} style={{ borderTop: '4px solid var(--color-error)' }} />
+          <StatCard label="Due Soon" value={totals.dueSoon} hint="Within 48 hours" icon={Clock} style={{ borderTop: '4px solid var(--color-warning)' }} />
         </div>
       )}
 
-      {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden shrink-0">
-          {FILTERS.map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`px-3 py-1.5 text-xs font-medium border-r border-[var(--color-border)] last:border-r-0 transition-colors ${
-                filter === f.id
-                  ? ''
-                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'
-              }`}
-              style={filter === f.id ? {
-                backgroundColor: 'rgba(var(--cpt-color-rgb), 0.06)',
-                color: 'var(--cpt-color)',
-              } : undefined}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <SegmentedToggle options={FILTERS} value={filter} onChange={setFilter} ariaLabel="Filter assignments" />
         <div className="relative flex-1 max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-disabled)]" />
           <input
@@ -194,8 +154,7 @@ export default function GradingDashboard({ initialCourseId }) {
         )}
       </div>
 
-      {/* Table */}
-      <div className="card overflow-hidden mb-4">
+      <Card padding="none" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
@@ -203,7 +162,7 @@ export default function GradingDashboard({ initialCourseId }) {
                 {COLUMNS.map(col => (
                   <th
                     key={col.key}
-                    className={`${col.width} px-3 py-3 text-left text-xs font-medium text-[var(--color-text-muted)] ${
+                    className={`table-header-cell ${col.width} px-3 py-3 text-left ${
                       col.sortable && !loading ? 'cursor-pointer select-none hover:text-[var(--color-text-secondary)]' : 'select-none'
                     }`}
                     onClick={col.sortable && !loading ? () => handleSort(col.key) : undefined}
@@ -221,7 +180,7 @@ export default function GradingDashboard({ initialCourseId }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-subtle)]">
-              {loading
+              {!courseId || loading
                 ? SKELETON_WIDTHS.map((widths, i) => <SkeletonRow key={i} widths={widths} />)
                 : filtered.length === 0
                   ? (
@@ -272,29 +231,15 @@ export default function GradingDashboard({ initialCourseId }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {!loading && filtered.length > 0 && (
         <div className="flex items-center gap-4 text-xs text-[var(--color-text-disabled)]">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-success)] inline-block" /> Graded</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-warning)] inline-block" /> Submitted, not graded</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm bg-[var(--color-border)] inline-block" /> Not submitted</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-[var(--radius-xs)]" style={{ background: 'var(--color-success)' }} /> Graded</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-[var(--radius-xs)]" style={{ background: 'var(--color-warning)' }} /> Submitted, not graded</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-[var(--radius-xs)] bg-[var(--color-border)]" /> Not submitted</span>
         </div>
       )}
-    </div>
-  )
-}
-
-function StatCard({ label, value, accent }) {
-  return (
-    <div className="card p-4">
-      <div
-        className="text-2xl font-bold"
-        style={{ color: accent ? 'var(--cpt-color)' : 'var(--color-text-body)' }}
-      >
-        {value}
-      </div>
-      <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
     </div>
   )
 }

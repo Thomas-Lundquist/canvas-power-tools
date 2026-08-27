@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Loader, TrendingUp } from 'lucide-react'
+import Card from '../../components/Card.jsx'
+import Button from '../../components/Button.jsx'
+import FieldLabel from '../../components/FieldLabel.jsx'
+import NumberField from '../../components/NumberField.jsx'
+import RadioGroup from '../../components/RadioGroup.jsx'
 import Modal from '../../components/Modal.jsx'
-import CourseSelector from '../../components/CourseSelector.jsx'
-import { getCourses } from '../../api/courses.js'
 import { getAssignmentsWithGradingData, getAssignmentSubmissions, updateSubmissionGrade } from '../../api/submissions.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
@@ -73,35 +76,33 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
         <div className="w-full">
           {beforeAvg !== null && afterAvg !== null && (
             <p className="text-xs text-[var(--color-text-disabled)] mb-3">
-              Class average: <span className="font-medium text-[var(--color-text-secondary)]">{applyRound(beforeAvg)}</span>
+              Class average: <span className="font-medium text-[var(--color-text-body)]">{applyRound(beforeAvg)}</span>
               {' → '}
-              <span className="font-medium text-[var(--color-text-secondary)]">{applyRound(afterAvg)}</span>
+              <span className="font-medium" style={{ color: 'var(--color-success)' }}>{applyRound(afterAvg)}</span>
               {max > 0 && ` (${Math.round((afterAvg / max) * 100)}%)`}
             </p>
           )}
           {applying && <p className="text-xs text-[var(--color-text-disabled)] mb-3">{progress}</p>}
           <div className="flex justify-end gap-3">
-            <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              onClick={onApply}
-              disabled={applying || changed.length === 0}
-            >
-              {applying && <Loader size={13} className="animate-spin" />}
-              {applying ? 'Applying…' : `Apply ${changed.length} Change${changed.length !== 1 ? 's' : ''}`}
-            </button>
+            <Button variant="secondary" onClick={onCancel} disabled={applying}>Cancel</Button>
+            <Button onClick={onApply} disabled={applying || changed.length === 0}>
+              <span className="flex items-center gap-1.5">
+                {applying && <Loader size={13} className="animate-spin" />}
+                {applying ? 'Applying…' : `Apply ${changed.length} Change${changed.length !== 1 ? 's' : ''}`}
+              </span>
+            </Button>
           </div>
         </div>
       }
     >
       <div className="-mx-6 -my-4">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
+          <thead className="sticky top-0 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Student</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Current</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">New</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Change</th>
+              <th className="table-header-cell px-4 py-2.5 text-left">Student</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">Current</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">New</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">Change</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border-subtle)]">
@@ -115,7 +116,7 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
                   <td className="px-4 py-2.5 text-right font-medium text-[var(--color-text-body)]">{fmt(r.newScore, max)}</td>
                   <td className="px-4 py-2.5 text-right">
                     {delta !== null && delta !== 0 && (
-                      <span className={delta > 0 ? 'text-[var(--color-success)] font-medium' : 'text-[var(--color-error)] font-medium'}>
+                      <span className="font-medium" style={{ color: delta > 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
                         {delta > 0 ? '+' : ''}{applyRound(delta)}
                       </span>
                     )}
@@ -130,14 +131,10 @@ function PreviewModal({ rows, assignment, onApply, onCancel, applying, progress 
   )
 }
 
-export default function GradeAdjustments() {
+export default function GradeAdjustments({ courseId, courseName, loadingCourse }) {
   const toast = useToast()
   const { requirePin } = usePinGate()
 
-  const [courses, setCourses]                   = useState([])
-  const [loadingCourses, setLoadingCourses]     = useState(true)
-  const [courseId, setCourseId]                 = useState(null)
-  const [courseName, setCourseName]             = useState('')
   const [assignments, setAssignments]           = useState([])
   const [loadingAssignments, setLoadingAssignments] = useState(false)
   const [selectedAssignmentId, setSelectedAssignmentId] = useState('')
@@ -152,17 +149,11 @@ export default function GradeAdjustments() {
   const [progress, setProgress]                 = useState('')
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
-        setCourses(list)
-        if (list.length > 0) loadAssignments(list[0].id, list[0].name)
-      })
-      .finally(() => setLoadingCourses(false))
-  }, [])
+    if (!courseId) { setAssignments([]); setSubmissions([]); return }
+    loadAssignments(courseId)
+  }, [courseId])
 
-  async function loadAssignments(cId, cName) {
-    setCourseId(cId)
-    setCourseName(cName ?? courses.find(c => c.id === cId)?.name ?? '')
+  async function loadAssignments(cId) {
     setAssignments([])
     setSubmissions([])
     setSelectedAssignmentId('')
@@ -223,6 +214,9 @@ export default function GradeAdjustments() {
   const curveNeedsValue = !['sqrt', 'scale-to-100'].includes(curveType)
   const canPreview = selectedAssignment && submissions.length > 0 && (!curveNeedsValue || curveValue !== '')
 
+  const beforeAvg = avg(previewRows)
+  const afterAvg = avgNew(previewRows)
+
   async function handleApply() {
     const changed = previewRows.filter(r => r.newScore !== r.currentScore && r.newScore !== null)
     if (!changed.length) return
@@ -249,110 +243,111 @@ export default function GradeAdjustments() {
   const activeCurve = CURVE_TYPES.find(c => c.id === curveType)
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-5">
+      <div>
         <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Grade Adjustments</h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">Apply a curve to grades on a single assignment. Preview before any changes are written.</p>
       </div>
 
-      {/* Course + Assignment pickers */}
-      <div className="card p-4 mb-5 space-y-3">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
-          <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
-            const c = courses.find(x => x.id === cId)
-            loadAssignments(cId, c?.name)
-          }} loading={loadingCourses} />
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Assignment</span>
-          {loadingAssignments ? (
-            <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5"><Loader size={13} className="animate-spin" /> Loading…</span>
-          ) : (
-            <select
-              className="input text-sm flex-1"
-              value={selectedAssignmentId}
-              onChange={e => loadSubmissions(courseId, e.target.value)}
-              disabled={assignments.length === 0}
-            >
-              {assignments.length === 0
-                ? <option>No gradable assignments</option>
-                : assignments.map(a => <option key={a.id} value={a.id}>{a.name}</option>)
-              }
-            </select>
-          )}
-        </div>
-      </div>
+      <Card>
+        <FieldLabel htmlFor="ga-assignment">Assignment</FieldLabel>
+        {loadingAssignments || loadingCourse ? (
+          <span className="text-sm text-[var(--color-text-disabled)] flex items-center gap-1.5 mt-1"><Loader size={13} className="animate-spin" /> Loading…</span>
+        ) : (
+          <select
+            id="ga-assignment"
+            className="input text-sm w-full mt-1"
+            value={selectedAssignmentId}
+            onChange={e => loadSubmissions(courseId, e.target.value)}
+            disabled={assignments.length === 0}
+          >
+            {assignments.length === 0
+              ? <option>No gradable assignments</option>
+              : assignments.map(a => <option key={a.id} value={a.id}>{a.name}</option>)
+            }
+          </select>
+        )}
+      </Card>
 
-      {/* Curve options */}
       {selectedAssignment && (
-        <div className="card p-5 mb-5 space-y-5">
+        <Card className="space-y-5">
           <div>
-            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Curve Type</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {CURVE_TYPES.map(ct => (
-                <button
-                  key={ct.id}
-                  type="button"
-                  onClick={() => { setCurveType(ct.id); setCurveValue('') }}
-                  className={`px-3 py-2.5 rounded-lg border text-sm text-left transition-colors ${
-                    curveType === ct.id
-                      ? 'border-transparent text-white'
-                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]'
-                  }`}
-                  style={curveType === ct.id ? { backgroundColor: 'var(--cpt-color)' } : undefined}
-                >
-                  <span className="font-medium block">{ct.label}</span>
-                  <span className={`text-xs mt-0.5 block ${curveType === ct.id ? 'text-white/80' : 'text-[var(--color-text-disabled)]'}`}>{ct.hint}</span>
-                </button>
-              ))}
+            <FieldLabel>Curve Type</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mt-1">
+              {CURVE_TYPES.map(ct => {
+                const active = curveType === ct.id
+                return (
+                  <button
+                    key={ct.id}
+                    type="button"
+                    onClick={() => { setCurveType(ct.id); setCurveValue('') }}
+                    className="px-3 py-2.5 rounded-[var(--radius-control)] border text-sm text-left transition-colors"
+                    style={active
+                      ? { borderColor: 'var(--color-stroke, var(--cpt-color))', background: 'var(--cpt-color)', color: 'white' }
+                      : { borderColor: 'var(--color-border)', color: 'var(--color-text-body)' }}
+                  >
+                    <span className="font-medium block">{ct.label}</span>
+                    <span className="text-xs mt-0.5 block" style={{ color: active ? 'rgba(255,255,255,0.8)' : 'var(--color-text-disabled)' }}>{ct.hint}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
           {curveNeedsValue && (
             <div>
-              <label className="label">
-                {activeCurve.label} Value
-              </label>
+              <FieldLabel htmlFor="ga-curve-value">{activeCurve.label} Value</FieldLabel>
               <div className="flex items-center gap-2 mt-1">
-                <input
-                  type="number"
-                  className="input w-32 text-sm"
-                  value={curveValue}
-                  onChange={e => setCurveValue(e.target.value)}
-                  placeholder={activeCurve.placeholder}
-                  min="0"
-                />
+                <NumberField id="ga-curve-value" className="w-32" value={curveValue} onChange={setCurveValue} min={0} />
                 {activeCurve.unit && <span className="text-sm text-[var(--color-text-muted)]">{activeCurve.unit}</span>}
               </div>
             </div>
           )}
 
           <div>
-            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Apply To</p>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-                <input type="radio" name="applyTo" value="all" checked={applyTo === 'all'}
-                  onChange={() => setApplyTo('all')} className="accent-[var(--cpt-color)]" />
-                All graded students
-              </label>
-              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-                <input type="radio" name="applyTo" value="below" checked={applyTo === 'below'}
-                  onChange={() => setApplyTo('below')} className="accent-[var(--cpt-color)]" />
-                Students below
-                <input
-                  type="number"
-                  className="input w-16 text-sm py-1 px-2"
-                  value={threshold}
-                  onChange={e => setThreshold(e.target.value)}
-                  min="0"
-                  max="100"
-                  disabled={applyTo !== 'below'}
-                />
-                <span className="text-[var(--color-text-muted)]">%</span>
-              </label>
+            <FieldLabel>Apply To</FieldLabel>
+            <div className="mt-1">
+              <RadioGroup
+                name="applyTo"
+                ariaLabel="Apply to"
+                value={applyTo}
+                onChange={setApplyTo}
+                options={[
+                  { value: 'all', label: 'All graded students' },
+                  {
+                    value: 'below',
+                    label: (
+                      <span className="flex items-center gap-2">
+                        Students below
+                        <NumberField
+                          className="w-16"
+                          value={threshold}
+                          onChange={setThreshold}
+                          min={0}
+                          max={100}
+                          disabled={applyTo !== 'below'}
+                        />
+                        %
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             </div>
           </div>
+
+          {(beforeAvg !== null && afterAvg !== null) && (
+            <Card padding="sm" style={{ background: 'var(--color-bg-page)' }}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[var(--color-text-muted)]">Class average before/after</span>
+                <span>
+                  <span className="font-semibold text-[var(--color-text-body)]">{applyRound(beforeAvg)}</span>
+                  <span className="text-[var(--color-text-disabled)]"> → </span>
+                  <span className="font-semibold" style={{ color: 'var(--color-success)' }}>{applyRound(afterAvg)}</span>
+                </span>
+              </div>
+            </Card>
+          )}
 
           <div className="flex items-center justify-between pt-1">
             {loadingSubmissions ? (
@@ -360,15 +355,11 @@ export default function GradeAdjustments() {
             ) : (
               <span className="text-sm text-[var(--color-text-disabled)]">{submissions.length} graded submission{submissions.length !== 1 ? 's' : ''}</span>
             )}
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              disabled={!canPreview || loadingSubmissions}
-              onClick={() => setShowPreview(true)}
-            >
-              <TrendingUp size={15} /> Preview Changes
-            </button>
+            <Button icon={TrendingUp} disabled={!canPreview || loadingSubmissions} onClick={() => setShowPreview(true)}>
+              Preview Changes
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {showPreview && selectedAssignment && (

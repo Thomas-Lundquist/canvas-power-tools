@@ -1,9 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Loader, Calculator } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Loader, Calculator, Shield } from 'lucide-react'
+import Card from '../../components/Card.jsx'
+import Button from '../../components/Button.jsx'
+import Badge from '../../components/Badge.jsx'
+import FieldLabel from '../../components/FieldLabel.jsx'
+import NumberField from '../../components/NumberField.jsx'
 import Modal from '../../components/Modal.jsx'
-import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
-import { getCourses } from '../../api/courses.js'
 import { getAssignmentsWithGradingData, getAssignmentSubmissions, updateSubmissionGrade } from '../../api/submissions.js'
 import { getPreferences, setPreference } from '../../storage/preferences.js'
 import { useToast } from '../../components/Toast.jsx'
@@ -46,29 +49,27 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
         <div className="w-full">
           {applying && <p className="text-xs text-[var(--color-text-disabled)] mb-3">{progress}</p>}
           <div className="flex justify-end gap-3">
-            <button className="btn-secondary" onClick={onCancel} disabled={applying}>Cancel</button>
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              onClick={onApply}
-              disabled={applying || changed.length === 0}
-            >
-              {applying && <Loader size={13} className="animate-spin" />}
-              {applying ? 'Applying…' : `Apply ${changed.length} Penalt${changed.length !== 1 ? 'ies' : 'y'}`}
-            </button>
+            <Button variant="secondary" onClick={onCancel} disabled={applying}>Cancel</Button>
+            <Button onClick={onApply} disabled={applying || changed.length === 0}>
+              <span className="flex items-center gap-1.5">
+                {applying && <Loader size={13} className="animate-spin" />}
+                {applying ? 'Applying…' : `Apply ${changed.length} Penalt${changed.length !== 1 ? 'ies' : 'y'}`}
+              </span>
+            </Button>
           </div>
         </div>
       }
     >
       <div className="-mx-6 -my-4">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
+          <thead className="sticky top-0 bg-[var(--color-bg-page)] border-b border-[var(--color-border)]">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Assignment</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Student</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Days Late</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Penalty</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">Current</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">New</th>
+              <th className="table-header-cell px-4 py-2.5 text-left">Assignment</th>
+              <th className="table-header-cell px-4 py-2.5 text-left">Student</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">Days Late</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">Penalty</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">Current</th>
+              <th className="table-header-cell px-4 py-2.5 text-right">New</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border-subtle)]">
@@ -78,7 +79,7 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
                 <td className="px-4 py-2.5 text-[var(--color-text-body)]">{r.userName ?? 'Unknown'}</td>
                 <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{r.penalty ? r.penalty.daysLate : '—'}</td>
                 <td className="px-4 py-2.5 text-right">
-                  {r.penalty ? <span className="text-[var(--color-error)] font-medium">−{r.penalty.penaltyPct}%</span> : '—'}
+                  {r.penalty ? <span className="font-medium" style={{ color: 'var(--color-error)' }}>−{r.penalty.penaltyPct}%</span> : '—'}
                 </td>
                 <td className="px-4 py-2.5 text-right text-[var(--color-text-muted)]">{r.currentScore ?? '—'}</td>
                 <td className="px-4 py-2.5 text-right font-medium text-[var(--color-text-body)]">
@@ -93,15 +94,11 @@ function PreviewModal({ rows, onApply, onCancel, applying, progress }) {
   )
 }
 
-export default function LatePolicyTool() {
+export default function LatePolicyTool({ courseId, courseName, loadingCourse }) {
   const toast = useToast()
   const { requirePin } = usePinGate()
 
   const [policy, setPolicy]                     = useState(DEFAULT_POLICY)
-  const [courses, setCourses]                   = useState([])
-  const [loadingCourses, setLoadingCourses]     = useState(true)
-  const [courseId, setCourseId]                 = useState(null)
-  const [courseName, setCourseName]             = useState('')
   const [assignments, setAssignments]           = useState([])
   const [loadingAssignments, setLoadingAssignments] = useState(false)
   const [selected, setSelected]                 = useState(new Set())
@@ -115,13 +112,12 @@ export default function LatePolicyTool() {
     getPreferences().then(p => {
       if (p.latePolicySettings) setPolicy(p.latePolicySettings)
     })
-    getCourses()
-      .then(list => {
-        setCourses(list)
-        if (list.length > 0) loadAssignments(list[0].id, list[0].name)
-      })
-      .finally(() => setLoadingCourses(false))
   }, [])
+
+  useEffect(() => {
+    if (!courseId) { setAssignments([]); return }
+    loadAssignments(courseId)
+  }, [courseId])
 
   function updatePolicy(patch) {
     const next = { ...policy, ...patch }
@@ -129,16 +125,13 @@ export default function LatePolicyTool() {
     setPreference('latePolicySettings', next)
   }
 
-  async function loadAssignments(cId, cName) {
-    setCourseId(cId)
-    setCourseName(cName ?? courses.find(c => c.id === cId)?.name ?? '')
+  async function loadAssignments(cId) {
     setAssignments([])
     setSelected(new Set())
     setPreviewRows(null)
     setLoadingAssignments(true)
     try {
       const data = await getAssignmentsWithGradingData(cId)
-      // Only show published assignments with a due date (penalty requires a reference point)
       const eligible = data.filter(a => a.published && a.dueAt)
       setAssignments(eligible)
     } finally {
@@ -212,19 +205,19 @@ export default function LatePolicyTool() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-5">
+      <div>
         <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Late Policy</h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">Define a penalty formula and apply it to late submissions. Always previewed before writing.</p>
       </div>
 
-      {/* Policy definition */}
-      <div className="card p-5 mb-5">
+      <Card>
         <h2 className="text-sm font-semibold text-[var(--color-text-body)] mb-4">Policy Settings</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="label">Penalty Type</label>
+            <FieldLabel htmlFor="lp-type">Penalty Type</FieldLabel>
             <select
+              id="lp-type"
               className="input w-full text-sm mt-1"
               value={policy.penaltyType}
               onChange={e => updatePolicy({ penaltyType: e.target.value })}
@@ -234,56 +227,46 @@ export default function LatePolicyTool() {
             </select>
           </div>
           <div>
-            <label className="label">
+            <FieldLabel htmlFor="lp-value">
               {policy.penaltyType === 'per-day' ? 'Penalty Per Day (%)' : 'Flat Penalty (%)'}
-            </label>
-            <input
-              type="number"
-              className="input w-full text-sm mt-1"
+            </FieldLabel>
+            <NumberField
+              id="lp-value"
+              className="w-full mt-1"
               value={policy.penaltyValue}
-              onChange={e => updatePolicy({ penaltyValue: Number(e.target.value) })}
-              min="0"
-              max="100"
+              onChange={v => updatePolicy({ penaltyValue: Number(v) })}
+              min={0}
+              max={100}
             />
           </div>
           <div>
-            <label className="label">Grace Period (hours)</label>
-            <input
-              type="number"
-              className="input w-full text-sm mt-1"
+            <FieldLabel htmlFor="lp-grace">Grace Period (hours)</FieldLabel>
+            <NumberField
+              id="lp-grace"
+              className="w-full mt-1"
               value={policy.gracePeriodHours}
-              onChange={e => updatePolicy({ gracePeriodHours: Number(e.target.value) })}
-              min="0"
+              onChange={v => updatePolicy({ gracePeriodHours: Number(v) })}
+              min={0}
             />
             <p className="text-xs text-[var(--color-text-disabled)] mt-1">Submissions within this window after the due date are not penalized.</p>
           </div>
           <div>
-            <label className="label">Maximum Penalty (%)</label>
-            <input
-              type="number"
-              className="input w-full text-sm mt-1"
+            <FieldLabel htmlFor="lp-cap">Maximum Penalty (%)</FieldLabel>
+            <NumberField
+              id="lp-cap"
+              className="w-full mt-1"
               value={policy.maxPenaltyPct}
-              onChange={e => updatePolicy({ maxPenaltyPct: Number(e.target.value) })}
-              min="0"
-              max="100"
+              onChange={v => updatePolicy({ maxPenaltyPct: Number(v) })}
+              min={0}
+              max={100}
             />
             <p className="text-xs text-[var(--color-text-disabled)] mt-1">Grade never drops below this percentage of points possible.</p>
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Course picker */}
-      <div className="card p-4 mb-5 flex items-center gap-4">
-        <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">Course</span>
-        <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
-          const c = courses.find(x => x.id === cId)
-          loadAssignments(cId, c?.name)
-        }} loading={loadingCourses} />
-      </div>
-
-      {/* Assignment selection */}
       {courseId && (
-        <div className="card overflow-hidden mb-5">
+        <Card padding="none" className="overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[var(--color-text-body)]">Select Assignments</h2>
             {assignments.length > 0 && (
@@ -292,7 +275,7 @@ export default function LatePolicyTool() {
               </button>
             )}
           </div>
-          {loadingAssignments ? (
+          {loadingAssignments || loadingCourse ? (
             <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-8 justify-center text-sm">
               <Loader size={14} className="animate-spin" /> Loading assignments…
             </div>
@@ -321,19 +304,15 @@ export default function LatePolicyTool() {
           )}
           {selected.size > 0 && (
             <div className="px-4 py-3 border-t border-[var(--color-border-subtle)] flex justify-end">
-              <button
-                className="btn-primary flex items-center gap-1.5"
-                onClick={handleCalculate}
-                disabled={calculating}
-              >
-                {calculating
-                  ? <><Loader size={13} className="animate-spin" /> Calculating…</>
-                  : <><Calculator size={15} /> Calculate Penalties ({selected.size})</>
-                }
-              </button>
+              <Button onClick={handleCalculate} disabled={calculating}>
+                <span className="flex items-center gap-1.5">
+                  {calculating ? <Loader size={15} className="animate-spin" /> : <Calculator size={15} />}
+                  {calculating ? 'Calculating…' : `Calculate Penalties (${selected.size})`}
+                </span>
+              </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {showPreview && previewRows && (
