@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Loader, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
+import { Loader, ArrowRight, ArrowLeft } from 'lucide-react'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { createRubricInCanvas } from '../../api/rubrics.js'
 import { saveRubric } from '../../storage/rubrics.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import Button from '../../components/Button.jsx'
+import Callout from '../../components/Callout.jsx'
 
 function Toggle({ checked, onChange }) {
   return (
@@ -13,12 +15,12 @@ function Toggle({ checked, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex w-12 h-6 border border-[var(--color-stroke)] rounded-[2px] transition-colors shrink-0 ${
-        checked ? 'bg-[var(--color-domain-grading)]' : 'bg-[var(--color-canvas-paper)]'
+      className={`relative inline-flex h-6 w-12 shrink-0 rounded-[var(--radius-control)] border border-[var(--color-border)] transition-colors ${
+        checked ? 'bg-[var(--color-domain-grading)]' : 'bg-[var(--color-bg-page)]'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 bg-white border border-[var(--color-stroke)] rounded-[2px] transition-all ${
+        className={`absolute top-0.5 h-5 w-5 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] transition-all ${
           checked ? 'left-[calc(100%-1.375rem)]' : 'left-0.5'
         }`}
       />
@@ -26,9 +28,6 @@ function Toggle({ checked, onChange }) {
     </button>
   )
 }
-
-const labelCls = 'block text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] mb-1'
-const selectCls = 'w-full bg-white border border-[var(--color-stroke)] rounded-[2px] text-xs font-mono p-2 focus:outline-none focus:ring-1 focus:ring-[var(--color-bauhaus-blue-bright)]'
 
 export default function DeployRubric({ rubric, onDone, onBack }) {
   const { requirePin } = usePinGate()
@@ -103,8 +102,8 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
 
   if (loadingCourses) {
     return (
-      <div className="flex items-center gap-2 text-[var(--color-text-disabled)] py-12 justify-center font-mono text-xs">
-        <Loader className="w-4 h-4 animate-spin" /> LOADING COURSES…
+      <div className="flex items-center justify-center gap-2 py-12 text-sm text-[var(--color-text-disabled)]">
+        <Loader className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading courses…
       </div>
     )
   }
@@ -112,53 +111,27 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
   if (result) {
     return (
       <div className="space-y-5">
-        <div className="border-b border-[var(--color-grid-divider)] pb-3">
-          <span className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-disabled)]">
-            {result.success ? 'DEPLOY COMPLETE' : 'DEPLOY FAILED'}
+        <div className="border-b border-[var(--color-border-subtle)] pb-3">
+          <span className="section-label !mb-0">
+            {result.success ? 'Deploy complete' : 'Deploy failed'}
           </span>
         </div>
 
-        <div className={`border border-[var(--color-stroke)] rounded-[2px] p-4 ${result.success ? 'bg-[color-mix(in_srgb,var(--color-domain-grading)_8%,white)]' : 'bg-[color-mix(in_srgb,var(--color-domain-alert)_6%,white)]'}`}>
-          {result.success ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[var(--color-domain-grading)] font-mono font-bold text-xs uppercase">
-                <CheckCircle className="w-4 h-4 shrink-0" />
-                RUBRIC CREATED IN {result.course?.name}
-              </div>
-              {result.assignment ? (
-                <p className="text-xs text-[var(--color-text-secondary)] font-mono pl-6">
-                  ATTACHED TO &quot;{result.assignment.name}&quot;
-                  {useForGrading ? ' — SET AS GRADING RUBRIC' : ' — VIEW ONLY'}
-                </p>
-              ) : (
-                <p className="text-xs text-[var(--color-text-muted)] font-mono pl-6">
-                  SAVED AS STANDALONE RUBRIC. ATTACH TO ASSIGNMENTS FROM WITHIN CANVAS.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-[var(--color-domain-alert)] font-mono text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {result.error}
-            </div>
-          )}
-        </div>
+        {result.success ? (
+          <Callout tone="success" title={`Rubric created in ${result.course?.name}`}>
+            {result.assignment
+              ? <>Attached to “{result.assignment.name}”{useForGrading ? ' — set as grading rubric' : ' — view only'}</>
+              : 'Saved as a standalone rubric. Attach to assignments from within Canvas.'}
+          </Callout>
+        ) : (
+          <Callout tone="error">{result.error}</Callout>
+        )}
 
         <div className="flex justify-end gap-3">
           {result.success && (
-            <button
-              onClick={() => setResult(null)}
-              className="px-3 py-1.5 bg-[var(--color-canvas-paper)] border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[var(--color-container-inset)]"
-            >
-              DEPLOY AGAIN
-            </button>
+            <Button variant="secondary" size="sm" onClick={() => setResult(null)}>Deploy Again</Button>
           )}
-          <button
-            onClick={onDone}
-            className="px-4 py-1.5 bg-[var(--color-domain-grading)] text-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-grading)_85%,black)]"
-          >
-            DONE
-          </button>
+          <Button variant="primary" size="sm" onClick={onDone}>Done</Button>
         </div>
       </div>
     )
@@ -167,22 +140,23 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
   return (
     <div className="space-y-5">
       {/* ── Deploy header ──────────────────────────────────────────────── */}
-      <div className="border-b border-[var(--color-grid-divider)] pb-3">
-        <span className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-disabled)]">DEPLOY TO CANVAS</span>
-        <h2 className="text-xl font-black text-[var(--color-stroke)] uppercase tracking-tight mt-0.5">
+      <div className="border-b border-[var(--color-border-subtle)] pb-3">
+        <span className="section-label !mb-0">Deploy to Canvas</span>
+        <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-[var(--color-text-body)]">
           {rubric.name}
         </h2>
-        <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5">
-          {rubric.criteria.length} {rubric.criteria.length === 1 ? 'CRITERION' : 'CRITERIA'} · {totalPoints} PTS TOTAL
+        <p className="list-row-meta mt-0.5 text-xs text-[var(--color-text-muted)]">
+          {rubric.criteria.length} {rubric.criteria.length === 1 ? 'criterion' : 'criteria'} · {totalPoints} pts total
         </p>
       </div>
 
       {/* ── Form ───────────────────────────────────────────────────────── */}
-      <div className="bg-[var(--color-container-inset)] border border-[var(--color-stroke)] rounded-[2px] p-4 space-y-4">
+      <div className="space-y-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)] p-4">
         <div>
-          <label className={labelCls}>Target course</label>
+          <label htmlFor="rubric-deploy-course" className="section-label">Target course</label>
           <select
-            className={selectCls}
+            id="rubric-deploy-course"
+            className="input text-sm"
             value={selectedCourseId}
             onChange={e => setSelectedCourseId(e.target.value)}
           >
@@ -191,12 +165,13 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
         </div>
 
         <div>
-          <label className={labelCls}>
+          <label htmlFor="rubric-deploy-assignment" className="section-label">
             Attach to assignment
-            <span className="ml-1 font-normal normal-case text-[var(--color-text-disabled)]">(optional)</span>
+            <span className="ml-1 font-normal normal-case tracking-normal text-[var(--color-text-disabled)]">(optional)</span>
           </label>
           <select
-            className={selectCls}
+            id="rubric-deploy-assignment"
+            className="input text-sm"
             value={selectedAssignmentId}
             onChange={e => setSelectedAssignmentId(e.target.value)}
             disabled={loadingAssignments}
@@ -207,17 +182,17 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
               : assignments.map(a => <option key={a.id} value={a.id}>{a.name}</option>)
             }
           </select>
-          <p className="text-[10px] font-mono text-[var(--color-text-disabled)] mt-1">
+          <p className="mt-1 text-xs text-[var(--color-text-disabled)]">
             Standalone rubrics attach to assignments later from within Canvas.
           </p>
         </div>
 
         {selectedAssignmentId && (
-          <div className="flex items-center gap-3 pt-3 border-t border-[var(--color-grid-divider)]">
+          <div className="flex items-center gap-3 border-t border-[var(--color-border-subtle)] pt-3">
             <Toggle checked={useForGrading} onChange={setUseForGrading} />
             <div>
-              <p className="text-xs font-mono font-bold uppercase text-[var(--color-stroke)]">Use for grading</p>
-              <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5">
+              <p className="text-xs font-semibold text-[var(--color-text-body)]">Use for grading</p>
+              <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
                 {useForGrading
                   ? 'Rubric scores feed into the assignment grade.'
                   : 'Rubric visible but does not affect the grade.'}
@@ -228,43 +203,34 @@ export default function DeployRubric({ rubric, onDone, onBack }) {
       </div>
 
       {/* ── Criteria preview ───────────────────────────────────────────── */}
-      <div className="border border-[var(--color-grid-divider)] rounded-[2px] p-3 space-y-1.5">
-        <p className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-disabled)] mb-2">Criteria preview</p>
+      <div className="space-y-1.5 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] p-3">
+        <p className="section-label">Criteria preview</p>
         {rubric.criteria.map(crit => {
           const maxPts = crit.ratings.reduce((m, r) => Math.max(m, r.points), 0)
           return (
-            <div key={crit.id} className="flex items-baseline justify-between text-xs font-mono">
-              <span className="text-[var(--color-stroke)] truncate mr-3">
+            <div key={crit.id} className="flex items-baseline justify-between text-xs">
+              <span className="mr-3 truncate text-[var(--color-text-body)]">
                 {crit.description || <em className="text-[var(--color-text-disabled)]">Unnamed criterion</em>}
               </span>
-              <span className="text-[var(--color-text-disabled)] shrink-0">{maxPts} pts</span>
+              <span className="list-row-meta shrink-0 text-[var(--color-text-disabled)]">{maxPts} pts</span>
             </div>
           )
         })}
-        <div className="pt-2 border-t border-[var(--color-grid-divider)] flex justify-between text-xs font-mono font-bold">
-          <span className="text-[var(--color-text-muted)] uppercase">Total</span>
-          <span className="text-[var(--color-stroke)]">{totalPoints} pts</span>
+        <div className="flex justify-between border-t border-[var(--color-border-subtle)] pt-2 text-xs font-semibold">
+          <span className="section-label !mb-0">Total</span>
+          <span className="list-row-meta text-[var(--color-text-body)]">{totalPoints} pts</span>
         </div>
       </div>
 
       {/* ── Actions ────────────────────────────────────────────────────── */}
       <div className="flex justify-between">
-        <button
-          onClick={onBack}
-          className="px-3 py-1.5 bg-[var(--color-canvas-paper)] border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[var(--color-container-inset)]"
-        >
-          ← BACK
-        </button>
-        <button
-          disabled={!selectedCourseId || deploying}
-          onClick={deploy}
-          className="px-4 py-1.5 bg-[var(--color-domain-grading)] text-white border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[2px] hover:bg-[color-mix(in_srgb,var(--color-domain-grading)_85%,black)] disabled:opacity-40 flex items-center gap-2"
-        >
+        <Button variant="secondary" size="sm" icon={ArrowLeft} onClick={onBack}>Back</Button>
+        <Button variant="primary" size="sm" disabled={!selectedCourseId || deploying} onClick={deploy}>
           {deploying
-            ? <><Loader className="w-3.5 h-3.5 animate-spin" /> CREATING…</>
-            : <><ArrowRight className="w-3.5 h-3.5" /> CREATE IN CANVAS</>
+            ? <><Loader className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Creating…</>
+            : <><ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /> Create in Canvas</>
           }
-        </button>
+        </Button>
       </div>
     </div>
   )
