@@ -215,12 +215,12 @@ export default function TemplateEditor({
 
           {/* Instructions */}
           <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: 'var(--color-bg-page)' }}>
-              <span className="section-label !mb-0">Instructions {!isPage && '(Canvas HTML)'}</span>
+            <div className="card-titlebar">
+              <span>Instructions {!isPage && '(Canvas HTML)'}</span>
               <button
                 type="button"
                 onClick={() => setEditingHtml(v => !v)}
-                className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-body)] transition-colors duration-75"
+                className="text-xs font-normal normal-case tracking-normal text-[var(--color-text-secondary)] hover:text-[var(--color-text-body)] transition-colors duration-75"
               >
                 {editingHtml ? 'Show preview' : 'Edit HTML source'}
               </button>

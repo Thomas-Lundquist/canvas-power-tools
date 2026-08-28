@@ -496,6 +496,15 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+/* Bauhaus section headers (design_docs/10 § Typography) — the reference app
+   renders every form/section label as a bold monospace stroke-colored header.
+   Theme-gated so it upgrades headers across all tools at once; no-op under
+   Default, which keeps the muted sans label. */
+[data-theme="bauhaus"] .section-label {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  color: var(--color-stroke);
+}
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────
    Applied when html.dark class is present (set by theme-init.js + applyDarkMode).

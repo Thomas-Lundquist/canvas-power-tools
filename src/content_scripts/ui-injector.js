@@ -12,15 +12,20 @@ function safeMessage(path) {
 }
 
 // Injected buttons live in Canvas's page, outside our extension's CSS cascade,
-// so they need a literal hex per palette rather than a CSS custom property.
-const PALETTE_COLORS = { bauhaus: '#B7102A', default: '#4f46e5' }
+// so they need literal per-palette values rather than CSS custom properties.
+// Colors mirror each theme's --cpt-color (Bauhaus red / Default primary-500);
+// radius mirrors --radius-control (Bauhaus flat 2px / Default rounded 6px) so an
+// injected button reads as the same shape as the tool it opens.
+const PALETTE_COLORS = { bauhaus: '#B7102A', default: '#2B54D4' }
+const PALETTE_RADIUS = { bauhaus: '2px', default: '6px' }
 
-async function getButtonColor() {
+async function getButtonTheme() {
   try {
     const result = await chrome.storage.local.get('preferences')
-    return PALETTE_COLORS[result.preferences?.palette] ?? PALETTE_COLORS.bauhaus
+    const palette = result.preferences?.palette === 'default' ? 'default' : 'bauhaus'
+    return { color: PALETTE_COLORS[palette], radius: PALETTE_RADIUS[palette] }
   } catch {
-    return PALETTE_COLORS.bauhaus
+    return { color: PALETTE_COLORS.bauhaus, radius: PALETTE_RADIUS.bauhaus }
   }
 }
 
@@ -32,7 +37,8 @@ function darken(hex) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }
 
-function makeCptButton(id, label, title, onClick, small = false, color = '#4f46e5') {
+function makeCptButton(id, label, title, onClick, small = false, theme = { color: '#B7102A', radius: '2px' }) {
+  const { color, radius } = theme
   const hoverColor = darken(color)
   const btn = document.createElement('button')
   btn.id = id
@@ -46,7 +52,7 @@ function makeCptButton(id, label, title, onClick, small = false, color = '#4f46e
     background: color,
     color: '#fff',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: radius,
     fontSize: small ? '12px' : '13px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -72,13 +78,13 @@ export async function injectBulkEditorButton() {
   const toolbar = findElement('assignmentListToolbar')
   if (!toolbar) return
 
-  const color = await getButtonColor()
+  const theme = await getButtonTheme()
   const courseId = courseIdFromPath()
   const path = courseId
     ? `src/pages/bulk-editor/index.html?courseId=${courseId}`
     : 'src/pages/bulk-editor/index.html'
 
-  const btn = makeCptButton(BULK_BTN_ID, 'Power Tools', 'Open Canvas Power Tools Bulk Editor', () => safeMessage(path), false, color)
+  const btn = makeCptButton(BULK_BTN_ID, 'Power Tools', 'Open Canvas Power Tools Bulk Editor', () => safeMessage(path), false, theme)
   toolbar.appendChild(btn)
 }
 
@@ -94,14 +100,14 @@ export async function injectSaveAsTemplateButton() {
   const anchor = actionArea ?? titleEl
   if (!anchor) return
 
-  const color = await getButtonColor()
+  const theme = await getButtonTheme()
   const btn = makeCptButton(
     TEMPLATE_BTN_ID,
     'Save as Template',
     'Save this assignment as a Canvas Power Tools template',
     () => safeMessage(`src/pages/templates/index.html?saveFrom=${courseId}/${assignmentId}`),
     false,
-    color,
+    theme,
   )
   anchor.insertAdjacentElement('afterend', btn)
 }
@@ -110,7 +116,7 @@ export async function injectModuleButtons() {
   const courseId = courseIdFromPath()
   if (!courseId) return
 
-  const color = await getButtonColor()
+  const theme = await getButtonTheme()
 
   document.querySelectorAll('.context_module').forEach(moduleEl => {
     const rawId = moduleEl.dataset.moduleId ?? moduleEl.id?.replace('context_module_', '')
@@ -128,7 +134,7 @@ export async function injectModuleButtons() {
       'Add a Canvas Power Tools template to this module',
       () => safeMessage(`src/pages/templates/index.html?courseId=${courseId}&moduleId=${rawId}`),
       true,
-      color,
+      theme,
     )
     igHeader.appendChild(btn)
   })
