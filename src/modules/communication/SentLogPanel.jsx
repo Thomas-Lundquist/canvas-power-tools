@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, ChevronDown, ChevronRight } from 'lucide-react'
 import Badge from '../../components/Badge.jsx'
+import IconButton from '../../components/IconButton.jsx'
 
 function formatTs(iso) {
   return new Date(iso).toLocaleString('en-US', {
@@ -21,12 +22,10 @@ export default function SentLogPanel({ entries, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-[var(--color-bg-surface)] rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
+      <div className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-[var(--radius-card)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]">
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[var(--color-border-subtle)] shrink-0">
-          <h3 className="font-semibold text-[var(--color-text-body)]">Sent Log</h3>
-          <button className="btn-ghost p-1" onClick={onClose} aria-label="Close sent log">
-            <X size={16} />
-          </button>
+          <h2 className="font-semibold text-[var(--color-text-body)]">Sent Log</h2>
+          <IconButton icon={X} label="Close sent log" onClick={onClose} />
         </div>
 
         <div className="overflow-y-auto flex-1">
@@ -85,7 +84,7 @@ export default function SentLogPanel({ entries, onClose }) {
                         {entry.messageBody && (
                           <div>
                             <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">Message</p>
-                            <p className="text-xs text-[var(--color-text-secondary)] whitespace-pre-wrap bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded p-2">{entry.messageBody}</p>
+                            <p className="text-xs text-[var(--color-text-secondary)] whitespace-pre-wrap bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-sm)] p-2">{entry.messageBody}</p>
                           </div>
                         )}
                       </div>

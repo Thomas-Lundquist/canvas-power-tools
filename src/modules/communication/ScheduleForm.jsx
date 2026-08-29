@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { ChevronRight } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
 import Callout from '../../components/Callout.jsx'
+import Button from '../../components/Button.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { addScheduledCheck, updateScheduledCheck } from '../../storage/scheduledChecks.js'
 import { resolveTokens, resolveOverallTokens } from './tokenHelpers.js'
@@ -215,27 +216,25 @@ export default function ScheduleForm({
       footer={
         <>
           {step > 1 && (
-            <button className="btn-secondary mr-auto" onClick={() => setStep(s => s - 1)} disabled={saving}>
-              Back
-            </button>
+            <div className="mr-auto">
+              <Button variant="secondary" onClick={() => setStep(s => s - 1)} disabled={saving}>
+                Back
+              </Button>
+            </div>
           )}
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
           {step < 3 ? (
-            <button
-              className="btn-primary"
+            <Button
+              variant="primary"
               onClick={() => setStep(s => s + 1)}
               disabled={step === 1 ? !canProceedStep1 : !canProceedStep2}
             >
               Next
-            </button>
+            </Button>
           ) : (
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              onClick={handleAuthorize}
-              disabled={saving}
-            >
+            <Button variant="primary" onClick={handleAuthorize} disabled={saving}>
               {saving ? 'Saving…' : isEdit ? 'Update Rule' : 'Authorize & Save'}
-            </button>
+            </Button>
           )}
         </>
       }
@@ -249,7 +248,7 @@ export default function ScheduleForm({
         {/* ── Step 1: Filter ── */}
         {step === 1 && (
           <div className="space-y-4">
-            <div className="rounded-lg border border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)] space-y-1.5 text-sm">
+            <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)] space-y-1.5 text-sm">
               <div className="flex gap-2">
                 <span className="text-[var(--color-text-muted)] w-24 shrink-0">Tool</span>
                 <span className="text-[var(--color-text-body)] font-medium">{TOOL_LABELS[toolType]}</span>
@@ -358,7 +357,7 @@ export default function ScheduleForm({
             {previewBody && (
               <div>
                 <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1.5">Preview (Jane Smith)</p>
-                <div className="rounded-lg border border-[var(--color-border)] p-3 text-sm text-[var(--color-text-body)] whitespace-pre-wrap bg-[var(--color-surface-raised)]">
+                <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-3 text-sm text-[var(--color-text-body)] whitespace-pre-wrap bg-[var(--color-surface-raised)]">
                   {previewBody}
                 </div>
               </div>
@@ -406,7 +405,7 @@ export default function ScheduleForm({
               </div>
             </div>
 
-            <div className="rounded-lg border border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)] text-sm text-[var(--color-text-body)]">
+            <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)] text-sm text-[var(--color-text-body)]">
               <p className="font-medium mb-1">Summary</p>
               <p className="text-[var(--color-text-muted)]">{summaryText()}</p>
             </div>

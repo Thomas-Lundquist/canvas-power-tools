@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Pencil, Trash2, Play, Pause, AlertCircle } from 'lucide-react'
 import { deleteScheduledCheck, toggleScheduledCheck } from '../../storage/scheduledChecks.js'
+import Button from '../../components/Button.jsx'
+import IconButton from '../../components/IconButton.jsx'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -41,13 +43,13 @@ function formatRunTime(isoString) {
 function StatusDot({ schedule }) {
   let color
   if (!schedule.enabled) {
-    color = '#9ca3af' // gray
+    color = 'var(--color-text-disabled)'
   } else if (schedule.lastRunResult === 'error') {
-    color = '#ef4444' // red
+    color = 'var(--color-error)'
   } else if (!schedule.lastRunAt) {
-    color = '#f59e0b' // yellow — never run
+    color = 'var(--color-warning)' // never run
   } else {
-    color = '#22c55e' // green
+    color = 'var(--color-success)'
   }
   const label = !schedule.enabled ? 'Paused' : schedule.lastRunResult === 'error' ? 'Error' : schedule.lastRunAt ? 'Active' : 'Scheduled'
   return (
@@ -74,7 +76,7 @@ export default function ScheduleCard({ schedule, onUpdate, onDelete, onEdit }) {
   }
 
   return (
-    <div className="border border-[var(--color-border)] rounded-lg p-4 bg-[var(--color-surface)]">
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-4 bg-[var(--color-surface)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5 min-w-0">
           <StatusDot schedule={schedule} />
@@ -89,30 +91,14 @@ export default function ScheduleCard({ schedule, onUpdate, onDelete, onEdit }) {
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button
+          <IconButton
+            icon={schedule.enabled ? Pause : Play}
+            label={schedule.enabled ? 'Pause schedule' : 'Resume schedule'}
+            size="sm"
             onClick={handleToggle}
-            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-surface-raised)] transition-colors"
-            aria-label={schedule.enabled ? 'Pause schedule' : 'Resume schedule'}
-            title={schedule.enabled ? 'Pause' : 'Resume'}
-          >
-            {schedule.enabled ? <Pause size={14} /> : <Play size={14} />}
-          </button>
-          <button
-            onClick={() => onEdit?.(schedule)}
-            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-surface-raised)] transition-colors"
-            aria-label="Edit schedule"
-            title="Edit"
-          >
-            <Pencil size={14} />
-          </button>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))] transition-colors"
-            aria-label="Delete schedule"
-            title="Delete"
-          >
-            <Trash2 size={14} />
-          </button>
+          />
+          <IconButton icon={Pencil} label="Edit schedule" size="sm" onClick={() => onEdit?.(schedule)} />
+          <IconButton icon={Trash2} label="Delete schedule" size="sm" variant="danger" onClick={() => setConfirmDelete(true)} />
         </div>
       </div>
 
@@ -143,18 +129,8 @@ export default function ScheduleCard({ schedule, onUpdate, onDelete, onEdit }) {
       {confirmDelete && (
         <div className="mt-3 pl-5 flex items-center gap-3 text-xs">
           <span className="text-[var(--color-text-body)]">Delete this rule? This cannot be undone.</span>
-          <button
-            onClick={handleDelete}
-            className="px-2.5 py-1 rounded-md bg-[var(--color-error)] text-white hover:bg-[color-mix(in_srgb,var(--color-error)_85%,black)] font-medium transition-colors"
-          >
-            Delete
-          </button>
-          <button
-            onClick={() => setConfirmDelete(false)}
-            className="px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-body)] hover:bg-[var(--color-surface-raised)] transition-colors"
-          >
-            Cancel
-          </button>
+          <Button variant="danger" size="sm" onClick={handleDelete}>Delete</Button>
+          <Button variant="secondary" size="sm" onClick={() => setConfirmDelete(false)}>Cancel</Button>
         </div>
       )}
     </div>

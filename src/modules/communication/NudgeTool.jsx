@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Loader, Send, Clock } from 'lucide-react'
+import { Loader, Send, Clock, ShieldCheck } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
+import Button from '../../components/Button.jsx'
+import NotchBadge from '../../components/NotchBadge.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
 import Callout from '../../components/Callout.jsx'
 import { Tabs, TabPanel } from '../../components/Tabs.jsx'
@@ -44,11 +46,11 @@ function CountdownButton({ onSend, sending, progress }) {
       onClick={onSend}
     >
       {sending ? (
-        <><Loader size={14} className="animate-spin" />{progress || 'Sending…'}</>
+        <><Loader size={14} className="animate-spin" aria-hidden="true" />{progress || 'Sending…'}</>
       ) : seconds > 0 ? (
-        <><Clock size={14} />Send in {seconds}…</>
+        <><Clock size={14} aria-hidden="true" />Send in {seconds}…</>
       ) : (
-        <><Send size={14} />Send Nudges</>
+        <><Send size={14} aria-hidden="true" />Send Nudges</>
       )}
     </button>
   )
@@ -66,21 +68,21 @@ function PreviewModal({ recipients, message, assignment, course, teacherName, on
       onClose={onCancel}
       size="sm"
       footer={<>
-        <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
+        <Button variant="secondary" onClick={onCancel} disabled={sending}>Cancel</Button>
         <CountdownButton onSend={onSend} sending={sending} progress={progress} />
       </>}
     >
       <div className="space-y-4">
         {recipients[0] && (
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
-            <div className="bg-[var(--color-bg-hover)] rounded-lg p-4 text-sm text-[var(--color-text-body)] whitespace-pre-wrap border border-[var(--color-border)]">
+            <p className="section-label !mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
+            <div className="whitespace-pre-wrap rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-hover)] p-4 text-sm text-[var(--color-text-body)]">
               {example}
             </div>
           </div>
         )}
         <div>
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Recipients</p>
+          <p className="section-label !mb-1">Recipients</p>
           <p className="text-sm text-[var(--color-text-secondary)]">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
         </div>
         <Callout tone="warning">
@@ -183,6 +185,12 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
     [submissions, selected],
   )
 
+  // Live sample resolves the template against the first recipient.
+  const sampleRecipient = recipients[0]
+  const samplePreview = sampleRecipient
+    ? resolveTokens(message, { student: sampleRecipient, assignment: selectedAssignment, course, teacherName })
+    : ''
+
   function toggleStudent(userId) {
     setSelected(prev => {
       const s = new Set(prev)
@@ -237,20 +245,34 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
       <PageHeader
         title="Submission Reminders"
         actions={
-          <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
-            Sent Log {sentLog.length > 0 && <span className="ml-1 text-xs text-[var(--color-text-disabled)]">({sentLog.length})</span>}
-          </button>
+          <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>
+            Sent Log{sentLog.length > 0 && ` (${sentLog.length})`}
+          </Button>
         }
       >
         Message students who have not submitted an assignment.
       </PageHeader>
+
+      <div
+        className="mb-5 flex items-start gap-2.5 rounded-[var(--radius-card)] border p-3 text-xs"
+        style={{
+          borderColor: 'var(--color-domain-communication)',
+          backgroundColor: 'color-mix(in srgb, var(--color-domain-communication) 8%, var(--color-bg-surface))',
+        }}
+      >
+        <ShieldCheck size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-domain-communication)' }} aria-hidden="true" />
+        <p className="leading-relaxed text-[var(--color-text-secondary)]">
+          Reminders send through the Canvas Inbox in your active session and cannot be unsent. Excused students are skipped automatically.
+        </p>
+      </div>
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
       <TabPanel tabId="send-now" activeTab={activeTab}>
 
       {/* Course + Assignment */}
-      <div className="card p-4 mt-5 mb-5 space-y-3">
+      <div className="card relative mb-5 mt-5 space-y-3 p-4 pt-5">
+        <NotchBadge>Course</NotchBadge>
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
@@ -327,28 +349,50 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
 
       {/* Message */}
       {assignmentId && submissions.length > 0 && (
-        <div className="card p-5 mb-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-[var(--color-text-body)]">Message</label>
-            <span className="text-xs text-[var(--color-text-disabled)]">Sending to: {recipients.length} student{recipients.length !== 1 ? 's' : ''}</span>
-          </div>
-          <textarea
-            className="input w-full text-sm font-mono resize-y"
-            rows={8}
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-          />
-          <p className="text-xs text-[var(--color-text-disabled)]">
-            Available tokens: {TOKENS.join('  ')}
-          </p>
-          <div className="flex justify-end">
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              disabled={recipients.length === 0 || !message.trim()}
-              onClick={() => setShowPreview(true)}
-            >
-              <Send size={14} /> Preview & Send
-            </button>
+        <div className="card relative mb-5 p-5 pt-6">
+          <NotchBadge>Message</NotchBadge>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <div className="space-y-3 lg:col-span-7">
+              <div className="flex items-center justify-between">
+                <label className="section-label !mb-0" htmlFor="nudge-message">Message template</label>
+                <span className="text-xs text-[var(--color-text-disabled)]">Sending to: {recipients.length} student{recipients.length !== 1 ? 's' : ''}</span>
+              </div>
+              <textarea
+                id="nudge-message"
+                className="input w-full resize-y font-mono text-sm"
+                rows={8}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+              />
+              <p className="text-xs text-[var(--color-text-disabled)]">
+                Available tokens: {TOKENS.join('  ')}
+              </p>
+              <div className="flex justify-end">
+                <Button
+                  variant="primary"
+                  icon={Send}
+                  disabled={recipients.length === 0 || !message.trim()}
+                  onClick={() => setShowPreview(true)}
+                >
+                  Preview &amp; Send
+                </Button>
+              </div>
+            </div>
+            <div className="lg:col-span-5">
+              <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-hover)] p-4">
+                <p className="section-label">Live sample preview</p>
+                {sampleRecipient ? (
+                  <>
+                    <p className="list-row-meta mb-2 text-[0.625rem] uppercase tracking-wider text-[var(--color-text-disabled)]">
+                      To {sampleRecipient.userName ?? 'Student'} · via Canvas Inbox
+                    </p>
+                    <p className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--color-text-body)]">{samplePreview}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-[var(--color-text-disabled)]">Select recipients to preview the resolved message.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -372,7 +416,7 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
       <TabPanel tabId="rules" activeTab={activeTab}>
         <div className="space-y-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mt-5 mb-2 px-0.5">Specific Assignment Rules</p>
+            <p className="section-label mt-5 px-0.5">Specific Assignment Rules</p>
             <ScheduleManager
               toolType="submission-reminder-specific"
               courseId={courseId}
@@ -381,7 +425,7 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
             />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2 px-0.5">Upcoming Assignment Rules</p>
+            <p className="section-label px-0.5">Upcoming Assignment Rules</p>
             <ScheduleManager
               toolType="submission-reminder-upcoming"
               courseId={courseId}
