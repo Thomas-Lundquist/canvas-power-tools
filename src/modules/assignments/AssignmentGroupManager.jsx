@@ -4,6 +4,8 @@ import { Plus, Trash2, ChevronUp, ChevronDown, Check, X, AlertCircle,
 import { useToast } from '../../components/Toast.jsx'
 import Modal from '../../components/Modal.jsx'
 import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
+import Button from '../../components/Button.jsx'
+import Badge from '../../components/Badge.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
 import { getAssignments, updateAssignment } from '../../api/assignments.js'
 import {
@@ -266,21 +268,23 @@ export default function AssignmentGroupManager({ courseId, courses }) {
   const weightNonZero = weightDisplay > 0
 
   return (
-    <div className="grid grid-cols-[260px_1fr] gap-6 items-start">
+    <div className="grid grid-cols-[260px_1fr] items-start gap-6">
 
       {/* Left sidebar: title, add button, stat cards */}
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-[var(--color-text-body)] uppercase mb-3">
+          <h1 className="mb-3 text-2xl font-semibold text-[var(--color-text-body)]">
             Assignment Groups
           </h1>
-          <button
-            className="btn-primary flex items-center gap-1.5 text-xs font-mono font-bold uppercase w-full justify-center"
+          <Button
+            variant="primary"
+            icon={Plus}
             onClick={startNew}
             disabled={isAddingGroup}
+            style={{ width: '100%', justifyContent: 'center' }}
           >
-            <Plus size={13} /> ADD GROUP
-          </button>
+            Add Group
+          </Button>
         </div>
 
         {!loadingGroups && groups.length > 0 && (
@@ -288,12 +292,12 @@ export default function AssignmentGroupManager({ courseId, courses }) {
             <StatCard
               label="Assignment Groups"
               value={groups.length}
-              icon={<FolderKanban size={18} className="text-[var(--color-domain-assignments)]" />}
+              icon={<FolderKanban size={18} className="text-[var(--color-domain-assignments)]" aria-hidden="true" />}
             />
             <StatCard
               label="Total Assignments"
               value={assignments.length}
-              icon={<FileText size={18} className="text-[var(--color-domain-assignments)]" />}
+              icon={<FileText size={18} className="text-[var(--color-domain-assignments)]" aria-hidden="true" />}
             />
           </div>
         )}
@@ -302,11 +306,15 @@ export default function AssignmentGroupManager({ courseId, courses }) {
       {/* Right column: error, group accordion, weight footer */}
       <div>
         {error && (
-          <div className="mb-4 border border-[var(--color-domain-alert)] bg-[color-mix(in_srgb,var(--color-domain-alert)_12%,var(--color-bg-surface))] rounded-[2px] p-3 flex items-center gap-2 text-sm text-[var(--color-domain-alert)]">
-            <AlertCircle size={14} className="shrink-0" />
+          <div
+            className="mb-4 flex items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-error) 12%, var(--color-bg-surface))' }}
+            role="alert"
+          >
+            <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
             {error}
-            <button className="ml-auto text-[var(--color-domain-alert)] hover:text-[color-mix(in_srgb,var(--color-domain-alert)_80%,black)]" onClick={() => setError(null)}>
-              <X size={14} />
+            <button className="ml-auto text-[var(--color-error)] hover:opacity-80" onClick={() => setError(null)} aria-label="Dismiss error">
+              <X size={14} aria-hidden="true" />
             </button>
           </div>
         )}
@@ -359,9 +367,9 @@ export default function AssignmentGroupManager({ courseId, courses }) {
         </div>
 
         {!loadingGroups && weightNonZero && (
-          <div className="mt-4 flex items-center gap-2 text-xs font-mono text-[var(--color-text-muted)]">
-            <span className="uppercase tracking-wide">Total weight:</span>
-            <span className={`font-bold ${weightOk ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}`}>
+          <div className="list-row-meta mt-4 flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+            <span>Total weight:</span>
+            <span className={`font-semibold ${weightOk ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}`}>
               {weightDisplay}%
             </span>
             {!weightOk && (
@@ -379,29 +387,26 @@ export default function AssignmentGroupManager({ courseId, courses }) {
           onClose={() => setDeleteTarget(null)}
           footer={
             <>
-              <button className="btn-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button
-                className="px-4 py-2 rounded-[2px] text-sm font-medium text-white bg-[var(--color-domain-alert)] disabled:opacity-50"
-                onClick={confirmDelete}
-                disabled={saving}
-              >
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+              <Button variant="danger" onClick={confirmDelete} disabled={saving}>
                 {saving ? 'Deleting…' : 'Delete Group'}
-              </button>
+              </Button>
             </>
           }
         >
-          <p className="text-sm text-[var(--color-text-secondary)] mb-1">
+          <p className="mb-1 text-sm text-[var(--color-text-secondary)]">
             This action is permanent and cannot be undone.
           </p>
-          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+          <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
             The {(assignmentsByGroup[deleteTarget.id] ?? []).length} assignment
             {(assignmentsByGroup[deleteTarget.id] ?? []).length !== 1 ? 's' : ''} in this group
             will be moved to another group before deletion.
           </p>
           {groups.filter(g => g.id !== deleteTarget.id).length > 0 && (
             <div>
-              <label className="label">Move assignments to</label>
+              <label className="label" htmlFor="delete-move-to">Move assignments to</label>
               <select
+                id="delete-move-to"
                 value={deleteMoveToId ?? ''}
                 onChange={e => setDeleteMoveToId(e.target.value)}
                 className="input"
@@ -423,26 +428,23 @@ export default function AssignmentGroupManager({ courseId, courses }) {
           onClose={() => setMergeSource(null)}
           footer={
             <>
-              <button className="btn-secondary" onClick={() => setMergeSource(null)}>Cancel</button>
-              <button
-                className="btn-primary disabled:opacity-50"
-                onClick={confirmMerge}
-                disabled={merging || !mergeTargetId}
-              >
+              <Button variant="secondary" onClick={() => setMergeSource(null)}>Cancel</Button>
+              <Button variant="primary" onClick={confirmMerge} disabled={merging || !mergeTargetId}>
                 {merging ? 'Merging…' : 'Merge Groups'}
-              </button>
+              </Button>
             </>
           }
         >
-          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+          <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
             All {(assignmentsByGroup[mergeSource.id] ?? []).length} assignment
             {(assignmentsByGroup[mergeSource.id] ?? []).length !== 1 ? 's' : ''} from{' '}
-            <strong>"{mergeSource.name}"</strong> will be moved to the selected group,
+            <strong>&quot;{mergeSource.name}&quot;</strong> will be moved to the selected group,
             then the source group will be deleted.
           </p>
           <div>
-            <label className="label">Merge into</label>
+            <label className="label" htmlFor="merge-into">Merge into</label>
             <select
+              id="merge-into"
               value={mergeTargetId ?? ''}
               onChange={e => setMergeTargetId(e.target.value)}
               className="input"
@@ -470,10 +472,10 @@ export default function AssignmentGroupManager({ courseId, courses }) {
 
 function StatCard({ label, value, icon }) {
   return (
-    <div className="bg-[var(--color-bg-surface)] border-2 border-[var(--color-stroke)] rounded-[2px] p-4 flex items-center justify-between">
+    <div className="flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
       <div>
-        <p className="text-[10px] font-mono font-bold uppercase text-[var(--color-text-muted)] tracking-wide">{label}</p>
-        <p className="text-2xl font-black text-[var(--color-text-body)] font-mono mt-0.5">{value}</p>
+        <p className="section-label !mb-0">{label}</p>
+        <p className="mt-0.5 text-2xl font-semibold text-[var(--color-text-body)]">{value}</p>
       </div>
       {icon}
     </div>
@@ -482,16 +484,16 @@ function StatCard({ label, value, icon }) {
 
 function GroupCardSkeleton() {
   return (
-    <div className="bg-[var(--color-bg-surface)] border-2 border-[var(--color-stroke)] rounded-[2px] overflow-hidden">
-      <div className="p-3 bg-[var(--color-container-inset)] flex items-center gap-3">
-        <div className="w-7 h-7 bg-[var(--color-border)] rounded-[1px] animate-pulse" />
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-surface)]">
+      <div className="flex items-center gap-3 bg-[var(--color-bg-hover)] p-3">
+        <div className="h-7 w-7 animate-pulse rounded-[var(--radius-sm)] bg-[var(--color-border)]" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-36 bg-[var(--color-border)] rounded animate-pulse" />
-          <div className="h-3 w-20 bg-[var(--color-border)] rounded animate-pulse" />
+          <div className="h-4 w-36 animate-pulse rounded bg-[var(--color-border)]" />
+          <div className="h-3 w-20 animate-pulse rounded bg-[var(--color-border)]" />
         </div>
         <div className="flex gap-2">
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className="w-16 h-7 bg-[var(--color-border)] rounded-[1px] animate-pulse" />
+            <div key={i} className="h-7 w-16 animate-pulse rounded-[var(--radius-sm)] bg-[var(--color-border)]" />
           ))}
         </div>
       </div>
@@ -507,25 +509,25 @@ function GroupCard({
   onMoveAssignment, deleteDisabled, mergeDisabled,
 }) {
   return (
-    <div className="bg-[var(--color-bg-surface)] border-2 border-[var(--color-stroke)] rounded-[2px] overflow-hidden">
-      <div className="bg-[var(--color-container-inset)] border-b border-[var(--color-stroke)] p-3 flex flex-wrap items-center gap-3">
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-surface)]">
+      <div className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-hover)] p-3">
         {/* Expand toggle */}
         <button
           onClick={onToggleExpand}
-          className="p-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-stroke)] rounded-[1px] hover:bg-[var(--color-bg-hover)] transition-colors"
+          className="rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-1.5 transition-colors hover:bg-[var(--color-bg-hover)]"
           aria-label={expanded ? 'Collapse group' : 'Expand group'}
         >
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {expanded ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
         </button>
 
         {/* Name / inline edit */}
         {isEditing ? (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <input
               type="text"
               value={editForm.name}
               onChange={e => onEditFormChange(f => ({ ...f, name: e.target.value }))}
-              className="input text-sm py-1.5 flex-1 min-w-0 font-bold"
+              className="input min-w-0 flex-1 py-1.5 text-sm font-semibold"
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') onSaveEdit(); if (e.key === 'Escape') onCancelEdit() }}
             />
@@ -534,70 +536,70 @@ function GroupCard({
               value={editForm.groupWeight}
               onChange={e => onEditFormChange(f => ({ ...f, groupWeight: e.target.value }))}
               placeholder="0"
-              className="input w-16 text-sm py-1.5"
+              className="input w-16 py-1.5 text-sm"
             />
-            <span className="text-xs text-[var(--color-text-muted)] font-mono shrink-0">%</span>
+            <span className="shrink-0 text-xs text-[var(--color-text-muted)]">%</span>
             <button
               onClick={onCancelEdit}
-              className="p-1.5 rounded-[1px] text-[var(--color-text-muted)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] transition-colors"
+              className="rounded-[var(--radius-control)] p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-body)]"
+              aria-label="Cancel edit"
             >
-              <X size={13} />
+              <X size={13} aria-hidden="true" />
             </button>
             <button
               onClick={onSaveEdit}
               disabled={saving || !editForm.name.trim()}
-              className="p-1.5 rounded-[1px] text-white disabled:opacity-50 transition-opacity"
+              className="rounded-[var(--radius-control)] p-1.5 text-white transition-opacity disabled:opacity-50"
               style={{ backgroundColor: 'var(--cpt-color)' }}
+              aria-label="Save group"
             >
-              {saving ? <Loader size={13} className="animate-spin" /> : <Check size={13} />}
+              {saving ? <Loader size={13} className="animate-spin" aria-hidden="true" /> : <Check size={13} aria-hidden="true" />}
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h3 className="font-extrabold text-sm text-[var(--color-text-body)] uppercase tracking-tight truncate">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <h3 className="truncate text-sm font-semibold text-[var(--color-text-body)]">
               {group.name}
             </h3>
-            <span className="shrink-0 px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-stroke)] font-mono text-[10px] font-bold text-[var(--color-text-muted)]">
-              {count}
-            </span>
+            <span className="shrink-0"><Badge tone="neutral">{count}</Badge></span>
             {group.groupWeight > 0 && (
-              <span className="shrink-0 px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-stroke)] font-mono text-[10px] font-bold text-[var(--color-text-secondary)]">
-                {group.groupWeight}%
-              </span>
+              <span className="shrink-0"><Badge tone="muted">{group.groupWeight}%</Badge></span>
             )}
           </div>
         )}
 
         {/* Action toolbar */}
         {!isEditing && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex mr-1">
+          <div className="flex shrink-0 items-center gap-1.5">
+            <div className="mr-1 flex">
               <button
                 onClick={onMoveUp}
                 disabled={index === 0}
-                className="p-1 text-[var(--color-text-disabled)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] disabled:opacity-25 rounded-[1px] transition-colors"
+                className="rounded-[var(--radius-control)] p-1 text-[var(--color-text-disabled)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-body)] disabled:opacity-25"
                 title="Move up"
+                aria-label="Move group up"
               >
-                <ChevronUp size={12} />
+                <ChevronUp size={12} aria-hidden="true" />
               </button>
               <button
                 onClick={onMoveDown}
                 disabled={index === total - 1}
-                className="p-1 text-[var(--color-text-disabled)] hover:text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)] disabled:opacity-25 rounded-[1px] transition-colors"
+                className="rounded-[var(--radius-control)] p-1 text-[var(--color-text-disabled)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-body)] disabled:opacity-25"
                 title="Move down"
+                aria-label="Move group down"
               >
-                <ChevronDown size={12} />
+                <ChevronDown size={12} aria-hidden="true" />
               </button>
             </div>
-            <ToolbarBtn onClick={onEdit} icon={<Edit2 size={12} />} label="RENAME" />
-            <ToolbarBtn onClick={onCopy} icon={<Copy size={12} />} label="DUPLICATE" />
-            <ToolbarBtn onClick={onCopyTo} disabled={!assignments.length} icon={<ExternalLink size={12} />} label="COPY TO" />
-            <ToolbarBtn onClick={onMerge} disabled={mergeDisabled} icon={<GitMerge size={12} />} label="MERGE" />
+            <ToolbarBtn onClick={onEdit} icon={<Edit2 size={12} aria-hidden="true" />} label="Rename" />
+            <ToolbarBtn onClick={onCopy} icon={<Copy size={12} aria-hidden="true" />} label="Duplicate" />
+            <ToolbarBtn onClick={onCopyTo} disabled={!assignments.length} icon={<ExternalLink size={12} aria-hidden="true" />} label="Copy to" />
+            <ToolbarBtn onClick={onMerge} disabled={mergeDisabled} icon={<GitMerge size={12} aria-hidden="true" />} label="Merge" />
             <ToolbarBtn
               onClick={onDelete}
               disabled={deleteDisabled}
-              icon={<Trash2 size={12} />}
-              label="DELETE"
+              icon={<Trash2 size={12} aria-hidden="true" />}
+              label="Delete"
               danger
             />
           </div>
@@ -624,35 +626,36 @@ function ToolbarBtn({ onClick, icon, label, disabled, danger }) {
       onClick={onClick}
       disabled={disabled}
       className={[
-        'px-2 py-1.5 bg-[var(--color-bg-surface)] border font-mono font-bold text-[10px] uppercase',
-        'rounded-[1px] flex items-center gap-1 transition-colors',
-        'disabled:opacity-30 disabled:cursor-not-allowed',
+        'flex items-center gap-1 rounded-[var(--radius-control)] border bg-[var(--color-bg-surface)] px-2 py-1.5 transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-30',
         danger
-          ? 'border-[var(--color-domain-alert)] text-[var(--color-domain-alert)] hover:bg-[color-mix(in_srgb,var(--color-domain-alert)_12%,var(--color-bg-surface))]'
-          : 'border-[var(--color-stroke)] text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]',
+          ? 'border-[var(--color-error)] text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_12%,var(--color-bg-surface))]'
+          : 'border-[var(--color-border)] text-[var(--color-text-body)] hover:bg-[var(--color-bg-hover)]',
       ].join(' ')}
     >
       {icon}
-      <span>{label}</span>
+      <span className="list-row-meta text-xs font-medium">{label}</span>
     </button>
   )
 }
 
 function AddGroupForm({ form, onChange, onSave, onCancel, saving }) {
   return (
-    <div className="border-2 border-[var(--color-stroke)] rounded-[2px] overflow-hidden" style={{ backgroundColor: '#FEF08A' }}>
-      <div className="px-3 py-2 border-b border-[var(--color-stroke)] flex items-center gap-2 font-mono font-extrabold text-xs uppercase text-[var(--color-text-body)]">
-        <Plus size={13} />
-        <span>Create New Assignment Group</span>
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-page)]">
+      <div className="card-titlebar">
+        <span className="flex items-center gap-2">
+          <Plus size={13} aria-hidden="true" />
+          Create new assignment group
+        </span>
       </div>
-      <div className="p-3 flex items-center gap-2">
+      <div className="flex items-center gap-2 p-3">
         <input
           type="text"
           autoFocus
           value={form.name}
           onChange={e => onChange(f => ({ ...f, name: e.target.value }))}
           placeholder="Group name..."
-          className="input flex-1 text-sm py-1.5 font-bold"
+          className="input flex-1 py-1.5 text-sm font-semibold"
           onKeyDown={e => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancel() }}
         />
         <input
@@ -660,22 +663,13 @@ function AddGroupForm({ form, onChange, onSave, onCancel, saving }) {
           value={form.groupWeight}
           onChange={e => onChange(f => ({ ...f, groupWeight: e.target.value }))}
           placeholder="0"
-          className="input w-16 text-sm py-1.5"
+          className="input w-16 py-1.5 text-sm"
         />
-        <span className="text-xs text-[var(--color-text-muted)] font-mono shrink-0">% weight</span>
-        <button
-          onClick={onSave}
-          disabled={saving || !form.name.trim()}
-          className="px-4 py-1.5 bg-[var(--color-stroke)] text-white font-mono font-bold text-xs uppercase rounded-[1px] hover:opacity-80 disabled:opacity-40 transition-opacity"
-        >
-          {saving ? 'Creating…' : 'CREATE'}
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-stroke)] font-mono font-bold text-xs uppercase rounded-[1px] hover:bg-[var(--color-bg-hover)] transition-colors"
-        >
-          CANCEL
-        </button>
+        <span className="shrink-0 text-xs text-[var(--color-text-muted)]">% weight</span>
+        <Button variant="primary" size="sm" onClick={onSave} disabled={saving || !form.name.trim()}>
+          {saving ? 'Creating…' : 'Create'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   )
@@ -684,40 +678,41 @@ function AddGroupForm({ form, onChange, onSave, onCancel, saving }) {
 function AssignmentList({ assignments, groups, currentGroupId, loading, movingId, onMove }) {
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] font-mono px-4 py-3">
-        <Loader size={12} className="animate-spin" /> Loading assignments…
+      <div className="flex items-center gap-2 px-4 py-3 text-xs text-[var(--color-text-muted)]">
+        <Loader size={12} className="animate-spin" aria-hidden="true" /> Loading assignments…
       </div>
     )
   }
   if (assignments.length === 0) {
     return (
-      <div className="mx-3 my-3 px-4 py-5 text-center border-2 border-dashed border-[var(--color-border)] rounded-[2px] font-mono text-xs text-[var(--color-text-muted)] uppercase">
+      <div className="mx-3 my-3 rounded-[var(--radius-card)] border-2 border-dashed border-[var(--color-border)] px-4 py-5 text-center text-xs text-[var(--color-text-muted)]">
         No assignments in this group.
       </div>
     )
   }
   return (
     <div className="p-3">
-      <div className="grid grid-cols-12 gap-2 text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase px-2 pb-1.5 border-b border-[var(--color-border)]">
+      <div className="list-row-meta grid grid-cols-12 gap-2 border-b border-[var(--color-border)] px-2 pb-1.5 text-xs font-medium text-[var(--color-text-muted)]">
         <div className="col-span-5">Assignment</div>
         <div className="col-span-2 text-right">Points</div>
         <div className="col-span-2">Due</div>
-        <div className="col-span-3 text-right">Move to Group</div>
+        <div className="col-span-3 text-right">Move to group</div>
       </div>
       <div className="divide-y divide-[var(--color-border)]">
         {assignments.map(a => (
-          <div key={a.id} className="grid grid-cols-12 gap-2 items-center px-2 py-2.5 hover:bg-[var(--color-bg-hover)] transition-colors">
-            <div className="col-span-5 text-xs text-[var(--color-text-body)] truncate">{a.name}</div>
+          <div key={a.id} className="grid grid-cols-12 items-center gap-2 px-2 py-2.5 transition-colors hover:bg-[var(--color-bg-hover)]">
+            <div className="col-span-5 truncate text-xs text-[var(--color-text-body)]">{a.name}</div>
             <div className="col-span-2 text-right text-xs text-[var(--color-text-secondary)]">{a.pointsPossible ?? '—'}</div>
             <div className="col-span-2 text-xs text-[var(--color-text-secondary)]">{a.dueAt ? formatDate(a.dueAt) : '—'}</div>
             <div className="col-span-3 text-right">
               {movingId === a.id ? (
-                <Loader size={12} className="animate-spin text-[var(--color-text-muted)] ml-auto" />
+                <Loader size={12} className="ml-auto animate-spin text-[var(--color-text-muted)]" aria-hidden="true" />
               ) : (
                 <select
                   value={currentGroupId}
                   onChange={e => onMove(a.id, e.target.value)}
-                  className="text-xs border border-[var(--color-border)] rounded-[1px] px-2 py-1 bg-[var(--color-bg-surface)] text-[var(--color-text-body)] font-mono w-full"
+                  className="input w-full px-2 py-1 text-xs"
+                  aria-label={`Move ${a.name} to group`}
                 >
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
