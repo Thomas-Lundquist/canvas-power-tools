@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Loader, AlertTriangle, Send, BookTemplate, Save, FileText, Trash2, Clock } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Loader, AlertTriangle, Send, BookTemplate, Save, FileText, Trash2, Clock, Info, Bold, Italic, Link as LinkIcon, List, Eye } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
+import Button from '../../components/Button.jsx'
+import IconButton from '../../components/IconButton.jsx'
 import { getCourses } from '../../api/courses.js'
 import { createAnnouncement } from '../../api/discussions.js'
 import { getDrafts, saveDraft, deleteDraft, getAnnouncementTemplates, saveAnnouncementTemplate, deleteAnnouncementTemplate } from '../../storage/announcements.js'
@@ -9,6 +11,69 @@ import { addSentLogEntry, getSentLog } from '../../storage/sentLog.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import SentLogPanel from './SentLogPanel.jsx'
+
+// Purple module identity carried by a single token — see design_docs/10 §2.
+const COMM_BADGE_STYLE = {
+  backgroundColor: 'var(--color-domain-communication)',
+  color: 'var(--primary-contrast)',
+}
+
+// Notched card label overlapping the top border — the signature Bauhaus card
+// marker from the reference AnnouncementsScreen. list-row-meta gives monospace
+// under Bauhaus only; colors come from tokens so it re-tints per module.
+function CardBadge({ children }) {
+  return (
+    <span
+      className="list-row-meta absolute -top-2.5 left-3 z-[1] rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider"
+      style={COMM_BADGE_STYLE}
+    >
+      {children}
+    </span>
+  )
+}
+
+// Basic formatting toolbar. Wraps the textarea selection in HTML tags, which is
+// what Canvas's announcement message field renders — so every button does real
+// work and carries an accessible name.
+function FormatToolbar({ textareaRef, value, onChange }) {
+  function wrap(before, after) {
+    const el = textareaRef.current
+    if (!el) return
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const selected = value.slice(start, end)
+    const next = value.slice(0, start) + before + selected + after + value.slice(end)
+    onChange(next)
+    requestAnimationFrame(() => {
+      el.focus()
+      el.selectionStart = start + before.length
+      el.selectionEnd = end + before.length
+    })
+  }
+
+  const tools = [
+    { icon: Bold, label: 'Bold', run: () => wrap('<strong>', '</strong>') },
+    { icon: Italic, label: 'Italic', run: () => wrap('<em>', '</em>') },
+    { icon: LinkIcon, label: 'Insert link', run: () => wrap('<a href="">', '</a>') },
+    { icon: List, label: 'Bulleted list', run: () => wrap('<ul>\n  <li>', '</li>\n</ul>') },
+  ]
+
+  return (
+    <div className="flex items-center gap-1 rounded-t-[var(--radius-card)] border border-b-0 border-[var(--color-border)] bg-[var(--color-bg-hover)] px-2 py-1.5">
+      {tools.map(t => (
+        <button
+          key={t.label}
+          type="button"
+          onClick={t.run}
+          aria-label={t.label}
+          className="rounded-[var(--radius-sm)] border border-transparent p-1 text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border)] hover:bg-[var(--color-bg-surface)] hover:text-[var(--color-text-body)]"
+        >
+          <t.icon size={14} aria-hidden="true" />
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function CountdownButton({ onConfirm, sending, progress }) {
   const [seconds, setSeconds] = useState(5)
@@ -23,16 +88,16 @@ function CountdownButton({ onConfirm, sending, progress }) {
 
   return (
     <button
-      className="btn-primary flex items-center gap-2 min-w-[10rem] justify-center"
+      className="btn-primary flex min-w-[10rem] items-center justify-center gap-2"
       disabled={!ready}
       onClick={onConfirm}
     >
       {sending ? (
-        <><Loader size={14} className="animate-spin" />{progress || 'Sending…'}</>
+        <><Loader size={14} className="animate-spin" aria-hidden="true" />{progress || 'Sending…'}</>
       ) : seconds > 0 ? (
-        <><Clock size={14} />Send in {seconds}…</>
+        <><Clock size={14} aria-hidden="true" />Send in {seconds}…</>
       ) : (
-        <><Send size={14} />Confirm and Send</>
+        <><Send size={14} aria-hidden="true" />Confirm and Send</>
       )}
     </button>
   )
@@ -45,33 +110,33 @@ function PreviewModal({ subject, body, selectedCourses, schedule, onConfirm, onC
       onClose={onCancel}
       size="sm"
       footer={<>
-        <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
+        <Button variant="secondary" onClick={onCancel} disabled={sending}>Cancel</Button>
         <CountdownButton onConfirm={onConfirm} sending={sending} progress={progress} />
       </>}
     >
       <div className="space-y-4">
         <div>
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Subject</p>
+          <p className="section-label !mb-1">Subject</p>
           <p className="text-sm font-medium text-[var(--color-text-body)]">{subject}</p>
         </div>
         <div>
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Message</p>
-          <p className="text-sm text-[var(--color-text-body)] whitespace-pre-wrap bg-[var(--color-bg-hover)] border border-[var(--color-border)] rounded-lg p-3">{body}</p>
+          <p className="section-label !mb-1">Message</p>
+          <p className="whitespace-pre-wrap rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-hover)] p-3 text-sm text-[var(--color-text-body)]">{body}</p>
         </div>
         <div>
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Sending to</p>
-          <ul className="text-sm text-[var(--color-text-secondary)] space-y-0.5">
+          <p className="section-label !mb-1">Sending to</p>
+          <ul className="space-y-0.5 text-sm text-[var(--color-text-secondary)]">
             {selectedCourses.map(c => <li key={c.id}>{c.name}</li>)}
           </ul>
         </div>
         <div>
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Schedule</p>
+          <p className="section-label !mb-1">Schedule</p>
           <p className="text-sm text-[var(--color-text-secondary)]">
             {schedule ? `Scheduled for ${new Date(schedule).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Send immediately'}
           </p>
         </div>
-        <div className="flex items-start gap-2 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg p-3 text-xs text-[var(--color-warning)]">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2 rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] p-3 text-xs text-[var(--color-warning)]" role="alert">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>Announcements cannot be recalled once sent.</span>
         </div>
       </div>
@@ -84,19 +149,17 @@ function DraftsPanel({ drafts, onLoad, onDelete, onClose }) {
     <Modal title="Saved Drafts" onClose={onClose} size="sm">
       <div className="-mx-6 -my-4">
         {drafts.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-disabled)] py-10 text-center">No saved drafts.</p>
+          <p className="py-10 text-center text-sm text-[var(--color-text-disabled)]">No saved drafts.</p>
         ) : (
           <div className="divide-y divide-[var(--color-border-subtle)]">
             {drafts.map(d => (
               <div key={d.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-body)] truncate">{d.subject || '(no subject)'}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-[var(--color-text-body)]">{d.subject || '(no subject)'}</p>
                   <p className="text-xs text-[var(--color-text-disabled)]">Saved {new Date(d.savedAt).toLocaleDateString()}</p>
                 </div>
-                <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(d)}>Load</button>
-                <button className="btn-ghost p-1.5 text-[var(--color-error)] hover:text-[var(--color-error)]" onClick={() => onDelete(d.id)} aria-label="Delete draft">
-                  <Trash2 size={14} />
-                </button>
+                <Button variant="secondary" size="sm" onClick={() => onLoad(d)}>Load</Button>
+                <IconButton icon={Trash2} label="Delete draft" variant="danger" size="sm" onClick={() => onDelete(d.id)} />
               </div>
             ))}
           </div>
@@ -111,19 +174,17 @@ function TemplatesPanel({ templates, onLoad, onDelete, onClose }) {
     <Modal title="Announcement Templates" onClose={onClose} size="sm">
       <div className="-mx-6 -my-4">
         {templates.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-disabled)] py-10 text-center">No saved templates.</p>
+          <p className="py-10 text-center text-sm text-[var(--color-text-disabled)]">No saved templates.</p>
         ) : (
           <div className="divide-y divide-[var(--color-border-subtle)]">
             {templates.map(t => (
               <div key={t.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-body)] truncate">{t.name}</p>
-                  <p className="text-xs text-[var(--color-text-disabled)] truncate">{t.subject || '(no subject)'}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-[var(--color-text-body)]">{t.name}</p>
+                  <p className="truncate text-xs text-[var(--color-text-disabled)]">{t.subject || '(no subject)'}</p>
                 </div>
-                <button className="btn-secondary text-xs shrink-0" onClick={() => onLoad(t)}>Use</button>
-                <button className="btn-ghost p-1.5 text-[var(--color-error)] hover:text-[var(--color-error)]" onClick={() => onDelete(t.id)} aria-label="Delete template">
-                  <Trash2 size={14} />
-                </button>
+                <Button variant="secondary" size="sm" onClick={() => onLoad(t)}>Use</Button>
+                <IconButton icon={Trash2} label="Delete template" variant="danger" size="sm" onClick={() => onDelete(t.id)} />
               </div>
             ))}
           </div>
@@ -157,6 +218,8 @@ export default function Announcements() {
   const [activeDraftId, setActiveDraftId] = useState(null)
   const [saveTemplateName, setSaveTemplateName] = useState('')
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+
+  const bodyRef = useRef(null)
 
   useEffect(() => {
     getCourses()
@@ -272,139 +335,161 @@ export default function Announcements() {
   }
 
   const canSend = selectedCourses.length > 0 && subject.trim() && body.trim()
+  const allSelected = courses.length > 0 && selectedCourseIds.size === courses.length
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-[var(--color-border)] pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Announcements</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">Write once, send to multiple courses. Supports scheduling and drafts.</p>
+          <h1 className="text-2xl font-semibold text-[var(--color-text-body)]">Announcements</h1>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">Write once, send to multiple courses. Supports scheduling and drafts.</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button className="btn-secondary text-sm relative" onClick={() => { getDrafts().then(setDrafts); setShowDrafts(true) }}>
-            Drafts {drafts.length > 0 && <span className="ml-1 text-xs text-[var(--color-text-disabled)]">({drafts.length})</span>}
-          </button>
-          <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
-            Sent Log
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => { getDrafts().then(setDrafts); setShowDrafts(true) }}>
+            Drafts{drafts.length > 0 && ` (${drafts.length})`}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>Sent Log</Button>
         </div>
       </div>
 
-      {/* Course selection */}
-      <div className="card overflow-hidden mb-5">
-        <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-          <p className="text-sm font-semibold text-[var(--color-text-body)]">Send to</p>
-          {courses.length > 0 && (
-            <button className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]" onClick={toggleAll}>
-              {selectedCourseIds.size === courses.length ? 'Deselect all' : 'Select all'}
-            </button>
-          )}
-        </div>
-        {loadingCourses ? (
-          <div className="flex items-center gap-2 py-6 px-4 text-[var(--color-text-disabled)] text-sm">
-            <Loader size={14} className="animate-spin" /> Loading courses…
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left column: recipient selection + notice */}
+        <div className="space-y-4 lg:col-span-4">
+          <div className="card relative p-4 pt-5">
+            <CardBadge>Recipients</CardBadge>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="section-label !mb-0">Send to</p>
+              {courses.length > 0 && (
+                <button
+                  className="text-xs text-[var(--color-text-disabled)] hover:text-[var(--color-text-secondary)]"
+                  onClick={toggleAll}
+                >
+                  {allSelected ? 'Deselect all' : 'Select all'}
+                </button>
+              )}
+            </div>
+            {loadingCourses ? (
+              <div className="flex items-center gap-2 py-6 text-sm text-[var(--color-text-disabled)]">
+                <Loader size={14} className="animate-spin" aria-hidden="true" /> Loading courses…
+              </div>
+            ) : (
+              <div className="-mx-1 max-h-64 divide-y divide-[var(--color-border-subtle)] overflow-y-auto">
+                {courses.map(c => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-3 rounded-[var(--radius-sm)] px-1 py-2.5 hover:bg-[var(--color-bg-hover)]">
+                    <Checkbox checked={selectedCourseIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
+                    <span className="text-sm text-[var(--color-text-body)]">{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="divide-y divide-[var(--color-border-subtle)] max-h-48 overflow-y-auto">
-            {courses.map(c => (
-              <label key={c.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--color-bg-hover)]">
-                <Checkbox checked={selectedCourseIds.has(c.id)} onChange={() => toggleCourse(c.id)} />
-                <span className="text-sm text-[var(--color-text-body)]">{c.name}</span>
+
+          <div
+            className="flex items-start gap-3 rounded-[var(--radius-card)] border p-4"
+            style={{
+              borderColor: 'var(--color-domain-communication)',
+              backgroundColor: 'color-mix(in srgb, var(--color-domain-communication) 8%, var(--color-bg-surface))',
+            }}
+          >
+            <Info size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--color-domain-communication)' }} aria-hidden="true" />
+            <div>
+              <h2 className="text-xs font-bold" style={{ color: 'var(--color-domain-communication)' }}>Before you send</h2>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                Announcements email every enrolled student immediately unless you schedule them. They cannot be recalled once sent.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right column: compose */}
+        <div className="card relative space-y-5 p-5 pt-6 lg:col-span-8">
+          <CardBadge>Compose</CardBadge>
+
+          <div>
+            <label className="section-label" htmlFor="ann-subject">Subject line</label>
+            <input
+              id="ann-subject"
+              type="text"
+              className="input w-full text-sm"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              placeholder="e.g. Midterm review session rescheduled"
+            />
+          </div>
+
+          <div>
+            <label className="section-label" htmlFor="ann-body">Message body</label>
+            <FormatToolbar textareaRef={bodyRef} value={body} onChange={setBody} />
+            <textarea
+              id="ann-body"
+              ref={bodyRef}
+              className="input w-full resize-y rounded-t-none text-sm"
+              rows={8}
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              placeholder="Write your announcement here…"
+            />
+          </div>
+
+          {/* Delivery schedule sub-panel */}
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-hover)] p-4">
+            <p className="section-label">Delivery schedule</p>
+            <div className="flex flex-col gap-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                <input type="radio" name="scheduleMode" value="now" checked={scheduleMode === 'now'}
+                  onChange={() => setScheduleMode('now')} className="accent-[var(--cpt-color)]" />
+                Send immediately
               </label>
-            ))}
+              <label className="flex cursor-pointer flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                <input type="radio" name="scheduleMode" value="scheduled" checked={scheduleMode === 'scheduled'}
+                  onChange={() => setScheduleMode('scheduled')} className="accent-[var(--cpt-color)]" />
+                Schedule for
+                <input
+                  type="date"
+                  className="input px-2 py-1 text-sm"
+                  value={scheduleDate}
+                  onChange={e => setScheduleDate(e.target.value)}
+                  disabled={scheduleMode !== 'scheduled'}
+                  aria-label="Schedule date"
+                />
+                <input
+                  type="time"
+                  className="input px-2 py-1 text-sm"
+                  value={scheduleTime}
+                  onChange={e => setScheduleTime(e.target.value)}
+                  disabled={scheduleMode !== 'scheduled'}
+                  aria-label="Schedule time"
+                />
+              </label>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Compose */}
-      <div className="card p-5 mb-5 space-y-4">
-        <div>
-          <label className="label">Subject</label>
-          <input
-            type="text"
-            className="input w-full text-sm mt-1"
-            value={subject}
-            onChange={e => setSubject(e.target.value)}
-            placeholder="Announcement subject…"
-          />
-        </div>
-        <div>
-          <label className="label">Message</label>
-          <textarea
-            className="input w-full text-sm mt-1 resize-y"
-            rows={8}
-            value={body}
-            onChange={e => setBody(e.target.value)}
-            placeholder="Write your announcement here…"
-          />
-        </div>
-
-        {/* Schedule */}
-        <div>
-          <p className="label mb-2">Schedule</p>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-              <input type="radio" name="scheduleMode" value="now" checked={scheduleMode === 'now'}
-                onChange={() => setScheduleMode('now')} className="accent-[var(--cpt-color)]" />
-              Send immediately
-            </label>
-            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-              <input type="radio" name="scheduleMode" value="scheduled" checked={scheduleMode === 'scheduled'}
-                onChange={() => setScheduleMode('scheduled')} className="accent-[var(--cpt-color)]" />
-              Schedule for
-              <input
-                type="date"
-                className="input text-sm py-1 px-2"
-                value={scheduleDate}
-                onChange={e => setScheduleDate(e.target.value)}
-                disabled={scheduleMode !== 'scheduled'}
-              />
-              <input
-                type="time"
-                className="input text-sm py-1 px-2"
-                value={scheduleTime}
-                onChange={e => setScheduleTime(e.target.value)}
-                disabled={scheduleMode !== 'scheduled'}
-              />
-            </label>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-1 flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              className="btn-secondary text-sm flex items-center gap-1.5"
-              onClick={() => { getAnnouncementTemplates().then(setTemplates); setShowTemplates(true) }}
-            >
-              <BookTemplate size={14} /> Load Template
-            </button>
-            <button
-              className="btn-secondary text-sm flex items-center gap-1.5"
-              disabled={!subject.trim() && !body.trim()}
-              onClick={() => setShowSaveTemplate(true)}
-            >
-              <Save size={14} /> Save as Template
-            </button>
-            <button
-              className="btn-secondary text-sm flex items-center gap-1.5"
-              disabled={!subject.trim() && !body.trim()}
-              onClick={handleSaveDraft}
-            >
-              <FileText size={14} /> Save Draft
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[var(--color-text-disabled)]">
-              Sending to: {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''}
-            </span>
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              disabled={!canSend}
-              onClick={() => setShowPreview(true)}
-            >
-              <Send size={14} /> Preview & Send
-            </button>
+          {/* Action bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] pt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" size="sm" icon={BookTemplate}
+                onClick={() => { getAnnouncementTemplates().then(setTemplates); setShowTemplates(true) }}>
+                Load Template
+              </Button>
+              <Button variant="secondary" size="sm" icon={Save}
+                disabled={!subject.trim() && !body.trim()}
+                onClick={() => setShowSaveTemplate(true)}>
+                Save as Template
+              </Button>
+              <Button variant="secondary" size="sm" icon={FileText}
+                disabled={!subject.trim() && !body.trim()}
+                onClick={handleSaveDraft}>
+                Save Draft
+              </Button>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-[var(--color-text-disabled)]">
+                {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''}
+              </span>
+              <Button variant="primary" icon={Eye} disabled={!canSend} onClick={() => setShowPreview(true)}>
+                Preview &amp; Send
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -415,8 +500,8 @@ export default function Announcements() {
           onClose={() => setShowSaveTemplate(false)}
           size="sm"
           footer={<>
-            <button className="btn-secondary" onClick={() => setShowSaveTemplate(false)}>Cancel</button>
-            <button className="btn-primary" disabled={!saveTemplateName.trim()} onClick={handleSaveTemplate}>Save</button>
+            <Button variant="secondary" onClick={() => setShowSaveTemplate(false)}>Cancel</Button>
+            <Button variant="primary" disabled={!saveTemplateName.trim()} onClick={handleSaveTemplate}>Save</Button>
           </>}
         >
           <input
@@ -425,6 +510,7 @@ export default function Announcements() {
             value={saveTemplateName}
             onChange={e => setSaveTemplateName(e.target.value)}
             placeholder="Template name…"
+            aria-label="Template name"
             onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
           />
         </Modal>
