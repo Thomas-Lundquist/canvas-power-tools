@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Loader, AlertTriangle, Send, Clock, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Loader, AlertTriangle, Send, Clock, ShieldCheck, CalendarClock } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
 import NotchBadge from '../../components/NotchBadge.jsx'
-import { Tabs, TabPanel } from '../../components/Tabs.jsx'
+import SlideOver from '../../components/SlideOver.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { getCourses } from '../../api/courses.js'
@@ -12,6 +12,7 @@ import { getEnrollmentsWithGrades } from '../../api/enrollments.js'
 import { sendConversation } from '../../api/conversations.js'
 import { getAccount } from '../../storage/account.js'
 import { addSentLogEntry, getSentLog } from '../../storage/sentLog.js'
+import { getScheduledChecksByTool } from '../../storage/scheduledChecks.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { resolveTokens, resolveOverallTokens } from './tokenHelpers.js'
@@ -126,7 +127,8 @@ export default function ThresholdMessenger() {
   const [progress, setProgress]             = useState('')
   const [showSentLog, setShowSentLog]       = useState(false)
   const [sentLog, setSentLog]               = useState([])
-  const [activeTab, setActiveTab]           = useState('send-now')
+  const [showAutomation, setShowAutomation] = useState(false)
+  const [ruleCount, setRuleCount]           = useState(0)
   const [showScheduleForm, setShowScheduleForm] = useState(false)
   const [editingSchedule, setEditingSchedule]   = useState(null)
   const [scheduleFormType, setScheduleFormType] = useState('grade-outreach-assignment')
@@ -354,21 +356,37 @@ export default function ThresholdMessenger() {
     })
   }
 
-  const TABS = [
-    { id: 'send-now', label: 'Send Now' },
-    { id: 'rules',    label: 'Rules' },
-  ]
+  const refreshRuleCount = useCallback(async () => {
+    const [a, b] = await Promise.all([
+      getScheduledChecksByTool('grade-outreach-assignment'),
+      getScheduledChecksByTool('grade-outreach-overall'),
+    ])
+    setRuleCount(a.length + b.length)
+  }, [])
+
+  useEffect(() => { refreshRuleCount() }, [refreshRuleCount])
 
   return (
-    <div>
+    <div
+      style={{
+        '--cpt-color': 'var(--color-domain-communication)',
+        '--cpt-color-rgb': 'var(--color-domain-communication-rgb)',
+        '--cpt-color-dark': 'color-mix(in srgb, var(--color-domain-communication) 82%, black)',
+      }}
+    >
       <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--color-border)] pb-4">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--color-text-body)]">Grade Outreach</h1>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">Message students who scored above or below a grade threshold.</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>
-          Sent Log{sentLog.length > 0 && ` (${sentLog.length})`}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" icon={CalendarClock} onClick={() => setShowAutomation(true)}>
+            Automation{ruleCount > 0 && ` (${ruleCount})`}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>
+            Sent Log{sentLog.length > 0 && ` (${sentLog.length})`}
+          </Button>
+        </div>
       </div>
 
       <div
@@ -384,9 +402,6 @@ export default function ThresholdMessenger() {
         </p>
       </div>
 
-      <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
-
-      <TabPanel tabId="send-now" activeTab={activeTab}>
 
       {/* Mode toggle */}
       <div className="card relative mb-5 mt-5 p-4 pt-5">
@@ -651,30 +666,30 @@ export default function ThresholdMessenger() {
         />
       )}
 
-      </TabPanel>
-
-      <TabPanel tabId="rules" activeTab={activeTab}>
-        <div className="space-y-6">
-          <div>
-            <p className="section-label mt-5 px-0.5">Assignment Score Rules</p>
-            <ScheduleManager
-              toolType="grade-outreach-assignment"
-              courseId={courseId}
-              onCreateSchedule={() => { setScheduleFormType('grade-outreach-assignment'); setShowScheduleForm(true) }}
-              onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
-            />
+      {showAutomation && (
+        <SlideOver title="Recurring Rules" onClose={() => { setShowAutomation(false); refreshRuleCount() }} width="32rem">
+          <div className="space-y-6">
+            <div>
+              <p className="section-label px-0.5">Assignment Score Rules</p>
+              <ScheduleManager
+                toolType="grade-outreach-assignment"
+                courseId={courseId}
+                onCreateSchedule={() => { setScheduleFormType('grade-outreach-assignment'); setShowScheduleForm(true) }}
+                onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
+              />
+            </div>
+            <div>
+              <p className="section-label px-0.5">Overall Grade Rules</p>
+              <ScheduleManager
+                toolType="grade-outreach-overall"
+                courseId={courseId}
+                onCreateSchedule={() => { setScheduleFormType('grade-outreach-overall'); setShowScheduleForm(true) }}
+                onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="section-label px-0.5">Overall Grade Rules</p>
-            <ScheduleManager
-              toolType="grade-outreach-overall"
-              courseId={courseId}
-              onCreateSchedule={() => { setScheduleFormType('grade-outreach-overall'); setShowScheduleForm(true) }}
-              onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
-            />
-          </div>
-        </div>
-      </TabPanel>
+        </SlideOver>
+      )}
 
       {showScheduleForm && (
         <ScheduleForm

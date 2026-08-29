@@ -319,7 +319,13 @@ export default function Announcements() {
   const allSelected = courses.length > 0 && selectedCourseIds.size === courses.length
 
   return (
-    <div>
+    <div
+      style={{
+        '--cpt-color': 'var(--color-domain-communication)',
+        '--cpt-color-rgb': 'var(--color-domain-communication-rgb)',
+        '--cpt-color-dark': 'color-mix(in srgb, var(--color-domain-communication) 82%, black)',
+      }}
+    >
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-[var(--color-border)] pb-4">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--color-text-body)]">Announcements</h1>

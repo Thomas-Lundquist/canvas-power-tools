@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Loader, Send, Clock, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Loader, Send, Clock, ShieldCheck, CalendarClock } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
 import NotchBadge from '../../components/NotchBadge.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
 import Callout from '../../components/Callout.jsx'
-import { Tabs, TabPanel } from '../../components/Tabs.jsx'
+import SlideOver from '../../components/SlideOver.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { getCourses } from '../../api/courses.js'
@@ -13,6 +13,7 @@ import { getAssignmentsWithGradingData, getAssignmentSubmissions } from '../../a
 import { sendConversation } from '../../api/conversations.js'
 import { getAccount } from '../../storage/account.js'
 import { addSentLogEntry, getSentLog } from '../../storage/sentLog.js'
+import { getScheduledChecksByTool } from '../../storage/scheduledChecks.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { resolveTokens } from './tokenHelpers.js'
@@ -114,7 +115,8 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
   const [progress, setProgress]           = useState('')
   const [showSentLog, setShowSentLog]     = useState(false)
   const [sentLog, setSentLog]             = useState([])
-  const [activeTab, setActiveTab]         = useState('send-now')
+  const [showAutomation, setShowAutomation] = useState(false)
+  const [ruleCount, setRuleCount]         = useState(0)
   const [showScheduleForm, setShowScheduleForm] = useState(false)
   const [editingSchedule, setEditingSchedule]   = useState(null)
   const [scheduleFormType, setScheduleFormType] = useState('submission-reminder-specific')
@@ -235,19 +237,35 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
     })
   }
 
-  const TABS = [
-    { id: 'send-now', label: 'Send Now' },
-    { id: 'rules',    label: 'Rules' },
-  ]
+  const refreshRuleCount = useCallback(async () => {
+    const [a, b] = await Promise.all([
+      getScheduledChecksByTool('submission-reminder-specific'),
+      getScheduledChecksByTool('submission-reminder-upcoming'),
+    ])
+    setRuleCount(a.length + b.length)
+  }, [])
+
+  useEffect(() => { refreshRuleCount() }, [refreshRuleCount])
 
   return (
-    <div>
+    <div
+      style={{
+        '--cpt-color': 'var(--color-domain-communication)',
+        '--cpt-color-rgb': 'var(--color-domain-communication-rgb)',
+        '--cpt-color-dark': 'color-mix(in srgb, var(--color-domain-communication) 82%, black)',
+      }}
+    >
       <PageHeader
         title="Submission Reminders"
         actions={
-          <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>
-            Sent Log{sentLog.length > 0 && ` (${sentLog.length})`}
-          </Button>
+          <>
+            <Button variant="secondary" size="sm" icon={CalendarClock} onClick={() => setShowAutomation(true)}>
+              Automation{ruleCount > 0 && ` (${ruleCount})`}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>
+              Sent Log{sentLog.length > 0 && ` (${sentLog.length})`}
+            </Button>
+          </>
         }
       >
         Message students who have not submitted an assignment.
@@ -265,10 +283,6 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
           Reminders send through the Canvas Inbox in your active session and cannot be unsent. Excused students are skipped automatically.
         </p>
       </div>
-
-      <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
-
-      <TabPanel tabId="send-now" activeTab={activeTab}>
 
       {/* Course + Assignment */}
       <div className="card relative mb-5 mt-5 space-y-3 p-4 pt-5">
@@ -411,30 +425,30 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
         />
       )}
 
-      </TabPanel>
-
-      <TabPanel tabId="rules" activeTab={activeTab}>
-        <div className="space-y-6">
-          <div>
-            <p className="section-label mt-5 px-0.5">Specific Assignment Rules</p>
-            <ScheduleManager
-              toolType="submission-reminder-specific"
-              courseId={courseId}
-              onCreateSchedule={() => { setScheduleFormType('submission-reminder-specific'); setShowScheduleForm(true) }}
-              onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
-            />
+      {showAutomation && (
+        <SlideOver title="Recurring Rules" onClose={() => { setShowAutomation(false); refreshRuleCount() }} width="32rem">
+          <div className="space-y-6">
+            <div>
+              <p className="section-label px-0.5">Specific Assignment Rules</p>
+              <ScheduleManager
+                toolType="submission-reminder-specific"
+                courseId={courseId}
+                onCreateSchedule={() => { setScheduleFormType('submission-reminder-specific'); setShowScheduleForm(true) }}
+                onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
+              />
+            </div>
+            <div>
+              <p className="section-label px-0.5">Upcoming Assignment Rules</p>
+              <ScheduleManager
+                toolType="submission-reminder-upcoming"
+                courseId={courseId}
+                onCreateSchedule={() => { setScheduleFormType('submission-reminder-upcoming'); setShowScheduleForm(true) }}
+                onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="section-label px-0.5">Upcoming Assignment Rules</p>
-            <ScheduleManager
-              toolType="submission-reminder-upcoming"
-              courseId={courseId}
-              onCreateSchedule={() => { setScheduleFormType('submission-reminder-upcoming'); setShowScheduleForm(true) }}
-              onEditSchedule={s => { setEditingSchedule(s); setShowScheduleForm(true) }}
-            />
-          </div>
-        </div>
-      </TabPanel>
+        </SlideOver>
+      )}
 
       {showScheduleForm && (
         <ScheduleForm

@@ -129,6 +129,7 @@
   --color-domain-assignments:   #2563EB;  /* Cobalt Blue */
   --color-domain-grading:       #059669;  /* Emerald Green */
   --color-domain-communication: #7C3AED;  /* Purple */
+  --color-domain-communication-rgb: 124, 58, 237;  /* rgb of the purple above, for rgba() accent tints */
   --color-domain-people:        #EA580C;  /* Orange */
   --color-domain-content:       #0D9488;  /* Teal */
   --color-domain-setup:         #334155;  /* Dark Slate */
@@ -400,6 +401,10 @@
   }
 }
 
+@keyframes slide-over-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(-0.5rem); }
   to   { opacity: 1; transform: translateY(0);       }
