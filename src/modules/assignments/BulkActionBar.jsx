@@ -125,7 +125,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
             <div className="flex-1 p-4 flex flex-col">
               <div className="flex items-center gap-1.5 mb-2">
                 <Calendar size={12} aria-hidden="true" className="text-[var(--color-text-secondary)]" />
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">Dates</span>
+                <span className="section-label !mb-0">Dates</span>
               </div>
               <div className="flex flex-col flex-1 divide-y divide-[var(--color-border-subtle)] py-2">
                 {DATE_ROWS.map(({ key, label }) => (
@@ -144,7 +144,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
             {/* Points + Status + Preview column */}
             <div className="w-52 shrink-0 p-4 flex flex-col gap-4">
               <div>
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide"># Points</span>
+                <span className="section-label !mb-0"># Points</span>
                 <div className="flex items-center gap-2 mt-2">
                   <NumberField
                     value={actions.points}
@@ -160,7 +160,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
               <div>
                 <div className="flex items-center gap-1.5">
                   <Eye size={12} aria-hidden="true" className="text-[var(--color-text-secondary)]" />
-                  <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">Status</span>
+                  <span className="section-label !mb-0">Status</span>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <StatusButton

@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, RotateCcw, AlertCircle, Loader } from 'lucid
 import Modal from '../../components/Modal.jsx'
 import Callout from '../../components/Callout.jsx'
 import Badge from '../../components/Badge.jsx'
+import Button from '../../components/Button.jsx'
 import { getChangeLog, addChangeLogEntry, buildChangeLogEntry } from '../../storage/changeLogs.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { updateAssignment } from '../../api/assignments.js'
@@ -140,18 +141,20 @@ export default function ChangeLog({ courseId, courseName, onClose, onRevertCompl
               {confirming === entry.id ? (
                 <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                   <span className="text-xs text-[var(--color-text-secondary)]">Revert {entry.changes.length} change{entry.changes.length !== 1 ? 's' : ''}?</span>
-                  <button className="btn-danger text-xs px-2 py-1" onClick={() => handleRevert(entry)}>Confirm</button>
-                  <button className="btn-ghost text-xs px-2 py-1" onClick={() => setConfirming(null)}>Cancel</button>
+                  <Button variant="danger" size="sm" onClick={() => handleRevert(entry)}>Confirm</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirming(null)}>Cancel</Button>
                 </div>
               ) : reverting === entry.id ? (
                 <Loader size={16} className="animate-spin" style={{ color: 'var(--cpt-color)' }} />
               ) : (
-                <button
-                  className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={RotateCcw}
                   onClick={e => { e.stopPropagation(); setConfirming(entry.id) }}
                 >
-                  <RotateCcw size={13} /> Revert
-                </button>
+                  Revert
+                </Button>
               )}
             </div>
 

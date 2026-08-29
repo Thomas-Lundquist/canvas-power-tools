@@ -188,7 +188,7 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
         <span className="inline-flex items-center gap-1.5 max-w-full">
           <span
             aria-hidden="true"
-            className="inline-block w-1.5 h-3 shrink-0 rounded-[1px]"
+            className="inline-block w-1.5 h-3 shrink-0 rounded-[var(--radius-sm)]"
             style={{ backgroundColor: getGroupColor(a.assignmentGroupId) }}
           />
           <span className="truncate">{a.assignmentGroupName}</span>
