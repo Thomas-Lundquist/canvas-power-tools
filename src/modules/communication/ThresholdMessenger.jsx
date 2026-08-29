@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Loader, AlertTriangle, Send, Clock } from 'lucide-react'
+import { Loader, AlertTriangle, Send, Clock, ShieldCheck } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
+import Button from '../../components/Button.jsx'
+import NotchBadge from '../../components/NotchBadge.jsx'
 import { Tabs, TabPanel } from '../../components/Tabs.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
@@ -50,11 +52,11 @@ function CountdownButton({ onSend, sending, progress, label }) {
       onClick={onSend}
     >
       {sending ? (
-        <><Loader size={14} className="animate-spin" />{progress || 'Sending…'}</>
+        <><Loader size={14} className="animate-spin" aria-hidden="true" />{progress || 'Sending…'}</>
       ) : seconds > 0 ? (
-        <><Clock size={14} />Send in {seconds}…</>
+        <><Clock size={14} aria-hidden="true" />Send in {seconds}…</>
       ) : (
-        <><Send size={14} />{label}</>
+        <><Send size={14} aria-hidden="true" />{label}</>
       )}
     </button>
   )
@@ -70,25 +72,25 @@ function PreviewModal({ recipients, message, resolveExample, subtitle, onSend, o
       onClose={onCancel}
       size="sm"
       footer={<>
-        <button className="btn-secondary" onClick={onCancel} disabled={sending}>Cancel</button>
+        <Button variant="secondary" onClick={onCancel} disabled={sending}>Cancel</Button>
         <CountdownButton onSend={onSend} sending={sending} progress={progress} label="Send Messages" />
       </>}
     >
       <div className="space-y-4">
         {recipients[0] && (
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
-            <div className="bg-[var(--color-bg-hover)] rounded-lg p-4 text-sm text-[var(--color-text-body)] whitespace-pre-wrap border border-[var(--color-border)]">
+            <p className="section-label !mb-2">Example ({recipients[0].userName ?? 'Student'})</p>
+            <div className="whitespace-pre-wrap rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-hover)] p-4 text-sm text-[var(--color-text-body)]">
               {example}
             </div>
           </div>
         )}
         <div>
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Recipients</p>
+          <p className="section-label !mb-1">Recipients</p>
           <p className="text-sm text-[var(--color-text-secondary)]">{recipients.map(r => r.userName ?? 'Unknown').join(', ')}</p>
         </div>
-        <div className="flex items-start gap-2 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg p-3 text-xs text-[var(--color-warning)]">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2 rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] p-3 text-xs text-[var(--color-warning)]" role="alert">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>This will send {recipients.length} message{recipients.length !== 1 ? 's' : ''} via Canvas Inbox. Messages cannot be unsent.</span>
         </div>
       </div>
@@ -274,6 +276,15 @@ export default function ThresholdMessenger() {
     }).length
   }, [mode, enrollments, scoreType])
 
+  // Live sample resolves the template against the first recipient — mirrors the
+  // reference's "live sample preview" panel beside the message editor.
+  const sampleRecipient = mode === 'assignment' ? recipients[0] : overallRecipients[0]
+  const samplePreview = sampleRecipient
+    ? (mode === 'assignment'
+        ? resolveTokens(message, { student: sampleRecipient, assignment: selectedAssignment, course, teacherName })
+        : resolveOverallTokens(message, { student: sampleRecipient, course, teacherName, scoreType }))
+    : ''
+
   async function handleSend() {
     if (!selectedAssignment || recipients.length === 0) return
 
@@ -350,14 +361,27 @@ export default function ThresholdMessenger() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-4">
+      <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--color-border)] pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Grade Outreach</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">Message students who scored above or below a grade threshold.</p>
+          <h1 className="text-2xl font-semibold text-[var(--color-text-body)]">Grade Outreach</h1>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">Message students who scored above or below a grade threshold.</p>
         </div>
-        <button className="btn-secondary text-sm" onClick={() => setShowSentLog(true)}>
-          Sent Log {sentLog.length > 0 && <span className="ml-1 text-xs text-[var(--color-text-disabled)]">({sentLog.length})</span>}
-        </button>
+        <Button variant="secondary" size="sm" onClick={() => setShowSentLog(true)}>
+          Sent Log{sentLog.length > 0 && ` (${sentLog.length})`}
+        </Button>
+      </div>
+
+      <div
+        className="mb-5 flex items-start gap-2.5 rounded-[var(--radius-card)] border p-3 text-xs"
+        style={{
+          borderColor: 'var(--color-domain-communication)',
+          backgroundColor: 'color-mix(in srgb, var(--color-domain-communication) 8%, var(--color-bg-surface))',
+        }}
+      >
+        <ShieldCheck size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-domain-communication)' }} aria-hidden="true" />
+        <p className="leading-relaxed text-[var(--color-text-secondary)]">
+          Messages send through the Canvas Inbox in your active session and cannot be unsent. Review recipients before you send.
+        </p>
       </div>
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
@@ -365,7 +389,8 @@ export default function ThresholdMessenger() {
       <TabPanel tabId="send-now" activeTab={activeTab}>
 
       {/* Mode toggle */}
-      <div className="card p-4 mt-5 mb-5">
+      <div className="card relative mb-5 mt-5 p-4 pt-5">
+        <NotchBadge>Audience</NotchBadge>
         <p className="section-label mb-3">Filter students by</p>
         <div className="segmented-control" role="group" aria-label="Filter mode">
           {[
@@ -383,17 +408,18 @@ export default function ThresholdMessenger() {
           ))}
         </div>
         {pendingMode && (
-          <div className="mt-3 flex items-center gap-3 bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] rounded-lg px-3 py-2 text-xs text-[var(--color-warning)]">
-            <AlertTriangle size={13} className="shrink-0" />
+          <div className="mt-3 flex items-center gap-3 rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-warning)_32%,var(--color-bg-surface))] bg-[color-mix(in_srgb,var(--color-warning)_12%,var(--color-bg-surface))] px-3 py-2 text-xs text-[var(--color-warning)]" role="alert">
+            <AlertTriangle size={13} className="shrink-0" aria-hidden="true" />
             <span>Switching modes will reset your message.</span>
-            <button className="btn-secondary text-xs py-0.5 px-2" onClick={() => applyMode(pendingMode)}>Continue</button>
-            <button className="btn-ghost text-xs py-0.5 px-2" onClick={() => setPendingMode(null)}>Cancel</button>
+            <Button variant="secondary" size="sm" onClick={() => applyMode(pendingMode)}>Continue</Button>
+            <Button variant="ghost" size="sm" onClick={() => setPendingMode(null)}>Cancel</Button>
           </div>
         )}
       </div>
 
       {/* Course + Assignment */}
-      <div className="card p-4 mb-5 space-y-3">
+      <div className="card relative mb-5 space-y-3 p-4 pt-5">
+        <NotchBadge>Course</NotchBadge>
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
@@ -451,7 +477,8 @@ export default function ThresholdMessenger() {
 
       {/* Threshold controls */}
       {(mode === 'assignment' ? !!assignmentId : !!courseId) && (
-        <div className="card p-5 mb-5">
+        <div className="card relative mb-5 p-5 pt-6">
+          <NotchBadge>Threshold</NotchBadge>
           <p className="text-sm font-semibold text-[var(--color-text-body)] mb-3">
             {mode === 'assignment' ? 'Send to students who scored:' : 'Send to students whose overall grade is:'}
           </p>
@@ -549,30 +576,52 @@ export default function ThresholdMessenger() {
 
       {/* Message */}
       {(mode === 'assignment' ? (!!assignmentId && matching.length > 0) : (!!courseId && overallMatching.length > 0)) && (
-        <div className="card p-5 mb-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-[var(--color-text-body)]">Message</label>
-            <span className="text-xs text-[var(--color-text-disabled)]">
-              Sending to: {mode === 'assignment' ? recipients.length : overallRecipients.length} student{(mode === 'assignment' ? recipients : overallRecipients).length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <textarea
-            className="input w-full text-sm font-mono resize-y"
-            rows={8}
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-          />
-          <p className="text-xs text-[var(--color-text-disabled)]">
-            Available tokens: {(mode === 'overall' ? OVERALL_TOKENS : TOKENS).join('  ')}
-          </p>
-          <div className="flex justify-end">
-            <button
-              className="btn-primary flex items-center gap-1.5"
-              disabled={(mode === 'assignment' ? recipients : overallRecipients).length === 0 || !message.trim()}
-              onClick={() => setShowPreview(true)}
-            >
-              <Send size={14} /> Preview & Send
-            </button>
+        <div className="card relative mb-5 p-5 pt-6">
+          <NotchBadge>Message</NotchBadge>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <div className="space-y-3 lg:col-span-7">
+              <div className="flex items-center justify-between">
+                <label className="section-label !mb-0" htmlFor="outreach-message">Message template</label>
+                <span className="text-xs text-[var(--color-text-disabled)]">
+                  Sending to: {mode === 'assignment' ? recipients.length : overallRecipients.length} student{(mode === 'assignment' ? recipients : overallRecipients).length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <textarea
+                id="outreach-message"
+                className="input w-full resize-y font-mono text-sm"
+                rows={8}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+              />
+              <p className="text-xs text-[var(--color-text-disabled)]">
+                Available tokens: {(mode === 'overall' ? OVERALL_TOKENS : TOKENS).join('  ')}
+              </p>
+              <div className="flex justify-end">
+                <Button
+                  variant="primary"
+                  icon={Send}
+                  disabled={(mode === 'assignment' ? recipients : overallRecipients).length === 0 || !message.trim()}
+                  onClick={() => setShowPreview(true)}
+                >
+                  Preview &amp; Send
+                </Button>
+              </div>
+            </div>
+            <div className="lg:col-span-5">
+              <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg-hover)] p-4">
+                <p className="section-label">Live sample preview</p>
+                {sampleRecipient ? (
+                  <>
+                    <p className="list-row-meta mb-2 text-[0.625rem] uppercase tracking-wider text-[var(--color-text-disabled)]">
+                      To {sampleRecipient.userName ?? 'Student'} · via Canvas Inbox
+                    </p>
+                    <p className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--color-text-body)]">{samplePreview}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-[var(--color-text-disabled)]">Select recipients to preview the resolved message.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -607,7 +656,7 @@ export default function ThresholdMessenger() {
       <TabPanel tabId="rules" activeTab={activeTab}>
         <div className="space-y-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mt-5 mb-2 px-0.5">Assignment Score Rules</p>
+            <p className="section-label mt-5 px-0.5">Assignment Score Rules</p>
             <ScheduleManager
               toolType="grade-outreach-assignment"
               courseId={courseId}
@@ -616,7 +665,7 @@ export default function ThresholdMessenger() {
             />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2 px-0.5">Overall Grade Rules</p>
+            <p className="section-label px-0.5">Overall Grade Rules</p>
             <ScheduleManager
               toolType="grade-outreach-overall"
               courseId={courseId}

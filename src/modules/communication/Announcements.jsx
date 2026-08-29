@@ -4,6 +4,7 @@ import Modal from '../../components/Modal.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import Button from '../../components/Button.jsx'
 import IconButton from '../../components/IconButton.jsx'
+import NotchBadge from '../../components/NotchBadge.jsx'
 import { getCourses } from '../../api/courses.js'
 import { createAnnouncement } from '../../api/discussions.js'
 import { getDrafts, saveDraft, deleteDraft, getAnnouncementTemplates, saveAnnouncementTemplate, deleteAnnouncementTemplate } from '../../storage/announcements.js'
@@ -11,26 +12,6 @@ import { addSentLogEntry, getSentLog } from '../../storage/sentLog.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import SentLogPanel from './SentLogPanel.jsx'
-
-// Purple module identity carried by a single token — see design_docs/10 §2.
-const COMM_BADGE_STYLE = {
-  backgroundColor: 'var(--color-domain-communication)',
-  color: 'var(--primary-contrast)',
-}
-
-// Notched card label overlapping the top border — the signature Bauhaus card
-// marker from the reference AnnouncementsScreen. list-row-meta gives monospace
-// under Bauhaus only; colors come from tokens so it re-tints per module.
-function CardBadge({ children }) {
-  return (
-    <span
-      className="list-row-meta absolute -top-2.5 left-3 z-[1] rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider"
-      style={COMM_BADGE_STYLE}
-    >
-      {children}
-    </span>
-  )
-}
 
 // Basic formatting toolbar. Wraps the textarea selection in HTML tags, which is
 // what Canvas's announcement message field renders — so every button does real
@@ -356,7 +337,7 @@ export default function Announcements() {
         {/* Left column: recipient selection + notice */}
         <div className="space-y-4 lg:col-span-4">
           <div className="card relative p-4 pt-5">
-            <CardBadge>Recipients</CardBadge>
+            <NotchBadge>Recipients</NotchBadge>
             <div className="mb-3 flex items-center justify-between">
               <p className="section-label !mb-0">Send to</p>
               {courses.length > 0 && (
@@ -403,7 +384,7 @@ export default function Announcements() {
 
         {/* Right column: compose */}
         <div className="card relative space-y-5 p-5 pt-6 lg:col-span-8">
-          <CardBadge>Compose</CardBadge>
+          <NotchBadge>Compose</NotchBadge>
 
           <div>
             <label className="section-label" htmlFor="ann-subject">Subject line</label>
