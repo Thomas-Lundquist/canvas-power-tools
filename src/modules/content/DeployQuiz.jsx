@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle, AlertCircle, Loader, ExternalLink } from 'lucide-react'
+import { CheckCircle, AlertCircle, Loader, ExternalLink, FileArchive } from 'lucide-react'
 import { getCourses } from '../../api/courses.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { createQuiz, createQuizItem } from '../../api/newQuizzes.js'
@@ -16,6 +16,7 @@ import NumberField from '../../components/NumberField.jsx'
 import Select from '../../components/Select.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import ProgressBar from '../../components/ProgressBar.jsx'
+import QtiExportModal from './QtiExportModal.jsx'
 
 function SettingsBar({ className = '', children }) {
   return (
@@ -41,11 +42,13 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
   const [unlockAt, setUnlockAt] = useState('')
   const [lockAt, setLockAt] = useState('')
   const [shuffleQuestions, setShuffleQuestions] = useState(false)
+  const [shuffleAnswers, setShuffleAnswers] = useState(false)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState('')
   const [allowedAttempts, setAllowedAttempts] = useState('1')
   const [deploying, setDeploying] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [result, setResult] = useState(null)
+  const [showQti, setShowQti] = useState(false)
 
   useEffect(() => {
     getCourses().then(setCourses).catch(() => {}).finally(() => setLoadingCourses(false))
@@ -83,6 +86,7 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
       unlockAt: unlockAt ? `${unlockAt}T00:00:00Z` : undefined,
       lockAt: lockAt ? `${lockAt}T23:59:00Z` : undefined,
       shuffleQuestions,
+      shuffleAnswers,
       timeLimitMinutes: timeLimitMinutes ? Number(timeLimitMinutes) : undefined,
       allowedAttempts: allowedAttempts ? Number(allowedAttempts) : undefined,
     }
@@ -100,7 +104,7 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
     const itemResults = []
     for (let i = 0; i < questions.length; i++) {
       try {
-        await createQuizItem(courseId, quiz.id, questions[i], i + 1)
+        await createQuizItem(courseId, quiz.id, questions[i], i + 1, { shuffleAnswers })
         itemResults.push({ question: questions[i], success: true })
       } catch (err) {
         itemResults.push({ question: questions[i], success: false, error: err.message })
@@ -158,6 +162,9 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
         </div>
 
         <div className="mt-6 flex gap-3 justify-end">
+          <Button variant="ghost" icon={FileArchive} onClick={() => setShowQti(true)}>
+            Also export for an item bank
+          </Button>
           {result.quizUrl && (
             <Button variant="secondary" onClick={() => window.open(result.quizUrl, '_blank', 'noopener')}>
               <ExternalLink size={14} aria-hidden="true" /> Review in Canvas
@@ -167,6 +174,14 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
             Done
           </Button>
         </div>
+
+        {showQti && (
+          <QtiExportModal
+            questions={questions}
+            title={result.quiz?.title || title || 'Quiz'}
+            onClose={() => setShowQti(false)}
+          />
+        )}
       </div>
     )
   }
@@ -251,6 +266,10 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
               <label className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer">
                 <input type="checkbox" checked={shuffleQuestions} onChange={e => setShuffleQuestions(e.target.checked)} />
                 Shuffle question order
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer">
+                <input type="checkbox" checked={shuffleAnswers} onChange={e => setShuffleAnswers(e.target.checked)} />
+                Shuffle answer options
               </label>
             </SettingsBar>
           </div>

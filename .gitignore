@@ -9,3 +9,7 @@ dist/
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# QTI export dev fixtures
+qti-fixture*.zip
+*-qti.zip

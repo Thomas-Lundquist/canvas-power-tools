@@ -1,8 +1,10 @@
-import { CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { CheckCircle2, FileArchive } from 'lucide-react'
 import PageHeader from '../../components/PageHeader.jsx'
 import Button from '../../components/Button.jsx'
 import Callout from '../../components/Callout.jsx'
 import Badge from '../../components/Badge.jsx'
+import QtiExportModal from './QtiExportModal.jsx'
 
 const TYPE_LABELS = {
   MC: 'Multiple Choice',
@@ -72,6 +74,7 @@ function QuestionBody({ question }) {
 }
 
 export default function QuizPreview({ questions, errors, fileName, onBack, onContinue }) {
+  const [showQti, setShowQti] = useState(false)
   const canDeploy = questions.length > 0 && errors.length === 0
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0)
 
@@ -81,9 +84,14 @@ export default function QuizPreview({ questions, errors, fileName, onBack, onCon
         title="Preview"
         back={{ label: 'Choose a different file', to: onBack }}
         actions={
-          <Button variant="primary" disabled={!canDeploy} onClick={onContinue}>
-            Continue to Deploy
-          </Button>
+          <>
+            <Button variant="secondary" icon={FileArchive} disabled={!canDeploy} onClick={() => setShowQti(true)}>
+              Export QTI
+            </Button>
+            <Button variant="primary" disabled={!canDeploy} onClick={onContinue}>
+              Continue to Deploy
+            </Button>
+          </>
         }
       >
         {fileName} · {questions.length} question{questions.length !== 1 ? 's' : ''} · {totalPoints} pts total
@@ -130,6 +138,14 @@ export default function QuizPreview({ questions, errors, fileName, onBack, onCon
           </div>
         ))}
       </div>
+
+      {showQti && (
+        <QtiExportModal
+          questions={questions}
+          title={(fileName || 'Quiz').replace(/\.[^.]+$/, '')}
+          onClose={() => setShowQti(false)}
+        />
+      )}
     </div>
   )
 }

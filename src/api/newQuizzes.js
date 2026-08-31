@@ -15,10 +15,10 @@ export async function createQuiz(courseId, settings) {
   return mapQuiz(raw)
 }
 
-export async function createQuizItem(courseId, assignmentId, question, position) {
+export async function createQuizItem(courseId, assignmentId, question, position, options = {}) {
   return canvasPost(
     `/api/quiz/v1/courses/${courseId}/quizzes/${assignmentId}/items`,
-    { item: buildItemPayload(question, position) },
+    { item: buildItemPayload(question, position, options) },
   )
 }
 
@@ -39,6 +39,7 @@ function buildQuizPayload(settings) {
 
   const quizSettings = {}
   if (settings.shuffleQuestions != null) quizSettings.shuffle_questions = settings.shuffleQuestions
+  if (settings.shuffleAnswers != null) quizSettings.shuffle_answers = settings.shuffleAnswers
   if (settings.timeLimitMinutes != null) {
     quizSettings.has_time_limit = true
     quizSettings.session_time_limit_in_seconds = settings.timeLimitMinutes * SECONDS_PER_MINUTE
@@ -58,7 +59,8 @@ function buildQuizPayload(settings) {
 }
 
 // entry_type/points_possible/position wrap every item; `entry` varies per type.
-export function buildItemPayload(question, position) {
+// options.shuffleAnswers flips the per-question shuffle_rules for MC/MA/matching.
+export function buildItemPayload(question, position, { shuffleAnswers = false } = {}) {
   return {
     entry_type: 'Item',
     points_possible: question.points,
@@ -68,30 +70,30 @@ export function buildItemPayload(question, position) {
       item_body: buildStemHtml(question),
       calculator_type: 'none',
       feedback: buildFeedback(question.feedback),
-      ...buildTypeEntry(question),
+      ...buildTypeEntry(question, shuffleAnswers),
     },
   }
 }
 
-function buildTypeEntry(question) {
+function buildTypeEntry(question, shuffleAnswers) {
   switch (question.type) {
-    case 'MC': return buildChoiceEntry(question, false)
-    case 'MA': return buildChoiceEntry(question, true)
+    case 'MC': return buildChoiceEntry(question, false, shuffleAnswers)
+    case 'MA': return buildChoiceEntry(question, true, shuffleAnswers)
     case 'TF': return buildTrueFalseEntry(question)
     case 'ESSAY': return buildEssayEntry()
-    case 'MATCH': return buildMatchingEntry(question)
+    case 'MATCH': return buildMatchingEntry(question, shuffleAnswers)
     case 'FIB': return buildFibEntry(question)
     default: throw new Error(`Unsupported question type: ${question.type}`)
   }
 }
 
 function buildStemHtml(question) {
-  // FIB embeds its blanks as backtick-wrapped text inside item_body — see
-  // buildFibEntry, which builds its own item_body and overrides this one.
+  // FIB overrides this with its own item_body (blanks as <span> placeholders) —
+  // see buildFibEntry.
   return `<p>${escapeHtml(question.stem)}</p>`
 }
 
-function buildChoiceEntry(question, isMultiAnswer) {
+function buildChoiceEntry(question, isMultiAnswer, shuffleAnswers) {
   const choices = question.options.map((opt, i) => ({
     id: crypto.randomUUID(),
     position: i + 1,
@@ -101,12 +103,14 @@ function buildChoiceEntry(question, isMultiAnswer) {
     .map((opt, i) => (opt.correct ? choices[i].id : null))
     .filter(Boolean)
 
-  return {
+  const entry = {
     interaction_type_slug: isMultiAnswer ? 'multi-answer' : 'choice',
     interaction_data: { choices },
     scoring_data: { value: isMultiAnswer ? correctIds : correctIds[0] },
     scoring_algorithm: isMultiAnswer ? 'AllOrNothing' : 'Equivalence',
   }
+  if (shuffleAnswers) entry.properties = { shuffle_rules: { choices: { shuffled: true } } }
+  return entry
 }
 
 function buildTrueFalseEntry(question) {
@@ -133,7 +137,12 @@ function buildEssayEntry() {
   }
 }
 
-function buildMatchingEntry(question) {
+// Shape verified against a live New Quizzes matching item (2026-08):
+// interaction_data.answers is a flat string list of every right-side value plus
+// distractors; scoring_data.value maps each left prompt's id to its correct
+// answer string; scoring_data.edit_data mirrors that for the authoring UI.
+// PartialDeep (not DeepEquals) is what the UI writes — it awards partial credit.
+function buildMatchingEntry(question, shuffleAnswers) {
   const questions = question.pairs.map(pair => ({ id: crypto.randomUUID(), item_body: pair.left }))
   const answers = [
     ...question.pairs.map(p => p.right),
@@ -145,34 +154,56 @@ function buildMatchingEntry(question) {
   return {
     interaction_type_slug: 'matching',
     interaction_data: { questions, answers },
-    scoring_data: { value },
-    scoring_algorithm: 'DeepEquals',
+    properties: { shuffle_rules: { questions: { shuffled: !!shuffleAnswers } } },
+    scoring_data: {
+      value,
+      edit_data: {
+        matches: question.pairs.map((pair, i) => ({
+          answer_body: pair.right,
+          question_id: questions[i].id,
+          question_body: pair.left,
+        })),
+        distractors: question.distractors.map(d => d.text),
+      },
+    },
+    scoring_algorithm: 'PartialDeep',
   }
 }
 
-// FIB is the one type whose item_body isn't the generic stem wrapper — each
-// {{answer}} token becomes backtick-wrapped text per Instructure's rich-fill-
-// blank format, cross-referenced by UUID into scoring_data.value[].id.
+// FIB is the one type whose item_body isn't the generic stem wrapper. Shape
+// verified against a live New Quizzes item (Instructure quiz-lti, 2026-08):
+// every {{answer}} token becomes an empty <span id="blank_<uuid>"> in item_body,
+// while scoring_data.working_item_body carries the same sentence with the
+// answers backtick-wrapped. The bare uuid (no blank_ prefix) is the cross-
+// reference into interaction_data.blanks[] and scoring_data.value[].
 function buildFibEntry(question) {
   const blankIds = question.blanks.map(() => crypto.randomUUID())
+
   let bodyHtml = escapeHtml(question.stem)
-  question.blanks.forEach(b => {
-    bodyHtml = bodyHtml.replace(`{{${b.answer}}}`, `\`${escapeHtml(b.answer)}\``)
+  let workingHtml = escapeHtml(question.stem)
+  question.blanks.forEach((b, i) => {
+    const token = `{{${b.answer}}}`
+    bodyHtml = bodyHtml.replace(token, `<span id="blank_${blankIds[i]}"></span>`)
+    workingHtml = workingHtml.replace(token, `\`${escapeHtml(b.answer)}\``)
   })
-  const itemBody = `<p>${bodyHtml}</p>`
 
   const blanks = question.blanks.map((b, i) => ({ id: blankIds[i], answer_type: 'openEntry' }))
   const scoringValue = question.blanks.map((b, i) => ({
     id: blankIds[i],
-    scoring_data: { value: b.answer, blank_text: b.answer, ignore_case: true },
-    scoring_algorithm: 'TextCloseEnough',
+    scoring_data: { value: b.answer, blank_text: b.answer },
+    scoring_algorithm: 'TextEquivalence',
   }))
 
   return {
     interaction_type_slug: 'rich-fill-blank',
-    item_body: itemBody,
-    interaction_data: { blanks, word_bank_choices: [], reuse_word_bank_choices: false },
-    scoring_data: { value: scoringValue, working_item_body: itemBody },
+    item_body: `<p>${bodyHtml}</p>`,
+    interaction_data: { blanks },
+    properties: { shuffle_rules: { blanks: {} } },
+    scoring_data: {
+      value: scoringValue,
+      case_sensitive: false,
+      working_item_body: `<p>${workingHtml}</p>`,
+    },
     scoring_algorithm: 'MultipleMethods',
   }
 }
