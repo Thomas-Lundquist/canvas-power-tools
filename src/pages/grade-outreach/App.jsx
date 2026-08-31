@@ -6,7 +6,7 @@ import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
 import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 import ThresholdMessenger from '../../modules/communication/ThresholdMessenger.jsx'
 
-export default function App() {
+export default function App({ initialCourseId }) {
   const { showPanel, setShowPanel } = useKeyboardShortcuts([])
 
   return (
@@ -18,7 +18,7 @@ export default function App() {
       >
         <div className="overflow-y-auto flex-1">
           <div className="max-w-4xl mx-auto px-6 pt-6">
-            <ThresholdMessenger />
+            <ThresholdMessenger initialCourseId={initialCourseId} />
           </div>
         </div>
       </ToolShell>

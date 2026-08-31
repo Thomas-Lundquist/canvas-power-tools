@@ -99,7 +99,7 @@ function PreviewModal({ recipients, message, resolveExample, subtitle, onSend, o
   )
 }
 
-export default function ThresholdMessenger() {
+export default function ThresholdMessenger({ initialCourseId } = {}) {
   const toast = useToast()
   const { requirePin } = usePinGate()
 
@@ -138,7 +138,8 @@ export default function ThresholdMessenger() {
     getCourses()
       .then(list => {
         setCourses(list)
-        if (list.length > 0) loadAssignments(list[0].id, list[0])
+        const start = (initialCourseId && list.find(c => c.id === String(initialCourseId))) || list[0]
+        if (start) loadAssignments(start.id, start)
       })
       .finally(() => setLoadingCourses(false))
     getSentLog().then(setSentLog)

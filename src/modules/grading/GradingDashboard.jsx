@@ -6,6 +6,14 @@ import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import ProgressBar from '../../components/ProgressBar.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
 import { getAssignmentsWithGradingData } from '../../api/submissions.js'
+import { getStudentGradeSummaries } from '../../api/studentSummaries.js'
+import StudentTable from './StudentTable.jsx'
+import StudentDrawer from './StudentDrawer.jsx'
+
+const LENSES = [
+  { value: 'assignment', label: 'By Assignment' },
+  { value: 'student',    label: 'By Student' },
+]
 
 const FILTERS = [
   { value: 'all',           label: 'All' },
@@ -65,6 +73,11 @@ export default function GradingDashboard({ courseId, loadingCourse }) {
   const [sortKey, setSortKey]         = useState('position')
   const [sortDir, setSortDir]         = useState('asc')
 
+  const [lens, setLens]                       = useState('assignment')
+  const [summaries, setSummaries]             = useState([])
+  const [summariesLoading, setSummariesLoading] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState(null)
+
   useEffect(() => {
     if (!courseId) { setAssignments([]); return }
     setLoading(true)
@@ -72,6 +85,17 @@ export default function GradingDashboard({ courseId, loadingCourse }) {
       .then(setAssignments)
       .finally(() => setLoading(false))
   }, [courseId])
+
+  // Load per-student summaries lazily — only when the By-Student lens is active.
+  // Re-runs on course change so the roster stays in sync.
+  useEffect(() => {
+    setSelectedStudent(null)
+    if (lens !== 'student' || !courseId) return
+    setSummariesLoading(true)
+    getStudentGradeSummaries(courseId)
+      .then(setSummaries)
+      .finally(() => setSummariesLoading(false))
+  }, [lens, courseId])
 
   function handleSort(key) {
     if (key === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -114,9 +138,16 @@ export default function GradingDashboard({ courseId, loadingCourse }) {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Overview</h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">Track submission and grading progress across all assignments.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-body)]">Overview</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+            {lens === 'assignment'
+              ? 'Track submission and grading progress across all assignments.'
+              : 'See each student’s standing and act on it — nudge, reach out, or set an accommodation.'}
+          </p>
+        </div>
+        <SegmentedToggle options={LENSES} value={lens} onChange={setLens} ariaLabel="Dashboard lens" />
       </div>
 
       {!loadingCourse && courseId && !loading && assignments.length > 0 && (
@@ -128,6 +159,7 @@ export default function GradingDashboard({ courseId, loadingCourse }) {
         </div>
       )}
 
+      {lens === 'assignment' && (<>
       <div className="flex items-center gap-3 flex-wrap">
         <SegmentedToggle options={FILTERS} value={filter} onChange={setFilter} ariaLabel="Filter assignments" />
         <div className="relative flex-1 max-w-sm">
@@ -239,6 +271,23 @@ export default function GradingDashboard({ courseId, loadingCourse }) {
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-[var(--radius-xs)]" style={{ background: 'var(--color-warning)' }} /> Submitted, not graded</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-[var(--radius-xs)] bg-[var(--color-border)]" /> Not submitted</span>
         </div>
+      )}
+      </>)}
+
+      {lens === 'student' && (
+        <StudentTable
+          summaries={summaries}
+          loading={summariesLoading || !courseId}
+          onSelectStudent={setSelectedStudent}
+        />
+      )}
+
+      {selectedStudent && (
+        <StudentDrawer
+          student={selectedStudent}
+          courseId={courseId}
+          onClose={() => setSelectedStudent(null)}
+        />
       )}
     </div>
   )
