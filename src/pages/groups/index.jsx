@@ -4,7 +4,7 @@ import AppNav, { SettingsButton, BrandLogo } from '../../components/AppNav.jsx'
 import ToolShell from '../../components/ToolShell.jsx'
 import CourseSelector from '../../components/CourseSelector.jsx'
 import AssignmentGroupManager from '../../modules/assignments/AssignmentGroupManager.jsx'
-import { getPreferences } from '../../storage/preferences.js'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { getCourses } from '../../api/courses.js'
 import '../../styles/global.css'
@@ -20,17 +20,22 @@ function App() {
   )
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
         setCourses(list)
-        if (!courseId) setCourseId(list[0]?.id ?? null)
+        setCourseId(resolveInitialCourseId(list, { override: courseId, prefs }))
       })
       .finally(() => setLoadingCourses(false))
   }, [])
 
+  function handleCourseChange(id) {
+    setCourseId(id)
+    setLastUsedCourse(id)
+  }
+
   return (
     <ToolShell
-      start={<><BrandLogo /><CourseSelector courses={courses} selectedId={courseId} onChange={setCourseId} loading={loadingCourses} /></>}
+      start={<><BrandLogo /><CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} /></>}
       end={<><AppNav current="groups" /><SettingsButton /></>}
     >
       <div className="overflow-y-auto flex-1">

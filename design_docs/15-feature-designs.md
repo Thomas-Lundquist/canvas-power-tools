@@ -151,6 +151,14 @@ Canvas assignment groups control grade weighting — Homework 20%, Quizzes 30%, 
 
 A table of all assignment groups with their weight, assignment count, and average score. Actions: Add Group, Reorder, Edit Weights.
 
+Each group also expands to list its assignments. Within that list, assignments can be reordered (arrow-based, same pattern as group reordering) or bulk-sorted (Name / Points / Due Date, ascending or descending, via a "Sort" menu in the group's header toolbar). Canvas has no bulk reorder endpoint for assignments within a group, so both write per-assignment `position` via the update-assignment endpoint (individual PUT requests). The active sort is remembered per group and shown on the Sort trigger until a manual arrow-nudge invalidates it. This is separate from the assignment-to-assignment-group move (the per-row "move to group" dropdown) and from ASN-003's course-wide bulk reorder in the Bulk Edit Tool.
+
+The group's header toolbar is a "Rename" button plus two menus (using the shared `Menu` component) to avoid crowding: a "Sort" menu (per above) and an "Actions" menu holding Duplicate, Copy to, Merge, a "Manage" submenu (Move assignments, Delete assignments), and Delete Group. The two bulk assignment-selection actions are nested under "Manage" (via `Menu.Submenu`, a flyout nested one level inside `Menu`) rather than sitting as top-level entries — their full labels widened the flat list more than the rest.
+
+**Move assignments** (Actions → Manage) opens a modal scoped to that one group: a destination-group picker plus a checklist of the group's assignments (with Select All) to move in bulk to the chosen group. Normal PIN gate (not forced) — same severity as the existing per-row "move to group" dropdown, just batched.
+
+**Delete assignments** (Actions → Manage) opens a modal scoped to that one group, listing its assignments with checkboxes (plus Select All) so the teacher picks a subset to permanently delete from Canvas — including their submissions and grades. This is a forced-PIN operation (see Doc 11, Forced PIN Re-Entry): the PIN prompt shows every time regardless of recent verification, and carries an explicit irreversible-deletion warning. There is no Change Log entry for deletions (they are not revertable); the audit log still records the action.
+
 Key value-add: a live weight adjustment preview that recalculates and displays the projected class average in real time as the teacher adjusts weights — before committing anything to Canvas.
 
 ### Canvas APIs

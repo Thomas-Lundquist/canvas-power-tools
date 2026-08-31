@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 import PinPrompt from '../components/PinPrompt.jsx'
-import { isSessionLocked, refreshActivity, getSecuritySettings } from './pin.js'
+import { isSessionLocked, refreshActivity, getSecuritySettings, PinRequiredError } from './pin.js'
 import { logAuditEntry } from './audit-log.js'
 
 const PinGateContext = createContext(null)
@@ -9,17 +9,24 @@ export function PinGateProvider({ children }) {
   const [visible, setVisible] = useState(false)
   const [pending, setPending] = useState(null)
 
-  async function requirePin(auditMeta, action) {
+  // `forcePrompt` (used by irreversible, high-stakes operations) always
+  // shows the PIN prompt, ignoring the normal "recently verified" shortcut.
+  // If no PIN is configured at all there is nothing to force, so the
+  // operation is blocked outright rather than silently allowed through.
+  async function requirePin(auditMeta, action, { forcePrompt = false } = {}) {
     const settings = await getSecuritySettings()
 
     if (!settings.pinEnabled || !settings.pinHash) {
+      if (forcePrompt) {
+        throw new PinRequiredError('Set up a PIN in Settings to use this feature.')
+      }
       await action()
       await logAuditEntry({ ...auditMeta, pinVerified: 'disabled' })
       await refreshActivity()
       return
     }
 
-    if (!(await isSessionLocked())) {
+    if (!forcePrompt && !(await isSessionLocked())) {
       await action()
       await logAuditEntry({ ...auditMeta, pinVerified: true })
       await refreshActivity()
@@ -48,7 +55,13 @@ export function PinGateProvider({ children }) {
   return (
     <PinGateContext.Provider value={{ requirePin }}>
       {children}
-      {visible && <PinPrompt onVerified={handleVerified} onCancel={handleCancel} />}
+      {visible && (
+        <PinPrompt
+          warning={pending?.auditMeta?.warning}
+          onVerified={handleVerified}
+          onCancel={handleCancel}
+        />
+      )}
     </PinGateContext.Provider>
   )
 }

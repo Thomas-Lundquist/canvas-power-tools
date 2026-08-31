@@ -139,7 +139,9 @@ These are independent action buttons, not toggles — clicking either fires the 
 
 ### Editable Fields (complete list — no others)
 
-Due Date · Avail. From · Avail. Until · Points · Published Status. This is the complete set. Assignment group changes are handled by the Assignment Groups tool. All other fields are too edge-case for bulk editing.
+Due Date · Avail. From · Avail. Until · Points · Published Status · Assignment Group. This is the complete set. All other fields are too edge-case for bulk editing.
+
+**Assignment Group** is a single select: "No change" or a specific group. Setting it moves every selected assignment into that group in one operation. The Assignment Groups tool keeps its own per-assignment "move to group" dropdown for quick single-assignment moves made while browsing a group — that dropdown is not a bulk-select UI and isn't meant to become one. Multi-assignment group moves belong here, where selection, filtering, preview, and per-assignment failure handling already exist.
 
 ### Preview Changes Button
 

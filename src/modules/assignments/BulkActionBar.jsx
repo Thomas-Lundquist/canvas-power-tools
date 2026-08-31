@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X, Copy } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X, Copy, FolderKanban } from 'lucide-react'
 import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import NumberField from '../../components/NumberField.jsx'
 import IconButton from '../../components/IconButton.jsx'
@@ -14,6 +14,7 @@ export const INITIAL_ACTIONS = {
   lockAt: { ...INITIAL_DATE_FIELD },
   points: '',
   status: null,
+  assignmentGroupId: '',
 }
 
 const DATE_MODES = [
@@ -38,10 +39,11 @@ function countActiveFields(actions) {
   }
   if (actions.points !== '') count++
   if (actions.status !== null) count++
+  if (actions.assignmentGroupId !== '') count++
   return count
 }
 
-export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo }) {
+export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, groups = [] }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const fieldCount = countActiveFields(actions)
@@ -117,7 +119,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
         </div>
 
         <div className={`overflow-hidden transition-[height,opacity] duration-300 ease-out ${
-          collapsed ? 'h-0 opacity-0' : 'h-[16rem] opacity-100'
+          collapsed ? 'h-0 opacity-0' : 'h-[19rem] opacity-100'
         }`}>
           <div className="flex h-full">
 
@@ -155,6 +157,22 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
                   />
                   <span className="text-sm text-[var(--color-text-secondary)] shrink-0">pts</span>
                 </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <FolderKanban size={12} aria-hidden="true" className="text-[var(--color-text-secondary)]" />
+                  <span className="section-label !mb-0">Assignment Group</span>
+                </div>
+                <select
+                  value={actions.assignmentGroupId}
+                  onChange={e => onActionsChange({ ...actions, assignmentGroupId: e.target.value })}
+                  className="input mt-2 w-full text-sm"
+                  aria-label="Move all selected assignments to a group"
+                >
+                  <option value="">No change</option>
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
               </div>
 
               <div>

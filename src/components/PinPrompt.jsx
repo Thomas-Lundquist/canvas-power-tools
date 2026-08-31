@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ShieldAlert, Lock, AlertTriangle } from 'lucide-react'
 import { verifyPin, recordFailedAttempt, clearFailedAttempts, isLockedOut, getLockoutRemaining, resetExtension } from '../security/pin.js'
 
-export default function PinPrompt({ onVerified, onCancel }) {
+export default function PinPrompt({ onVerified, onCancel, warning }) {
   const [view, setView]             = useState('pin')   // 'pin' | 'lockout' | 'reset'
   const [pin, setPin]               = useState('')
   const [error, setError]           = useState(null)
@@ -126,6 +126,9 @@ export default function PinPrompt({ onVerified, onCancel }) {
         <div>
           <h2 className="text-xl font-bold text-[var(--color-text-body)]">Enter Your PIN</h2>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">You are about to make changes to Canvas.</p>
+          {warning && (
+            <p className="text-sm font-semibold text-[var(--color-error)] mt-2">{warning}</p>
+          )}
         </div>
 
         <div className="space-y-2">

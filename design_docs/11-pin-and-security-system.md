@@ -157,6 +157,17 @@ Certain operations are flagged as high-stakes and receive an additional confirma
 | Send message to all students in a course | Recipient count prominently displayed. 5-second delay before Send button activates |
 | Apply accommodation override to student | Clear display of student name and all assignments being overridden |
 | Delete all change logs | Separate confirmation requiring typed acknowledgment ("Type DELETE to confirm") |
+| Delete assignments from a group | Selection modal with an explicit irreversible-deletion warning; PIN re-entry is **forced** regardless of session state (see Forced PIN Re-Entry below) |
+
+### Forced PIN Re-Entry
+
+`requirePin` accepts a third `{ forcePrompt: true }` argument for operations that must never ride on a "recently verified" session — deletions that cannot be reverted via the Change Log or audit trail. When `forcePrompt` is set:
+
+- The inactivity-timeout shortcut is bypassed entirely — the PIN prompt shows every time, even seconds after the last successful entry.
+- If no PIN is configured at all, the operation is blocked outright (not silently allowed) with a message directing the teacher to set one up in Settings. There is nothing to "force" without a PIN to check against.
+- The prompt can carry an optional `warning` string, rendered in the PIN modal itself, describing the specific irreversible consequence (e.g. "This permanently deletes 3 assignments... This cannot be undone.").
+
+This is opt-in per call site — most write operations should keep using the default inactivity-based gate.
 
 ---
 
@@ -188,6 +199,8 @@ Every new feature that writes to Canvas must declare whether it is PIN-gated.
 - Create or modify groups
 - Deploy template to courses
 - Apply rubric to assignment
+- Reorder or sort assignments within an assignment group
+- Delete assignments from an assignment group (forced PIN re-entry, see High-Stakes Operations)
 
 ### Planned
 - Fire conditional assignment rules manually

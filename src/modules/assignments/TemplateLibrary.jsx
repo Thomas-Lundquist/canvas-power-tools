@@ -591,7 +591,6 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
           onEdit={onEdit}
           onMove={onMove}
           onDelete={onDelete}
-          z={30}
         />
       </div>
 
@@ -611,11 +610,10 @@ function TemplateTile({ template, onUse, onEdit, onDelete, onMove, onDragStart, 
   )
 }
 
-function TemplateActionsMenu({ templateName, onEdit, onMove, onDelete, z = 20 }) {
+function TemplateActionsMenu({ templateName, onEdit, onMove, onDelete }) {
   return (
     <Menu
       width="7rem"
-      z={z}
       trigger={p => (
         <IconButton
           icon={MoreHorizontal}

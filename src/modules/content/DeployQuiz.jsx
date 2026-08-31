@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle, AlertCircle, Loader, ExternalLink, FileArchive } from 'lucide-react'
 import { getCourses } from '../../api/courses.js'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { createQuiz, createQuizItem } from '../../api/newQuizzes.js'
 import { addChangeLogEntry } from '../../storage/changeLogs.js'
@@ -51,8 +52,19 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
   const [showQti, setShowQti] = useState(false)
 
   useEffect(() => {
-    getCourses().then(setCourses).catch(() => {}).finally(() => setLoadingCourses(false))
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
+        setCourses(list)
+        setCourseId(resolveInitialCourseId(list, { prefs }) ?? '')
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCourses(false))
   }, [])
+
+  function handleCourseChange(id) {
+    setCourseId(id)
+    setLastUsedCourse(id)
+  }
 
   useEffect(() => {
     if (!courseId) { setGroups([]); return }
@@ -212,7 +224,7 @@ export default function DeployQuiz({ questions, onDone, onBack }) {
           <SettingsBar className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <FieldLabel htmlFor="quiz-course" required>Course</FieldLabel>
-              <CourseSelector courses={courses} selectedId={courseId} onChange={setCourseId} loading={loadingCourses} />
+              <CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} />
             </div>
             <div className="space-y-1">
               <FieldLabel htmlFor="quiz-title" required>Quiz Title</FieldLabel>

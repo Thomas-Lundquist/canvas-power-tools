@@ -14,6 +14,7 @@ import { sendConversation } from '../../api/conversations.js'
 import { getAccount } from '../../storage/account.js'
 import { addSentLogEntry, getSentLog } from '../../storage/sentLog.js'
 import { getScheduledChecksByTool } from '../../storage/scheduledChecks.js'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { resolveTokens } from './tokenHelpers.js'
@@ -123,12 +124,11 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
 
   useEffect(() => {
     getAccount().then(a => setTeacherName(a?.userName ?? ''))
-    getCourses()
-      .then(list => {
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
         setCourses(list)
-        const start = initialCourseId && list.find(c => c.id === String(initialCourseId))
-          ? list.find(c => c.id === String(initialCourseId))
-          : list[0]
+        const startId = resolveInitialCourseId(list, { override: initialCourseId, prefs })
+        const start = list.find(c => c.id === startId)
         if (start) loadAssignments(start.id, start, initialAssignmentId, initialStudentIds)
       })
       .finally(() => setLoadingCourses(false))
@@ -291,6 +291,7 @@ export default function NudgeTool({ initialCourseId, initialAssignmentId, initia
           <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0 w-24">Course</span>
           <CourseSelector courses={courses} selectedId={courseId} onChange={cId => {
             const c = courses.find(x => x.id === cId)
+            setLastUsedCourse(cId)
             loadAssignments(cId, c)
           }} loading={loadingCourses} />
         </div>

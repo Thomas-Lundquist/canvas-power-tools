@@ -76,6 +76,7 @@ function buildPayload(fields) {
     gradingType: 'grading_type',
     assignmentGroupId: 'assignment_group_id',
     peerReviews: 'peer_reviews',
+    position: 'position',
   }
   for (const [jsKey, apiKey] of Object.entries(map)) {
     if (fields[jsKey] !== undefined) payload[apiKey] = fields[jsKey]

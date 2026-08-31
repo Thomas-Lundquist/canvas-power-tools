@@ -7,6 +7,7 @@ import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
 import ShortcutsPanel from '../../components/ShortcutsPanel.jsx'
 import { getCourses } from '../../api/courses.js'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 import GradingDashboard from '../../modules/grading/GradingDashboard.jsx'
 import MissingWork from '../../modules/grading/MissingWork.jsx'
 import GradeAdjustments from '../../modules/grading/GradeAdjustments.jsx'
@@ -28,16 +29,18 @@ export default function App({ initialCourseId }) {
   const [courseId, setCourseId]             = useState(null)
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
         setCourses(list)
-        const start = initialCourseId && list.find(c => c.id === String(initialCourseId))
-          ? String(initialCourseId)
-          : list[0]?.id ?? null
-        setCourseId(start)
+        setCourseId(resolveInitialCourseId(list, { override: initialCourseId, prefs }))
       })
       .finally(() => setLoadingCourses(false))
   }, [])
+
+  function handleCourseChange(id) {
+    setCourseId(id)
+    setLastUsedCourse(id)
+  }
 
   const course = courses.find(c => c.id === courseId) ?? null
 
@@ -45,7 +48,7 @@ export default function App({ initialCourseId }) {
     <>
       <SkipLink />
       <ToolShell
-        start={<><BrandLogo /><CourseSelector courses={courses} selectedId={courseId} onChange={setCourseId} loading={loadingCourses} /></>}
+        start={<><BrandLogo /><CourseSelector courses={courses} selectedId={courseId} onChange={handleCourseChange} loading={loadingCourses} /></>}
         end={<><AppNav current="grading" /><SettingsButton /></>}
       >
         <div className="overflow-y-auto flex-1">

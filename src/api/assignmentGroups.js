@@ -6,16 +6,18 @@ export async function getAssignmentGroups(courseId) {
 }
 
 export async function createAssignmentGroup(courseId, fields) {
-  const group = await canvasPost(`/api/v1/courses/${courseId}/assignment_groups`, {
-    assignment_group: buildPayload(fields),
-  })
+  // Unlike most Canvas resources, assignment_groups create/update take flat
+  // top-level params (name, position, group_weight) — not nested under an
+  // `assignment_group` wrapper key. Wrapping them causes Canvas to silently
+  // ignore the params and fall back to its own default name.
+  const group = await canvasPost(`/api/v1/courses/${courseId}/assignment_groups`, buildPayload(fields))
   return mapGroup(group)
 }
 
 export async function updateAssignmentGroup(courseId, groupId, fields) {
   const group = await canvasPut(
     `/api/v1/courses/${courseId}/assignment_groups/${groupId}`,
-    { assignment_group: buildPayload(fields) },
+    buildPayload(fields),
   )
   return mapGroup(group)
 }

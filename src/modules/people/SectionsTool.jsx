@@ -9,6 +9,7 @@ import { getSections } from '../../api/sections.js'
 import { getAssignmentOverrides, createSectionOverride, updateSectionOverride } from '../../api/overrides.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 
 // ── Preview Modal ───────────────────────────────────────────────────────────
 
@@ -388,10 +389,13 @@ export default function SectionsTool() {
   const [view, setView]                   = useState('due-dates')
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
         setCourses(list)
-        if (list.length > 0) { setCourseId(list[0].id); setCourseName(list[0].name) }
+        const startId = resolveInitialCourseId(list, { prefs })
+        const start = list.find(c => c.id === startId)
+        setCourseId(start?.id ?? null)
+        setCourseName(start?.name ?? '')
       })
       .finally(() => setLoadingCourses(false))
   }, [])
@@ -400,6 +404,7 @@ export default function SectionsTool() {
     const c = courses.find(x => x.id === cId)
     setCourseId(cId)
     setCourseName(c?.name ?? '')
+    setLastUsedCourse(cId)
   }
 
   return (

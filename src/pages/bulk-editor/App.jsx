@@ -20,7 +20,7 @@ import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getModules } from '../../api/modules.js'
-import { getPreferences, setLastUsedCourse } from '../../storage/preferences.js'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
 
@@ -104,10 +104,7 @@ export default function App() {
         applyDarkMode(prefs.themeMode ?? 'system')
         applyTextSize(prefs.textSize ?? 'medium')
         setCourses(fetchedCourses)
-        const lastId = prefs.lastUsedCourseId
-        const initialId = fetchedCourses.find(c => c.id === lastId)
-          ? lastId
-          : fetchedCourses[0]?.id ?? null
+        const initialId = resolveInitialCourseId(fetchedCourses, { prefs })
         if (initialId) selectCourse(initialId, fetchedCourses)
       } catch (err) {
         setError(err.message)
@@ -343,6 +340,7 @@ export default function App() {
         onPreview={() => setShowPreview(true)}
         onClearAll={clearSelection}
         onCopyTo={() => setShowCopyModal(true)}
+        groups={groups}
       />
       {showPreview && (
         <PreviewDiff
@@ -350,6 +348,7 @@ export default function App() {
           actions={actions}
           courseId={selectedCourseId}
           courseName={selectedCourseName}
+          groups={groups}
           onCancel={() => setShowPreview(false)}
           onDone={handlePreviewDone}
           onViewReport={handleViewReport}

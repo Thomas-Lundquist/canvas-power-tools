@@ -1,3 +1,5 @@
+export class PinRequiredError extends Error {}
+
 const STORAGE_KEY = 'security'
 
 const DEFAULTS = {

@@ -13,6 +13,7 @@ import {
 import { getEnrollments } from '../../api/enrollments.js'
 import { getCourses } from '../../api/courses.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 
 const DRAG_TYPE = 'text/plain'
 
@@ -46,10 +47,19 @@ export default function GroupManager({ initialCourseId }) {
   const [confirmDeleteGroup, setConfirmDeleteGroup] = useState(null)
 
   useEffect(() => {
-    getCourses()
-      .then(cs => { setCourseList(cs); setLoadingCourses(false) })
-      .catch(() => setLoadingCourses(false))
+    Promise.all([getCourses(), getPreferences()])
+      .then(([cs, prefs]) => {
+        setCourseList(cs)
+        setCourseId(prev => prev ?? resolveInitialCourseId(cs, { override: initialCourseId, prefs }))
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCourses(false))
   }, [])
+
+  function handleCourseChange(id) {
+    setCourseId(id)
+    setLastUsedCourse(id)
+  }
 
   useEffect(() => {
     if (!courseId) return
@@ -259,7 +269,7 @@ export default function GroupManager({ initialCourseId }) {
       <CourseSelector
         courses={courses}
         selectedId={courseId}
-        onChange={setCourseId}
+        onChange={handleCourseChange}
         loading={loadingCourses}
       />
 

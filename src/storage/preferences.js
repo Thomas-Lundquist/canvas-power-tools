@@ -147,3 +147,26 @@ export async function resetPreferences(keys) {
 export async function setLastUsedCourse(courseId) {
   return setPreference('lastUsedCourseId', courseId)
 }
+
+// Resolves which course a tool should pre-select once its course list has
+// loaded, honoring the `defaultCourse` setting so course selection is
+// consistent across every tool rather than each one defaulting to the first
+// course independently:
+//   - `override` (e.g. a courseId carried in a deep-link URL param, or a
+//     prop passed from a Canvas content-script action) always wins when it's
+//     present in the fetched list.
+//   - `defaultCourse: 'ask'` leaves nothing pre-selected — the teacher picks
+//     explicitly every time.
+//   - Otherwise (`'last_used'`, the default) falls back to
+//     `prefs.lastUsedCourseId` if that course is still in the list, then the
+//     first course.
+export function resolveInitialCourseId(courseList, { override, prefs } = {}) {
+  if (override) {
+    const match = courseList.find(c => c.id === String(override))
+    if (match) return match.id
+  }
+  if (prefs?.defaultCourse === 'ask') return null
+  const lastId = prefs?.lastUsedCourseId
+  if (lastId && courseList.some(c => c.id === lastId)) return lastId
+  return courseList[0]?.id ?? null
+}

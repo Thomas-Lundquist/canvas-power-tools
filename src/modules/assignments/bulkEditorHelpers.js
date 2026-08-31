@@ -24,6 +24,7 @@ export function buildChanges(selectedAssignments, bulkSpec) {
       { key: 'lockAt', spec: bulkSpec.lockAt },
       { key: 'pointsPossible', spec: bulkSpec.points },
       { key: 'published', spec: bulkSpec.published },
+      { key: 'assignmentGroupId', spec: bulkSpec.assignmentGroupId },
     ]
 
     for (const { key, spec } of fields) {
@@ -31,7 +32,7 @@ export function buildChanges(selectedAssignments, bulkSpec) {
       let newValue
       if (key === 'pointsPossible') {
         newValue = spec.value !== '' && spec.value !== null ? Number(spec.value) : undefined
-      } else if (key === 'published') {
+      } else if (key === 'published' || key === 'assignmentGroupId') {
         newValue = spec.value
       } else {
         newValue = resolveFieldChange(assignment[key], spec)

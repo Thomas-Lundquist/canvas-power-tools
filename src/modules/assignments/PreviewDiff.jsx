@@ -15,12 +15,14 @@ const FIELD_LABELS = {
   lockAt: 'Avail. Until',
   pointsPossible: 'Points',
   published: 'Status',
+  assignmentGroupId: 'Assignment Group',
 }
 
-function formatValue(field, value) {
+function formatValue(field, value, groupNameById) {
   if (value === null || value === undefined) return '—'
   if (field === 'published') return value ? 'Published' : 'Unpublished'
   if (field === 'pointsPossible') return `${value} pts`
+  if (field === 'assignmentGroupId') return groupNameById?.get(value) ?? value
   return formatDate(value) ?? String(value)
 }
 
@@ -56,6 +58,7 @@ function actionsToSpec(actions) {
     lockAt: dateSpec(actions.lockAt),
     points: actions.points !== '' ? { value: actions.points } : null,
     published: actions.status !== null ? { value: actions.status === 'publish' } : null,
+    assignmentGroupId: actions.assignmentGroupId !== '' ? { value: actions.assignmentGroupId } : null,
   }
 }
 
@@ -71,8 +74,9 @@ function groupChangesByAssignment(changes) {
 }
 
 export default function PreviewDiff({
-  selectedAssignments, actions, courseId, courseName, onCancel, onDone, onViewReport,
+  selectedAssignments, actions, courseId, courseName, groups = [], onCancel, onDone, onViewReport,
 }) {
+  const groupNameById = new Map(groups.map(g => [g.id, g.name]))
   const [phase, setPhase] = useState('preview')
   const [assignmentStatus, setAssignmentStatus] = useState({})
   const [succeededAssignments, setSucceededAssignments] = useState([])
@@ -156,7 +160,7 @@ export default function PreviewDiff({
       <Modal title={MODAL_TITLES.preview} onClose={modalClose} size="lg">
         <div className="overflow-y-auto max-h-[60vh] divide-y divide-[var(--color-border)]">
           {grouped.map(assignment => (
-            <AssignmentBlock key={assignment.id} assignment={assignment} />
+            <AssignmentBlock key={assignment.id} assignment={assignment} groupNameById={groupNameById} />
           ))}
         </div>
         <div className="flex items-center justify-between pt-4 mt-4 border-t border-[var(--color-border)]">
@@ -180,6 +184,7 @@ export default function PreviewDiff({
             <AssignmentBlock
               key={assignment.id}
               assignment={assignment}
+              groupNameById={groupNameById}
               status={assignmentStatus[assignment.id]}
               showStatus
             />
@@ -264,7 +269,7 @@ export default function PreviewDiff({
   )
 }
 
-function AssignmentBlock({ assignment, status, showStatus = false }) {
+function AssignmentBlock({ assignment, groupNameById, status, showStatus = false }) {
   return (
     <div className="py-3 flex items-start gap-3">
       {showStatus && (
@@ -292,11 +297,11 @@ function AssignmentBlock({ assignment, status, showStatus = false }) {
                 {FIELD_LABELS[change.field] ?? change.field}
               </span>
               <span className="text-xs text-[var(--color-text-muted)]">
-                {formatValue(change.field, change.previousValue)}
+                {formatValue(change.field, change.previousValue, groupNameById)}
               </span>
               <span className="text-xs font-medium text-[var(--cpt-color)]" aria-hidden="true">→</span>
               <span className="text-xs font-medium text-[var(--color-text-body)]">
-                {formatValue(change.field, change.newValue)}
+                {formatValue(change.field, change.newValue, groupNameById)}
               </span>
             </div>
           ))}

@@ -8,6 +8,7 @@ import { getAssignmentsWithOverrides, createStudentOverride, updateOverride, del
 import { getEnrollments } from '../../api/enrollments.js'
 import { useToast } from '../../components/Toast.jsx'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -488,10 +489,13 @@ export default function AccommodationsTool({ initialStudentId }) {
   const [detailStudent, setDetailStudent]     = useState(null)
 
   useEffect(() => {
-    getCourses()
-      .then(list => {
+    Promise.all([getCourses(), getPreferences()])
+      .then(([list, prefs]) => {
         setCourses(list)
-        if (list.length > 0) { setCourseId(list[0].id); setCourseName(list[0].name) }
+        const startId = resolveInitialCourseId(list, { prefs })
+        const start = list.find(c => c.id === startId)
+        setCourseId(start?.id ?? null)
+        setCourseName(start?.name ?? '')
       })
       .finally(() => setLoadingCourses(false))
   }, [])
@@ -543,6 +547,7 @@ export default function AccommodationsTool({ initialStudentId }) {
     setCourseName(c?.name ?? '')
     setDetailStudent(null)
     cancelWizard()
+    setLastUsedCourse(cId)
   }
 
   function startWizard(student = null) {
