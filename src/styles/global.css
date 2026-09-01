@@ -399,6 +399,63 @@
     outline: none;
     box-shadow: inset 0 0 0 2px rgba(var(--cpt-color-rgb), 0.8);
   }
+
+  /* Filter chips — a removable, editable tag for one active table filter.
+     Default: a neat bordered pill on the surface. Bauhaus: flat, 1px stroke,
+     monospace uppercase key with a small accent square (override below). */
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 2.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background-color: var(--color-bg-surface);
+    overflow: hidden;
+  }
+  .filter-chip-body {
+    display: inline-flex;
+    align-items: stretch;
+    height: 100%;
+    font-size: 0.875rem;
+    color: var(--color-text-body);
+  }
+  /* Key segment — the filter *type* ("Assignment Group"). Accent-tinted so the
+     chip reads apart from the neutral toolbar behind it, and so the type is
+     clearly delimited from its value (the plain segment to its right). */
+  .filter-chip-keyseg {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    background-color: rgba(var(--cpt-color-rgb), 0.10);
+    border-right: 1px solid var(--color-border);
+  }
+  .filter-chip-key {
+    font-weight: 600;
+    color: var(--cpt-color);
+  }
+  .filter-chip-val {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.625rem;
+    transition: background-color 75ms;
+  }
+  .filter-chip-body:hover .filter-chip-val {
+    background-color: var(--color-bg-hover);
+  }
+  .filter-chip-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 100%;
+    color: var(--color-text-muted);
+    border-left: 1px solid var(--color-border);
+    transition: background-color 75ms, color 75ms;
+  }
+  .filter-chip-x:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-body);
+  }
 }
 
 @keyframes slide-over-in {
@@ -509,6 +566,20 @@
   font-family: var(--font-mono, ui-monospace, monospace);
   font-weight: 700;
   color: var(--color-stroke);
+}
+
+/* Filter chips under Bauhaus — flat stroke box, monospace uppercase key with a
+   red accent square, per doc 10 § Component Taxonomy (metadata tags + markers). */
+[data-theme="bauhaus"] .filter-chip {
+  border-radius: var(--radius-sm);
+}
+[data-theme="bauhaus"] .filter-chip-key {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  color: var(--cpt-color);
 }
 
 /* ─── Dark mode ────────────────────────────────────────────────────────────────
