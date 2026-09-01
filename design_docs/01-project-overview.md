@@ -315,7 +315,11 @@ a manual export and import via the Library module's backup feature.
     rubrics: [{ id, name, categoryId }],
     commentBank: [{ id, categoryId, text_preview }],
     announcementTemplates: [{ id, name }]
-  }
+  },
+
+  // Teacher-picked assignment-group colors, one key per course. Values are
+  // --color-cat-* token names — no PII. See src/storage/groupColors.js.
+  "groupColors_<courseId>": { "<groupId>": "--color-cat-3" }
 }
 ```
 

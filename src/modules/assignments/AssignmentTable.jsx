@@ -4,7 +4,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { formatDate } from '../../components/DateInput.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import Badge from '../../components/Badge.jsx'
-import { getGroupColor } from '../../utils/groupColors.js'
+import { groupColorCss } from '../../utils/groupColors.js'
 
 const COLUMNS = [
   { key: 'name', label: 'Assignment', width: 'w-64' },
@@ -28,7 +28,7 @@ const SKELETON_WIDTHS = [
   ['w-60', 'w-24', 'w-24', 'w-24', 'w-24', 'w-8',  'w-20'],
 ]
 
-export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading, fillHeight = false, actionBarVisible = false }) {
+export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading, groupColorTokens, fillHeight = false, actionBarVisible = false }) {
   const allSelected = assignments.length > 0 && assignments.every(a => selectedIds.has(a.id))
   const someSelected = assignments.some(a => selectedIds.has(a.id))
 
@@ -121,6 +121,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
                         selected={selectedIds.has(a.id)}
                         onToggle={() => onToggle(a.id)}
                         rowIndex={virtualRow.index}
+                        groupColor={groupColorCss(a.assignmentGroupId, groupColorTokens)}
                       />
                     )
                   })}
@@ -158,7 +159,7 @@ function SkeletonRow({ widths }) {
   )
 }
 
-function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
+function AssignmentRow({ assignment: a, selected, onToggle, rowIndex, groupColor }) {
   const trRef = useRef(null)
   const checkboxTdRef = useRef(null)
 
@@ -189,7 +190,7 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex }) {
           <span
             aria-hidden="true"
             className="inline-block w-1.5 h-3 shrink-0 rounded-[var(--radius-sm)]"
-            style={{ backgroundColor: getGroupColor(a.assignmentGroupId) }}
+            style={{ backgroundColor: groupColor }}
           />
           <span className="truncate">{a.assignmentGroupName}</span>
         </span>

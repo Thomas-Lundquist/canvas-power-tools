@@ -36,8 +36,11 @@ Both themes keep the same behavioral rules (accessibility, error copy, empty sta
 Distinct from the per-Module **domain** colors (§2 below, Bauhaus-only, fixed meaning) — this is for coloring items from an *open-ended, teacher-defined* set, e.g. Canvas Assignment Groups, where there's no fixed palette to hand-assign. Same mechanism should be reused for any future "arbitrary category → consistent color" need (Modules-by-course, custom tags, etc.), not just assignment groups.
 
 - **Palette:** `--color-cat-1` … `--color-cat-8` in `global.css`. Eight hues, theme-independent (unlike Bauhaus mechanics, category color coding stays on under Default too).
-- **Assignment:** `getGroupColor(id)` (`src/utils/groupColors.js`) — a djb2 string hash of the item's own id, modulo palette length. Same id always resolves to the same color regardless of fetch order, filtering, or reload. Not cryptographic; used only for display.
-- **Usage:** a small color tick/swatch next to the item's name — decorative (`aria-hidden`), since the name text already carries the meaning (WCAG 1.4.1 — color is never the only signal). See `AssignmentTable`'s Group column for the reference implementation.
+- **Assignment (assignment groups): teacher-pickable.** `resolveGroupColorTokens(orderedGroups, overrides)` (`src/utils/groupColors.js`) returns a `Map<groupId, token>`:
+  - **Explicit picks win.** A teacher assigns a color via the swatch in the Assignment Groups Tool's group header (`GroupColorSwatch`). Canvas has no color field on assignment groups, so picks are stored locally — `src/storage/groupColors.js`, `chrome.storage.sync` key `groupColors_<courseId>` (index data, no PII, so `sync` is allowed).
+  - **Unpicked groups get a *distinct* auto color** by their position in the course's group order, drawing from the palette tokens not already claimed by an override. So a fresh course still reads with every group a different color (for ≤ 8 groups), and the teacher only overrides the ones they care about. Wrapping (non-distinct) only past 8 un-picked groups.
+  - `groupColorCss(groupId, tokenMap)` resolves one id to a `var(--token)` string, falling back to the neutral no-group fill (`--color-text-disabled`) for ungrouped assignments or before the map loads.
+- **Usage:** a small color tick/swatch next to the item's name — decorative (`aria-hidden`), since the name text already carries the meaning (WCAG 1.4.1 — color is never the only signal). See `AssignmentTable`'s Group column and the Assignment Groups Tool header for the reference implementations. Per bead `canvas-power-tools-12m`: keep it a tick/swatch — do **not** promote the group name to a solid `badge-pill`; that treatment is reserved for the one binary Published/Unpublished status.
 
 ---
 

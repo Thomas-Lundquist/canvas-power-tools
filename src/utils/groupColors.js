@@ -1,10 +1,11 @@
-// Deterministic color coding for Canvas Assignment Groups (design_docs/10 §
-// Data Tables — "4px domain accent indicator" per row). Groups are teacher-
-// defined per course with no fixed set, so colors are hashed from the group's
-// own id rather than assigned by fetch order — the same group renders the
-// same color across reloads, filters, and re-sorts.
+// Color coding for Canvas Assignment Groups (design_docs/10 § Categorical Color
+// Coding). Canvas's Assignment Group API has no color field, so a teacher's
+// picks are stored locally (src/storage/groupColors.js, keyed by course + group
+// id). Groups with no explicit pick are auto-assigned a *distinct* color by
+// their position in the course's group order, so a fresh course still reads
+// with every group a different color; the teacher can then override any of them.
 
-const PALETTE_TOKENS = [
+export const GROUP_COLOR_TOKENS = [
   '--color-cat-1',
   '--color-cat-2',
   '--color-cat-3',
@@ -15,28 +16,51 @@ const PALETTE_TOKENS = [
   '--color-cat-8',
 ]
 
-// djb2 string hash — stable, fast, good-enough distribution for a palette
-// this small. Not used for anything security-sensitive.
-function hashString(str) {
-  let hash = 5381
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash + str.charCodeAt(i)) >>> 0
-  }
-  return hash
+// Neutral fill for assignments with no group — "no group" is not a category.
+export const NO_GROUP_COLOR = 'var(--color-text-disabled)'
+
+/** cssVar('--color-cat-3') → 'var(--color-cat-3)'. Safe for a style prop. */
+export function cssVar(token) {
+  return `var(${token})`
 }
 
 /**
- * getGroupColor(groupId) — the CSS color for an assignment group's accent.
- * Ungrouped assignments (no assignmentGroupId) get the neutral disabled token
- * rather than a palette color, since "no group" isn't itself a category.
+ * resolveGroupColorTokens(orderedGroups, overrides)
  *
- * @param {string|number|null|undefined} groupId
- * @returns {string} a `var(--token)` reference, safe to use directly in a style prop
+ * @param {{id: string|number}[]} orderedGroups  groups in course (position) order
+ * @param {Record<string, string>} [overrides]   { [groupId]: '--color-cat-N' }
+ * @returns {Map<string, string>}  groupId (string) → token name
+ *
+ * Explicit overrides win. Remaining groups are handed the palette tokens not
+ * already claimed by an override, in order, wrapping only if there are more
+ * un-overridden groups than free colors.
  */
-export function getGroupColor(groupId) {
-  if (groupId === null || groupId === undefined || groupId === '') {
-    return 'var(--color-text-disabled)'
+export function resolveGroupColorTokens(orderedGroups = [], overrides = {}) {
+  const map = new Map()
+  const claimed = new Set(Object.values(overrides))
+  const pool = GROUP_COLOR_TOKENS.filter(t => !claimed.has(t))
+  let i = 0
+
+  for (const g of orderedGroups) {
+    const id = String(g.id)
+    if (overrides[id]) {
+      map.set(id, overrides[id])
+      continue
+    }
+    const source = pool.length > 0 ? pool : GROUP_COLOR_TOKENS
+    map.set(id, source[i % source.length])
+    i++
   }
-  const index = hashString(String(groupId)) % PALETTE_TOKENS.length
-  return `var(${PALETTE_TOKENS[index]})`
+  return map
+}
+
+/**
+ * groupColorCss(groupId, tokenMap) — the CSS color for one group's swatch,
+ * falling back to the neutral no-group fill when the id isn't in the map
+ * (ungrouped assignment, or map not loaded yet).
+ */
+export function groupColorCss(groupId, tokenMap) {
+  if (groupId === null || groupId === undefined || groupId === '') return NO_GROUP_COLOR
+  const token = tokenMap?.get(String(groupId))
+  return token ? cssVar(token) : NO_GROUP_COLOR
 }
