@@ -157,7 +157,7 @@ Certain operations are flagged as high-stakes and receive an additional confirma
 | Send message to all students in a course | Recipient count prominently displayed. 5-second delay before Send button activates |
 | Apply accommodation override to student | Clear display of student name and all assignments being overridden |
 | Delete all change logs | Separate confirmation requiring typed acknowledgment ("Type DELETE to confirm") |
-| Delete assignments from a group | Selection modal with an explicit irreversible-deletion warning; PIN re-entry is **forced** regardless of session state (see Forced PIN Re-Entry below) |
+| Delete assignments (Bulk Edit Tool) | Confirmation modal listing the selected assignments with an explicit irreversible-deletion warning; PIN re-entry is **forced** regardless of session state (see Forced PIN Re-Entry below) |
 
 ### Forced PIN Re-Entry
 
@@ -200,7 +200,7 @@ Every new feature that writes to Canvas must declare whether it is PIN-gated.
 - Deploy template to courses
 - Apply rubric to assignment
 - Reorder or sort assignments within an assignment group
-- Delete assignments from an assignment group (forced PIN re-entry, see High-Stakes Operations)
+- Delete assignments (Bulk Edit Tool — forced PIN re-entry, see High-Stakes Operations)
 
 ### Planned
 - Fire conditional assignment rules manually

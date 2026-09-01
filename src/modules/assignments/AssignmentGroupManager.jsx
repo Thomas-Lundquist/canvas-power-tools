@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Trash, ChevronUp, ChevronDown, Check, X, AlertCircle,
-         Loader, Copy, GitMerge, Edit2, FolderKanban, FileText, ExternalLink, ArrowUpDown, MoreHorizontal, FolderInput } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Check, X, AlertCircle,
+         Loader, Copy, GitMerge, Edit2, FolderKanban, FileText, ExternalLink, ArrowUpDown, MoreHorizontal, SlidersHorizontal } from 'lucide-react'
 import { useToast } from '../../components/Toast.jsx'
 import Modal from '../../components/Modal.jsx'
 import Menu from '../../components/Menu.jsx'
@@ -8,7 +8,7 @@ import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
 import Button from '../../components/Button.jsx'
 import Badge from '../../components/Badge.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
-import { getAssignments, updateAssignment, deleteAssignment } from '../../api/assignments.js'
+import { getAssignments, updateAssignment } from '../../api/assignments.js'
 import {
   getAssignmentGroups,
   createAssignmentGroup,
@@ -17,6 +17,18 @@ import {
 } from '../../api/assignmentGroups.js'
 import { sortAssignments } from './bulkEditorHelpers.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
+import GroupColorSwatch from '../../components/GroupColorSwatch.jsx'
+import { resolveGroupColorTokens } from '../../utils/groupColors.js'
+import { getGroupColorOverrides, setGroupColorOverride } from '../../storage/groupColors.js'
+
+// Multi-assignment operations (bulk move / delete / date+point+publish edits)
+// live in the Bulk Edit tool, which owns selection, filtering, preview and
+// per-assignment failure handling. From here we deep-link into it pre-filtered
+// to this group with every assignment pre-selected.
+function bulkEditGroupUrl(courseId, groupId) {
+  const params = new URLSearchParams({ courseId, group: groupId, selectAll: '1' })
+  return chrome.runtime.getURL(`src/pages/bulk-editor/index.html?${params.toString()}`)
+}
 
 const SORT_OPTIONS = [
   { key: 'name', dir: 'asc', label: 'Name (A–Z)' },
@@ -41,15 +53,6 @@ export default function AssignmentGroupManager({ courseId, courses }) {
   const [reorderingGroupId, setReorderingGroupId] = useState(null)
   const [groupSortState, setGroupSortState] = useState({})
 
-  const [deleteAssignmentsGroup, setDeleteAssignmentsGroup] = useState(null)
-  const [selectedDeleteIds, setSelectedDeleteIds]           = useState(new Set())
-  const [deletingAssignments, setDeletingAssignments]       = useState(false)
-
-  const [moveAssignmentsGroup, setMoveAssignmentsGroup] = useState(null)
-  const [selectedMoveIds, setSelectedMoveIds]           = useState(new Set())
-  const [moveTargetGroupId, setMoveTargetGroupId]       = useState(null)
-  const [movingAssignments, setMovingAssignments]       = useState(false)
-
   const [editingId, setEditingId]           = useState(null)
   const [isAddingGroup, setIsAddingGroup]   = useState(false)
   const [editForm, setEditForm]             = useState({ name: '', groupWeight: '' })
@@ -64,6 +67,7 @@ export default function AssignmentGroupManager({ courseId, courses }) {
   const [saving, setSaving]                 = useState(false)
   const [error, setError]                   = useState(null)
   const [copyToGroup, setCopyToGroup]       = useState(null)
+  const [colorOverrides, setColorOverrides] = useState({})
 
   useEffect(() => {
     if (courseId) loadCourseData(courseId)
@@ -79,12 +83,14 @@ export default function AssignmentGroupManager({ courseId, courses }) {
     setLoadingGroups(true)
     setLoadingAssignments(true)
     try {
-      const [groupData, assignmentData] = await Promise.all([
+      const [groupData, assignmentData, colorData] = await Promise.all([
         getAssignmentGroups(cId),
         getAssignments(cId),
+        getGroupColorOverrides(cId),
       ])
       setGroups(groupData)
       setAssignments(assignmentData)
+      setColorOverrides(colorData)
       setExpandedGroups(Object.fromEntries(groupData.map(g => [g.id, true])))
     } catch (err) {
       setError(err.message)
@@ -106,6 +112,22 @@ export default function AssignmentGroupManager({ courseId, courses }) {
     for (const gId in map) map[gId].sort((a, b) => a.position - b.position)
     return map
   }, [assignments])
+
+  const groupColorTokens = useMemo(
+    () => resolveGroupColorTokens(groups, colorOverrides),
+    [groups, colorOverrides],
+  )
+
+  // Display-only preference — never a Canvas write, so no PIN gate.
+  async function pickGroupColor(groupId, token) {
+    const id = String(groupId)
+    setColorOverrides(prev => ({ ...prev, [id]: token }))
+    try {
+      await setGroupColorOverride(courseId, groupId, token)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   function pinGuard(summary, action, options = {}) {
     const { actionType = 'assignment_group_change', warning, forcePrompt = false } = options
@@ -363,118 +385,6 @@ export default function AssignmentGroupManager({ courseId, courses }) {
     })
   }
 
-  // ── Delete assignments (scoped to one group) ──────────────────────────────────
-
-  function openDeleteAssignmentsModal(group) {
-    setDeleteAssignmentsGroup(group)
-    setSelectedDeleteIds(new Set())
-  }
-
-  function toggleDeleteSelection(assignmentId) {
-    setSelectedDeleteIds(prev => {
-      const next = new Set(prev)
-      next.has(assignmentId) ? next.delete(assignmentId) : next.add(assignmentId)
-      return next
-    })
-  }
-
-  async function confirmDeleteAssignments() {
-    const group = deleteAssignmentsGroup
-    const toDelete = (assignmentsByGroup[group.id] ?? []).filter(a => selectedDeleteIds.has(a.id))
-    if (toDelete.length === 0) return
-    const count = toDelete.length
-
-    try {
-      await pinGuard(
-        `Deleted ${count} assignment${count !== 1 ? 's' : ''} from "${group.name}"`,
-        async () => {
-          setDeletingAssignments(true)
-          setError(null)
-          const failures = []
-          const succeededIds = []
-          for (const a of toDelete) {
-            try {
-              await deleteAssignment(courseId, a.id)
-              succeededIds.push(a.id)
-            } catch (err) {
-              failures.push({ name: a.name, reason: err.message })
-            }
-          }
-          if (succeededIds.length > 0) {
-            setAssignments(prev => prev.filter(a => !succeededIds.includes(a.id)))
-          }
-          setDeletingAssignments(false)
-          if (failures.length === 0) {
-            toast(`${succeededIds.length} assignment${succeededIds.length !== 1 ? 's' : ''} deleted`, 'success')
-            setDeleteAssignmentsGroup(null)
-          } else {
-            setError(`Deleted ${succeededIds.length} of ${count}. Failed: ${failures.map(f => f.name).join(', ')}`)
-          }
-        },
-        {
-          actionType: 'assignment_delete',
-          forcePrompt: true,
-          warning: `This permanently deletes ${count} assignment${count !== 1 ? 's' : ''} from Canvas — including all student submissions and grades. This cannot be undone.`,
-        },
-      )
-    } catch (err) {
-      setDeletingAssignments(false)
-      setError(err.message)
-    }
-  }
-
-  // ── Move assignments in bulk (scoped to one group) ────────────────────────────
-
-  function openMoveAssignmentsModal(group) {
-    const fallback = groups.find(g => g.id !== group.id)?.id ?? null
-    setMoveAssignmentsGroup(group)
-    setSelectedMoveIds(new Set())
-    setMoveTargetGroupId(fallback)
-  }
-
-  function toggleMoveSelection(assignmentId) {
-    setSelectedMoveIds(prev => {
-      const next = new Set(prev)
-      next.has(assignmentId) ? next.delete(assignmentId) : next.add(assignmentId)
-      return next
-    })
-  }
-
-  async function confirmMoveAssignments() {
-    const group = moveAssignmentsGroup
-    const toMove = (assignmentsByGroup[group.id] ?? []).filter(a => selectedMoveIds.has(a.id))
-    const target = groups.find(g => g.id === moveTargetGroupId)
-    if (toMove.length === 0 || !target) return
-    const count = toMove.length
-
-    await pinGuard(`Moved ${count} assignment${count !== 1 ? 's' : ''} from "${group.name}" to "${target.name}"`, async () => {
-      setMovingAssignments(true)
-      setError(null)
-      const failures = []
-      const succeededIds = []
-      for (const a of toMove) {
-        try {
-          await updateAssignment(courseId, a.id, { assignmentGroupId: target.id })
-          succeededIds.push(a.id)
-        } catch (err) {
-          failures.push({ name: a.name, reason: err.message })
-        }
-      }
-      if (succeededIds.length > 0) {
-        setAssignments(prev => prev.map(a =>
-          succeededIds.includes(a.id) ? { ...a, assignmentGroupId: target.id } : a
-        ))
-      }
-      setMovingAssignments(false)
-      if (failures.length === 0) {
-        toast(`${succeededIds.length} assignment${succeededIds.length !== 1 ? 's' : ''} moved to "${target.name}"`, 'success')
-        setMoveAssignmentsGroup(null)
-      } else {
-        setError(`Moved ${succeededIds.length} of ${count}. Failed: ${failures.map(f => f.name).join(', ')}`)
-      }
-    })
-  }
-
   const totalWeight   = groups.reduce((s, g) => s + (g.groupWeight ?? 0), 0)
   const weightDisplay = Math.round(totalWeight * 10) / 10
   const weightOk      = Math.abs(weightDisplay - 100) < 0.1
@@ -553,6 +463,8 @@ export default function AssignmentGroupManager({ courseId, courses }) {
                 movingId={movingId}
                 reordering={reorderingGroupId === group.id}
                 sortState={groupSortState[group.id]}
+                colorToken={groupColorTokens.get(String(group.id))}
+                onColorChange={token => pickGroupColor(group.id, token)}
                 onToggleExpand={() => toggleExpand(group.id)}
                 onMoveUp={() => swapPositions(index, index - 1)}
                 onMoveDown={() => swapPositions(index, index + 1)}
@@ -563,8 +475,7 @@ export default function AssignmentGroupManager({ courseId, courses }) {
                 onCopyTo={() => setCopyToGroup(group)}
                 onMerge={() => openMergeModal(group)}
                 onDelete={() => openDeleteModal(group)}
-                onDeleteAssignments={() => openDeleteAssignmentsModal(group)}
-                onMoveAssignments={() => openMoveAssignmentsModal(group)}
+                onBulkEdit={() => { window.location.href = bulkEditGroupUrl(courseId, group.id) }}
                 onMoveAssignment={moveAssignment}
                 onReorderAssignment={(assignmentId, direction) => moveAssignmentPosition(group.id, assignmentId, direction)}
                 onSortGroup={(sortKey, sortDir) => sortGroupAssignments(group.id, sortKey, sortDir)}
@@ -683,152 +594,6 @@ export default function AssignmentGroupManager({ courseId, courses }) {
           onClose={() => setCopyToGroup(null)}
         />
       )}
-
-      {/* Delete assignments modal */}
-      {deleteAssignmentsGroup && (
-        <Modal
-          title={`Delete assignments from "${deleteAssignmentsGroup.name}"`}
-          size="md"
-          onClose={() => !deletingAssignments && setDeleteAssignmentsGroup(null)}
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setDeleteAssignmentsGroup(null)} disabled={deletingAssignments}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                onClick={confirmDeleteAssignments}
-                disabled={deletingAssignments || selectedDeleteIds.size === 0}
-              >
-                {deletingAssignments
-                  ? 'Deleting…'
-                  : `Delete ${selectedDeleteIds.size} Assignment${selectedDeleteIds.size !== 1 ? 's' : ''}`}
-              </Button>
-            </>
-          }
-        >
-          <p className="mb-4 text-sm font-semibold text-[var(--color-error)]">
-            This permanently deletes the selected assignments from Canvas — including all
-            student submissions and grades. This cannot be undone.
-          </p>
-
-          <div className="mb-2 flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-[var(--color-text-body)]">
-              <input
-                type="checkbox"
-                checked={
-                  selectedDeleteIds.size > 0 &&
-                  selectedDeleteIds.size === (assignmentsByGroup[deleteAssignmentsGroup.id] ?? []).length
-                }
-                onChange={e => setSelectedDeleteIds(
-                  e.target.checked
-                    ? new Set((assignmentsByGroup[deleteAssignmentsGroup.id] ?? []).map(a => a.id))
-                    : new Set()
-                )}
-                disabled={deletingAssignments}
-              />
-              Select all
-            </label>
-            <span className="text-xs text-[var(--color-text-muted)]">{selectedDeleteIds.size} selected</span>
-          </div>
-
-          <div className="max-h-72 overflow-y-auto rounded-[var(--radius-card)] border border-[var(--color-border)] divide-y divide-[var(--color-border)]">
-            {(assignmentsByGroup[deleteAssignmentsGroup.id] ?? []).map(a => (
-              <label
-                key={a.id}
-                className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)]"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedDeleteIds.has(a.id)}
-                  onChange={() => toggleDeleteSelection(a.id)}
-                  disabled={deletingAssignments}
-                />
-                <span className="flex-1 truncate text-[var(--color-text-body)]">{a.name}</span>
-                <span className="shrink-0 text-xs text-[var(--color-text-muted)]">{a.pointsPossible ?? '—'} pts</span>
-              </label>
-            ))}
-          </div>
-        </Modal>
-      )}
-
-      {/* Move assignments modal */}
-      {moveAssignmentsGroup && (
-        <Modal
-          title={`Move assignments from "${moveAssignmentsGroup.name}"`}
-          size="md"
-          onClose={() => !movingAssignments && setMoveAssignmentsGroup(null)}
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setMoveAssignmentsGroup(null)} disabled={movingAssignments}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={confirmMoveAssignments}
-                disabled={movingAssignments || selectedMoveIds.size === 0 || !moveTargetGroupId}
-              >
-                {movingAssignments
-                  ? 'Moving…'
-                  : `Move ${selectedMoveIds.size} Assignment${selectedMoveIds.size !== 1 ? 's' : ''}`}
-              </Button>
-            </>
-          }
-        >
-          <div className="mb-4">
-            <label className="label" htmlFor="move-assignments-target">Move to group</label>
-            <select
-              id="move-assignments-target"
-              value={moveTargetGroupId ?? ''}
-              onChange={e => setMoveTargetGroupId(e.target.value)}
-              disabled={movingAssignments}
-              className="input"
-            >
-              {groups.filter(g => g.id !== moveAssignmentsGroup.id).map(g =>
-                <option key={g.id} value={g.id}>{g.name}</option>
-              )}
-            </select>
-          </div>
-
-          <div className="mb-2 flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-[var(--color-text-body)]">
-              <input
-                type="checkbox"
-                checked={
-                  selectedMoveIds.size > 0 &&
-                  selectedMoveIds.size === (assignmentsByGroup[moveAssignmentsGroup.id] ?? []).length
-                }
-                onChange={e => setSelectedMoveIds(
-                  e.target.checked
-                    ? new Set((assignmentsByGroup[moveAssignmentsGroup.id] ?? []).map(a => a.id))
-                    : new Set()
-                )}
-                disabled={movingAssignments}
-              />
-              Select all
-            </label>
-            <span className="text-xs text-[var(--color-text-muted)]">{selectedMoveIds.size} selected</span>
-          </div>
-
-          <div className="max-h-72 overflow-y-auto rounded-[var(--radius-card)] border border-[var(--color-border)] divide-y divide-[var(--color-border)]">
-            {(assignmentsByGroup[moveAssignmentsGroup.id] ?? []).map(a => (
-              <label
-                key={a.id}
-                className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)]"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedMoveIds.has(a.id)}
-                  onChange={() => toggleMoveSelection(a.id)}
-                  disabled={movingAssignments}
-                />
-                <span className="flex-1 truncate text-[var(--color-text-body)]">{a.name}</span>
-                <span className="shrink-0 text-xs text-[var(--color-text-muted)]">{a.pointsPossible ?? '—'} pts</span>
-              </label>
-            ))}
-          </div>
-        </Modal>
-      )}
     </div>
   )
 }
@@ -869,8 +634,9 @@ function GroupCardSkeleton() {
 function GroupCard({
   group, index, total, count, assignments, allGroups, expanded,
   isEditing, editForm, onEditFormChange, saving, loadingAssignments, movingId, reordering, sortState,
+  colorToken, onColorChange,
   onToggleExpand, onMoveUp, onMoveDown,
-  onEdit, onSaveEdit, onCancelEdit, onCopy, onCopyTo, onMerge, onDelete, onDeleteAssignments, onMoveAssignments,
+  onEdit, onSaveEdit, onCancelEdit, onCopy, onCopyTo, onMerge, onDelete, onBulkEdit,
   onMoveAssignment, onReorderAssignment, onSortGroup, deleteDisabled, mergeDisabled,
 }) {
   const sortLabel = sortState
@@ -887,6 +653,9 @@ function GroupCard({
         >
           {expanded ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
         </button>
+
+        {/* Group color — picker doubles as the always-on indicator */}
+        <GroupColorSwatch token={colorToken} groupName={group.name} onPick={onColorChange} />
 
         {/* Name / inline edit */}
         {isEditing ? (
@@ -997,10 +766,7 @@ function GroupCard({
               <Menu.Item icon={Copy} onSelect={onCopy}>Duplicate</Menu.Item>
               <Menu.Item icon={ExternalLink} onSelect={onCopyTo} disabled={!assignments.length}>Copy to</Menu.Item>
               <Menu.Item icon={GitMerge} onSelect={onMerge} disabled={mergeDisabled}>Merge</Menu.Item>
-              <Menu.Submenu icon={FolderKanban} label="Manage">
-                <Menu.Item icon={FolderInput} onSelect={onMoveAssignments} disabled={!assignments.length || mergeDisabled}>Move assignments</Menu.Item>
-                <Menu.Item icon={Trash} onSelect={onDeleteAssignments} disabled={!assignments.length} danger>Delete assignments</Menu.Item>
-              </Menu.Submenu>
+              <Menu.Item icon={SlidersHorizontal} onSelect={onBulkEdit} disabled={!assignments.length}>Bulk edit assignments…</Menu.Item>
               <Menu.Item icon={Trash2} onSelect={onDelete} disabled={deleteDisabled} danger>Delete Group</Menu.Item>
             </Menu>
           </div>

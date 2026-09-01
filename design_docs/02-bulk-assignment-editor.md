@@ -20,6 +20,8 @@ The Bulk Edit Tool lives in the **Assignments Module**. It is the first Tool tea
 
 A button is injected into the Canvas assignments page toolbar by the content script. Clicking it opens the Bulk Assignment Editor as a new tab — a full extension page served by the extension itself.
 
+It can also be opened from the **Assignment Groups Tool** via its "Bulk edit assignments…" action, which deep-links with `?courseId=&group=&selectAll=1`. On load the tool preselects that course, applies an Assignment Group filter for that group, pre-selects every assignment in it, and strips the query string so a manual refresh starts clean. This is the single supported path for any multi-assignment group operation (bulk move, bulk delete, bulk date/point/publish edit) — the Groups tool does not carry its own bulk-select UI.
+
 ---
 
 ## Page Structure
@@ -142,6 +144,16 @@ These are independent action buttons, not toggles — clicking either fires the 
 Due Date · Avail. From · Avail. Until · Points · Published Status · Assignment Group. This is the complete set. All other fields are too edge-case for bulk editing.
 
 **Assignment Group** is a single select: "No change" or a specific group. Setting it moves every selected assignment into that group in one operation. The Assignment Groups tool keeps its own per-assignment "move to group" dropdown for quick single-assignment moves made while browsing a group — that dropdown is not a bulk-select UI and isn't meant to become one. Multi-assignment group moves belong here, where selection, filtering, preview, and per-assignment failure handling already exist.
+
+### Delete Assignments (destructive — not a field edit)
+
+Deleting assignments is an **action**, not one of the editable fields, so it sits in the action panel's header strip beside "Copy To" — a `Delete` control, not part of the Preview/Apply flow.
+
+- Opens a confirmation modal listing the selected assignments with an explicit irreversible-deletion warning.
+- **Forced PIN re-entry** (see Doc 11): the PIN prompt shows every time regardless of recent verification. If no PIN is configured, the action is blocked outright with a pointer to Settings.
+- Deletion is **not revertable**, so there is **no Change Log entry**. The audit log still records the action via the PIN gate.
+- Per-assignment success/failure is tracked; the result screen lists any failures with a translated reason. Deleted rows are removed from the table in place.
+- This is the only place in the extension that bulk-deletes assignments.
 
 ### Preview Changes Button
 
@@ -310,6 +322,7 @@ Shows what was successfully reverted and what was skipped (e.g., assignment no l
 | List modules | GET | /api/v1/courses/:id/modules |
 | Bulk update dates | PUT | /api/v1/courses/:id/assignments/bulk_update |
 | Update single assignment | PUT | /api/v1/courses/:id/assignments/:id |
+| Delete assignment | DELETE | /api/v1/courses/:id/assignments/:id |
 
 The `bulk_update` endpoint handles date changes efficiently. Point value and publish status changes are fired as individual PUT requests per assignment since `bulk_update` only covers dates.
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X, Copy, FolderKanban } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Calendar, X, Copy, FolderKanban, Trash2 } from 'lucide-react'
 import SegmentedToggle from '../../components/SegmentedToggle.jsx'
 import NumberField from '../../components/NumberField.jsx'
 import IconButton from '../../components/IconButton.jsx'
@@ -43,7 +43,7 @@ function countActiveFields(actions) {
   return count
 }
 
-export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, groups = [] }) {
+export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, onDelete, groups = [] }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const fieldCount = countActiveFields(actions)
@@ -92,7 +92,9 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
             )}
           </span>
           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-            {onCopyTo && (
+            {/* Row-acting controls are hidden while collapsed — the collapsed
+                bar is just a summary + re-expand affordance. */}
+            {!collapsed && onCopyTo && (
               <button
                 type="button"
                 onClick={onCopyTo}
@@ -101,6 +103,17 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
               >
                 <Copy size={12} aria-hidden="true" />
                 Copy To
+              </button>
+            )}
+            {!collapsed && onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-control)] text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[color-mix(in_srgb,var(--color-error)_14%,var(--color-bg-surface))] hover:text-[var(--color-error)] transition-colors duration-75"
+                aria-label={`Delete ${selectedCount} selected assignment${selectedCount !== 1 ? 's' : ''} from Canvas`}
+              >
+                <Trash2 size={12} aria-hidden="true" />
+                Delete
               </button>
             )}
             <IconButton
@@ -119,7 +132,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
         </div>
 
         <div className={`overflow-hidden transition-[height,opacity] duration-300 ease-out ${
-          collapsed ? 'h-0 opacity-0' : 'h-[19rem] opacity-100'
+          collapsed ? 'h-0 opacity-0' : 'h-[21rem] opacity-100'
         }`}>
           <div className="flex h-full">
 
@@ -143,8 +156,8 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
 
             <div className="w-px bg-[var(--color-border)] shrink-0" />
 
-            {/* Points + Status + Preview column */}
-            <div className="w-52 shrink-0 p-4 flex flex-col gap-4">
+            {/* Points + Group + Status + Preview column */}
+            <div className="w-52 shrink-0 p-4 flex flex-col gap-3">
               <div>
                 <span className="section-label !mb-0"># Points</span>
                 <div className="flex items-center gap-2 mt-2">
@@ -196,7 +209,7 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
                 </div>
               </div>
 
-              <div className="mt-auto">
+              <div className="mt-auto pt-3 border-t border-[var(--color-border-subtle)]">
                 <Button
                   variant="primary"
                   onClick={onPreview}

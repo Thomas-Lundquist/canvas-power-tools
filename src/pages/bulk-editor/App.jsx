@@ -15,12 +15,16 @@ import ChangeLog from '../../modules/assignments/ChangeLog.jsx'
 import useSort from '../../utils/useSort.js'
 import BulkActionBar, { INITIAL_ACTIONS } from '../../modules/assignments/BulkActionBar.jsx'
 import PreviewDiff from '../../modules/assignments/PreviewDiff.jsx'
+import DeleteAssignmentsModal from '../../modules/assignments/DeleteAssignmentsModal.jsx'
 import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
+import { useToast } from '../../components/Toast.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getModules } from '../../api/modules.js'
 import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
+import { getGroupColorOverrides } from '../../storage/groupColors.js'
+import { resolveGroupColorTokens } from '../../utils/groupColors.js'
 import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { useKeyboardShortcuts } from '../../utils/useKeyboardShortcuts.js'
 
@@ -68,12 +72,28 @@ function applyFilters(assignments, search, filters) {
   return result
 }
 
+// One-time read of deep-link params. The Assignment Groups tool sends teachers
+// here (?courseId=&group=&selectAll=1) to move / delete / bulk-edit a group's
+// assignments, since this tool owns selection, filtering, preview and per-row
+// failure handling.
+function readLaunchIntent() {
+  const p = new URLSearchParams(window.location.search)
+  const courseId = p.get('courseId')
+  const groupId = p.get('group')
+  if (!courseId && !groupId) return null
+  return { courseId, groupId, selectAll: p.get('selectAll') === '1' }
+}
+
+const LAUNCH_INTENT = readLaunchIntent()
+
 export default function App() {
+  const toast = useToast()
   const [courses, setCourses] = useState([])
   const [selectedCourseId, setSelectedCourseId] = useState(null)
   const [selectedCourseName, setSelectedCourseName] = useState('')
   const [assignments, setAssignments] = useState([])
   const [groups, setGroups] = useState([])
+  const [groupColorTokens, setGroupColorTokens] = useState(() => new Map())
   const [modules, setModules] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [loadingAssignments, setLoadingAssignments] = useState(false)
@@ -86,6 +106,7 @@ export default function App() {
   const [actions, setActions] = useState(INITIAL_ACTIONS)
   const [showPreview, setShowPreview] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const filteredAssignments = useMemo(
     () => applyFilters(assignments, search, filters),
@@ -104,8 +125,13 @@ export default function App() {
         applyDarkMode(prefs.themeMode ?? 'system')
         applyTextSize(prefs.textSize ?? 'medium')
         setCourses(fetchedCourses)
-        const initialId = resolveInitialCourseId(fetchedCourses, { prefs })
-        if (initialId) selectCourse(initialId, fetchedCourses)
+        const initialId = resolveInitialCourseId(fetchedCourses, {
+          override: LAUNCH_INTENT?.courseId,
+          prefs,
+        })
+        if (initialId) selectCourse(initialId, fetchedCourses, LAUNCH_INTENT)
+        // Consume the deep-link params so a manual refresh starts clean.
+        if (LAUNCH_INTENT) window.history.replaceState({}, '', window.location.pathname)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -115,12 +141,13 @@ export default function App() {
     init()
   }, [])
 
-  async function selectCourse(courseId, courseList = courses) {
+  async function selectCourse(courseId, courseList = courses, intent = null) {
     const course = courseList.find(c => c.id === courseId)
     setSelectedCourseId(courseId)
     setSelectedCourseName(course?.name ?? '')
     setAssignments([])
     setGroups([])
+    setGroupColorTokens(new Map())
     setModules([])
     setSelectedIds(new Set())
     setActions(INITIAL_ACTIONS)
@@ -130,11 +157,13 @@ export default function App() {
     setLoadingAssignments(true)
     await setLastUsedCourse(courseId)
     try {
-      const [fetchedAssignments, fetchedGroups, fetchedModules] = await Promise.all([
+      const [fetchedAssignments, fetchedGroups, fetchedModules, colorOverrides] = await Promise.all([
         getAssignments(courseId),
         getAssignmentGroups(courseId),
         getModules(courseId),
+        getGroupColorOverrides(courseId),
       ])
+      setGroupColorTokens(resolveGroupColorTokens(fetchedGroups, colorOverrides))
       const groupNameById = new Map(fetchedGroups.map(g => [g.id, g.name]))
       const assignmentsWithGroups = fetchedAssignments.map(a => ({
         ...a,
@@ -143,6 +172,25 @@ export default function App() {
       setAssignments(assignmentsWithGroups)
       setGroups(fetchedGroups)
       setModules(fetchedModules)
+
+      // Deep-link from the Assignment Groups tool: pre-filter to the group and
+      // (optionally) pre-select every assignment in it, ready to move / delete.
+      if (intent?.groupId) {
+        const g = fetchedGroups.find(x => x.id === intent.groupId)
+        if (g) {
+          setFilters([{
+            id: 'group',
+            label: 'Assignment Group',
+            value: { value: g.id },
+            displayValue: g.name,
+          }])
+          if (intent.selectAll) {
+            setSelectedIds(new Set(
+              assignmentsWithGroups.filter(a => a.assignmentGroupId === g.id).map(a => a.id),
+            ))
+          }
+        }
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -171,6 +219,18 @@ export default function App() {
     clearSelection()
     selectCourse(selectedCourseId)
     setShowChangeLog(true)
+  }
+
+  function handleDeleted(deletedIds) {
+    const gone = new Set(deletedIds)
+    setAssignments(prev => prev.filter(a => !gone.has(a.id)))
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      for (const id of gone) next.delete(id)
+      return next
+    })
+    setActions(INITIAL_ACTIONS)
+    toast(`${deletedIds.length} assignment${deletedIds.length !== 1 ? 's' : ''} deleted`, 'success')
   }
 
   function clearFilters() {
@@ -297,6 +357,7 @@ export default function App() {
               sortDir={sort.dir}
               onSort={sort.onSort}
               loading={loadingAssignments}
+              groupColorTokens={groupColorTokens}
               fillHeight
               actionBarVisible={selectedIds.size > 0}
             />
@@ -340,6 +401,7 @@ export default function App() {
         onPreview={() => setShowPreview(true)}
         onClearAll={clearSelection}
         onCopyTo={() => setShowCopyModal(true)}
+        onDelete={() => setShowDeleteModal(true)}
         groups={groups}
       />
       {showPreview && (
@@ -359,6 +421,15 @@ export default function App() {
           assignments={selectedAssignments}
           sourceCourseId={selectedCourseId}
           onClose={() => setShowCopyModal(false)}
+        />
+      )}
+      {showDeleteModal && (
+        <DeleteAssignmentsModal
+          assignments={selectedAssignments}
+          courseId={selectedCourseId}
+          courseName={selectedCourseName}
+          onClose={() => setShowDeleteModal(false)}
+          onDeleted={handleDeleted}
         />
       )}
       {showPanel && <ShortcutsPanel onClose={() => setShowPanel(false)} context="bulk-editor" />}
