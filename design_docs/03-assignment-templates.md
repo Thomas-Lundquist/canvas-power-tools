@@ -12,9 +12,9 @@ These decisions define how the system works. They are architectural and should n
 
 | # | Decision | Rationale |
 |---|---|---|
-| 1 | **Deployment is split by cardinality.** The PowerTools dashboard owns the Library and the Bulk Deployment Engine (many courses at once). Canvas injection owns two lightweight buttons — *Save to Templates* and *Create from Template* — for single, in-context actions. | Multi-course batch deploy is the headline value Canvas cannot replicate — it belongs in the dashboard. Single, precise deploy wants the module context that only exists inside Canvas. Each path lives where it is strongest. |
+| 1 | **Deployment is split by cardinality.** The PowerTools dashboard owns the Library and the Bulk Deployment Engine (many courses at once). Canvas injection owns two lightweight buttons — *Save as Template* and *Add from Template* — for single, in-context actions. | Multi-course batch deploy is the headline value Canvas cannot replicate — it belongs in the dashboard. Single, precise deploy wants the module context that only exists inside Canvas. Each path lives where it is strongest. |
 | 2 | **Injected buttons trigger only; the extension does all API work.** | Hard architectural rule: content scripts inject trigger UI, never call the Canvas API. Keeps the injected DOM footprint tiny and API access centralized in `request.js`. |
-| 3 | **"Create from Template" requires a minimum of 2 steps (pick template → deploy); dates and publish are optional.** | The single-target path is exactly where a teacher is setting up one specific thing. Optional fields keep the "fast" promise for those who want it. |
+| 3 | **"Add from Template" requires a minimum of 2 steps (pick template → deploy); dates and publish are optional.** | The single-target path is exactly where a teacher is setting up one specific thing. Optional fields keep the "fast" promise for those who want it. |
 | 4 | **Templates store two types: `assignment` and `page`.** Quizzes are deferred. | Assignments cover most of what teachers reuse; Pages are the next-simplest shape. New Quizzes is a separate API surface and is deferred. |
 | 5 | **Instructions are stored as verbatim Canvas HTML and rendered sanitized, read-only.** No WYSIWYG editor in PowerTools. | "Save once, redeploy faithfully" requires lossless capture. Rendering saved HTML needs a sanitizer, not a full editor. |
 | 6 | **Editing model: structured fields are editable forms; the instructions body is edited via a raw-HTML source view (light edits) or by re-capturing from the Canvas RCE (heavy edits).** | Matching the RCE means re-implementing Canvas's media/embed pickers against course-scoped resources. "Light edits here, heavy edits in Canvas" is honest and avoids shipping a large, worse editor. |
@@ -23,11 +23,12 @@ These decisions define how the system works. They are architectural and should n
 | 9 | **Deploy resolves groups by name, and creates the group if it does not exist** — shown as a per-course mappable field the teacher can redirect. | Assignment groups carry grade weight; a silent fallback could wreck a gradebook. The mapping is always visible so the teacher controls which grade bucket each course's assignment lands in. |
 | 10 | **Publish state defaults to Auto: publish if a due date is set, otherwise leave as a draft.** Editor holds a default preference; deploy offers Auto / Published / Unpublished. | Publish is a semester-context truth like dates, not a stored fact. "Has a due date" is a good proxy for "ready to publish." |
 | 11 | **Library offers a grouped list view and a card view** where each card shows a scaled, sanitized HTML thumbnail of the instructions. | The list is dense and clearest for scanning; the card thumbnails reuse HTML we already store to give a real document preview. List ships first; cards are the toggle. |
-| 12 | **Variables and New Quizzes are deferred — but their seams are reserved now.** Instructions are stored as an unresolved template string; the schema reserves `engine`. | "Table the feature, reserve the seam." Storing pre-rendered instructions or hardcoding the assignment API would block variables and New Quizzes permanently. |
+| 12 | **Tags ship in both tiers; New Quizzes stays deferred.** Instructions are stored as an unresolved template string and resolved only on the way into Canvas; the schema reserves `engine`. | "Table the feature, reserve the seam" paid off — the unresolved-string decision is exactly what let tags be added with no migration. Storing pre-rendered instructions would have blocked them permanently. |
+| 13 | **One tag syntax, two resolution sources.** `{snake_case}`, matching the Communication module's personalization tokens. A name in the auto registry resolves from deploy context; anything else becomes a prompted field. | A second syntax for the same idea is a tax on the teacher's memory. Making "prompted" the default for unknown names means a teacher can invent a tag without registering it anywhere. |
+| 14 | **Prompted values are shared across courses; auto tags resolve per course.** | The teacher fills in "Unit 3" once for a five-course deploy, but `{course_name}` has to differ per course or the feature is a lie. |
 
 **Deferred with seams reserved:**
 
-- **Dynamic variables**, in two tiers. Auto-resolved tokens (`[Course Name]`, `[Due Date]`, `[Term]`) are cheap — the data already exists at deploy time. User-prompted tokens need an authoring syntax and a fill-in step at deploy. Neither is specced now.
 - **New Quizzes** (`engine: "new_quiz"`) — separate `/quiz-lti` API surface.
 - **Rubric attachment** (`rubricId`).
 - **Course-scoped media rehoming** — see the known limitation below.
@@ -85,6 +86,45 @@ The editor form is conditional on type — a `page` template shows only Name + I
 | Publish default | Default publish preference; overridable at deploy (Decision 10) |
 
 A **page template** stores only Name, Instructions (verbatim HTML), and the publish default.
+
+---
+
+## Template Tags
+
+A tag is a placeholder written into the template's **name** or **instructions** that gets a real value on the way into Canvas. Templates are stored unresolved (Decision 12) — the substitution happens per deploy, never in storage.
+
+**Syntax:** `{snake_case}` — a lowercase letter followed by 2–40 letters, digits, or underscores. This is the same token syntax the Communication module uses (`modules/communication/tokenHelpers.js`), deliberately (Decision 13).
+
+To write a literal brace, double it: `{{unit}}` deploys as `{unit}`. This matters because instructions are verbatim Canvas HTML and can legitimately contain braces — code samples, math. A brace run that does not match the tag pattern (`{i}`, `{Unit}`, `{1st}`, `{two words}`) is left alone and never becomes a prompt.
+
+### Tier 1 — auto tags
+
+Resolved silently from deploy context. The registry lives in `modules/assignments/templateTags.js`:
+
+| Tag | Resolves to |
+|---|---|
+| `{course_name}` | Target course name |
+| `{course_code}` | Target course code |
+| `{course_term}` | Target course term |
+| `{due_date}` | The due date set at deploy, formatted long-form; empty if undated |
+| `{today}` | The deploy date |
+| `{teacher_name}` | The teacher's name |
+
+Auto tags resolve **per course** (Decision 14), so one multi-course deploy produces correctly different text in each course.
+
+### Tier 2 — prompted tags
+
+Any tag not in the registry. The teacher fills it in at deploy, once, shared across every selected course. A prompted tag with no value **blocks the deploy** rather than substituting an empty string — shipping a literal `{chapter}` into a real assignment is worse than a stopped deploy.
+
+An explicit prompted value for a registry name overrides the auto value, so a teacher can force `{course_name}` if they need to.
+
+### Where tags surface
+
+| Surface | Behavior |
+|---|---|
+| Template Editor | Live chip summary under the instructions, splitting auto from prompted, plus a "How tags work" disclosure listing the registry. Chips carry an icon and text, never color alone. |
+| Bulk Deployment Engine | Step 2, "Fill In Template Tags" — one input per prompted tag; auto tags listed as context. Deploy is disabled until every prompted tag has a value. |
+| Injected module modal | Same fill-in step, inline (see §4). |
 
 ---
 
@@ -154,10 +194,10 @@ When a teacher opens the extension on a new device, their template library struc
 ```
 PowerTools dashboard                 Canvas (injected buttons — triggers only)
 ────────────────────                 ─────────────────────────────────────────
-• Template Library                   • "Save to Templates"  (assignment / page)
+• Template Library                   • "Save as Template"   (assignment or page)
   (browse, organize, CRUD)             → capture in context
-• Template Editor                    • "Create from Template" (module page,
-• Bulk Deployment Engine               beside the native "+")
+• Template Editor                    • "Add from Template"  (module header,
+• Bulk Deployment Engine               in-page modal, no tab switch)
   (many courses at once)               → single, in-context deploy
 ```
 
@@ -173,8 +213,8 @@ The Templates Tool consists of five surfaces:
 
 1. **Template Library** — dashboard: browse, organize, manage all templates
 2. **Template Editor** — dashboard: create or edit a template
-3. **Save to Templates** — injected modal on Canvas assignment/page views
-4. **Create from Template** — injected surface on Canvas module pages (single deploy)
+3. **Save as Template** — injected button on Canvas assignment and page views
+4. **Add from Template** — injected in-page modal on Canvas module headers (single deploy)
 5. **Bulk Deployment Engine** — dashboard: deploy one template to many courses at once
 
 ---
@@ -223,7 +263,7 @@ Creates a new template or edits an existing one. When editing, all fields are pr
 
 - Displays a sanitized, read-only render of the stored HTML (DOMPurify + a styled container). This is not a WYSIWYG editor.
 - An "Edit HTML source" control reveals a raw-HTML textarea for light edits.
-- For heavy formatting, the teacher edits in the Canvas RCE and re-saves via *Save to Templates*.
+- For heavy formatting, the teacher edits in the Canvas RCE and re-saves via *Save as Template*.
 
 ### Assignment Group Field (Decisions 8–9)
 
@@ -238,29 +278,53 @@ A type-ahead combobox, not a course-bound dropdown. The teacher types a group na
 
 ---
 
-## 3. Save to Templates — injected (Canvas → capture)
+## 3. Save as Template — injected (Canvas → capture)
 
-A "Save to Templates" button injected by the content script into the Canvas assignment (and page) view. It is a trigger only — the extension performs the capture.
+A **"Save as Template"** button injected by the content script into two Canvas views. It is a trigger only — the button opens the Template Editor pre-filled, and the extension performs the capture.
 
-**What it shows:**
+| Injected on | Route | Captures as |
+|---|---|---|
+| `/courses/:id/assignments/:id` | `?saveFrom=courseId/assignmentId` | `assignment` template |
+| `/courses/:id/pages/:slug` | `?savePageFrom=courseId/pageSlug` | `page` template |
+
+The template type is inferred from the view the button is on, so the editor opens with the right form and the Assignment Fields section already hidden for a page. Instructions are captured as verbatim HTML.
+
+**What the editor shows on arrival:**
 - Pre-filled template name (editable)
 - Folder selector
-- Explicit list of fields that will and will not be saved (sets clear expectations about why dates are absent)
+- A form conditional on type, making it visible which fields are and are not saved (dates are absent by design — Core Rule)
 
-The template type is inferred from the page the button is on. Instructions are captured as verbatim HTML. `sourceId` is set to the Canvas item's ID for traceability.
+`sourceId` records the Canvas item for traceability: a numeric id for an assignment, the **slug** for a page (Canvas addresses pages by slug, not id — see `api/pages.js`).
+
+The bare `/courses/:id/pages` index is deliberately not injected — there is no single item there to capture.
 
 ---
 
-## 4. Create from Template — injected (Canvas module → single deploy)
+## 4. Add from Template — injected (Canvas module → single deploy)
 
-A "Create from Template" button injected at the module level on the Canvas Modules page. Because it lives on a module, the module id is free from context — the biggest advantage over dashboard deploy.
+An **"Add from Template"** button injected into every module header on the Canvas Modules page. Because it lives on a module, the module id is free from context — the biggest advantage over dashboard deploy.
+
+The teacher never leaves Canvas. The button opens a modal **in the page**, and on success the page reloads so the new item appears in the module where Canvas rendered it.
 
 **What it shows:**
-- Template picker (search/select)
-- Optional due date
-- Optional publish setting (Auto / Published / Unpublished)
+- Template picker (searchable, most-recently-used first)
+- Prompted tag fields for the selected template, if it has any
+- Optional due date (disabled for page templates)
+- Publish setting (Auto / Published / Unpublished)
 
-Minimum 2 interactions: pick a template → create. Dates and publish are optional. The assignment is created in the current course and added to the current module. Assignment group resolves by name (Decision 9). Publish follows Decision 10.
+Minimum 2 interactions for a tagless template: pick a template → Create. Dates and publish are optional; prompted tags are not.
+
+### Implementation shape
+
+The modal is rendered into a **shadow root** (`content_scripts/template-modal.js`). Canvas's stylesheet cannot reach in and the extension's styles cannot leak out — which is also why the modal's CSS uses literal values rather than the extension's theme custom properties, taking only the accent color and radius from preferences.
+
+Decision 2 is enforced structurally, not by convention: the content script imports only the pure tag engine and sends a single message. Every Canvas call, the PIN gate, and the audit entry run in `background/templateDeploy.js`. The built content-script bundle contains no `fetch(` and no `/api/v1` string.
+
+**PIN gate.** A content script cannot use the `usePinGate` React hook, so the background mirrors its logic (`passGate`): PIN disabled → run and log `pinVerified: 'disabled'`; session unlocked → run and log `pinVerified: true`; session locked → return `needsPin`, and the modal reveals a PIN field and re-sends. Failed attempts and lockout go through the same `security/pin.js` helpers the dashboard uses, so the injected path cannot be used to bypass or outrun a lockout.
+
+**Partial failure is reported honestly.** Creating the item and adding it to the module are two Canvas calls. If the second fails, the modal says the item was created but not placed, and does *not* reload — the teacher keeps the message and places it manually.
+
+Assignment group resolves by name (Decision 9). Publish follows Decision 10.
 
 ---
 
@@ -288,9 +352,9 @@ Shows per-course success and failure. **View in Bulk Editor** opens the Bulk Edi
 ## Relationship Between Templates and Bulk Editor
 
 ```
-Teacher creates a template     (Template Editor or Save to Templates)
+Teacher creates a template     (Template Editor or Save as Template)
         ↓
-Teacher deploys to courses     (Bulk Deployment Engine, or Create from Template)
+Teacher deploys to courses     (Bulk Deployment Engine, or Add from Template)
         ↓
 Assignments created (dated or undated per deploy)
         ↓
@@ -306,8 +370,6 @@ Canvas inline images and file links use course-scoped URLs (e.g., `/courses/123/
 ---
 
 ## Future Additions — Noted, Not Scoped
-
-**Dynamic variables** — two tiers (auto-resolved and user-prompted); see Product Decisions. Instructions are already stored as an unresolved template string so both tiers remain possible.
 
 **New Quizzes** — `engine: "new_quiz"`; separate `/quiz-lti` API surface. The `engine` field is reserved.
 

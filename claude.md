@@ -29,6 +29,8 @@ Read the relevant doc before writing any feature code. Never guess at a document
 | 14-communication-tools.md | Communication Module |
 | 15-feature-designs.md | Feature designs: Grading, People, and other tools |
 | 16-popup-window-delivery.md | Deferred: popup window delivery |
+| 21-pages-tool.md | Content → Pages Tool |
+| 22-fix-links.md | Idea only: stale course-link repair |
 
 ---
 
