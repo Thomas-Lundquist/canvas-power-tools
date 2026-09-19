@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import DOMPurify from 'dompurify'
 import { AlertCircle } from 'lucide-react'
 import { Checkbox } from '../../components/FormControls.jsx'
@@ -6,6 +6,8 @@ import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getPreferences } from '../../storage/preferences.js'
 import { saveTemplate } from '../../storage/templates.js'
 import { validateTemplate, buildTemplateObject, templateToFormFields } from './templateHelpers.js'
+import { extractTags } from './templateTags.js'
+import TemplateTagSummary from './TemplateTagSummary.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
 import FieldLabel from '../../components/FieldLabel.jsx'
 import TextField from '../../components/TextField.jsx'
@@ -145,6 +147,9 @@ export default function TemplateEditor({
 
   const isEditing = !!template
   const isPage = form.type === 'page'
+  // Recomputed as the teacher types, so the chips below the instructions always
+  // reflect what a deploy would actually ask for.
+  const tags = useMemo(() => extractTags([form.name, form.description]), [form.name, form.description])
   const folderOptions = [FOLDER_PLACEHOLDER, ...folders.map(f => ({ value: f.id, label: f.name }))]
   const groupSuggestions = [...new Set(groups.map(g => g.name))]
 
@@ -246,6 +251,11 @@ export default function TemplateEditor({
               <p className="px-4 pb-3 text-xs text-[var(--color-text-muted)]">No instructions yet.</p>
             )}
           </div>
+
+          {/* Tag summary — reflects name + instructions above */}
+          <SettingsBar>
+            <TemplateTagSummary tags={tags} />
+          </SettingsBar>
 
           {/* Assignment-only fields */}
           {!isPage && (

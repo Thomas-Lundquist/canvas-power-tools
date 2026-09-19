@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { CheckCircle, AlertCircle, Loader, ExternalLink } from 'lucide-react'
 import { Checkbox } from '../../components/FormControls.jsx'
 import { useToast } from '../../components/Toast.jsx'
@@ -6,7 +6,9 @@ import { getCourses } from '../../api/courses.js'
 import { saveTemplate } from '../../storage/templates.js'
 import { getPreferences } from '../../storage/preferences.js'
 import { deployTemplateToCourse } from './templateHelpers.js'
-import { addAssignmentToModule } from '../../api/moduleItems.js'
+import { extractTags } from './templateTags.js'
+import TemplateTagFields, { missingTagValues } from './TemplateTagFields.jsx'
+import { addAssignmentToModule, addPageToModule } from '../../api/moduleItems.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
 import FieldLabel from '../../components/FieldLabel.jsx'
@@ -48,8 +50,23 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
   const [publishState, setPublishState] = useState(template.publishDefault ?? 'auto')
   const [deploying, setDeploying] = useState(false)
   const [results, setResults] = useState(null)
+  const [tagValues, setTagValues] = useState({})
 
   const defaultGroup = template.fields?.assignmentGroup ?? ''
+  const isPage = template.type === 'page'
+  const itemNoun = isPage ? 'Page' : 'Assignment'
+
+  // Prompted tag values are shared across every target course; auto tags are
+  // resolved per course at write time, so {course_name} differs correctly.
+  const tags = useMemo(
+    () => extractTags([template.fields?.name, template.fields?.description]),
+    [template.fields?.name, template.fields?.description],
+  )
+  const unfilledTags = missingTagValues(tags, tagValues)
+  const hasTagStep = tags.length > 0
+  const stepGroup = hasTagStep ? 3 : 2
+  const stepDates = hasTagStep ? 4 : 3
+  const stepPublish = hasTagStep ? 5 : 4
 
   function initCourseState(id) {
     setPerCourseGroups(prev => ({ ...prev, [id]: prev[id] ?? defaultGroup }))
@@ -128,7 +145,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
         const courseTemplate = groupOverride !== defaultGroup
           ? { ...template, fields: { ...template.fields, assignmentGroup: groupOverride } }
           : template
-        return deployTemplateToCourse(courseTemplate, course, courseDates, publishState)
+        return deployTemplateToCourse(courseTemplate, course, courseDates, publishState, tagValues)
       })
     )
 
@@ -139,7 +156,11 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
         for (const r of deployResults) {
           if (r.success && r.courseId === String(initialCourseId)) {
             try {
-              await addAssignmentToModule(r.courseId, moduleId, r.assignment.id)
+              if (r.page) {
+                await addPageToModule(r.courseId, moduleId, r.page.url)
+              } else {
+                await addAssignmentToModule(r.courseId, moduleId, r.assignment.id)
+              }
               moduleAddResults[r.courseId] = 'added'
             } catch {
               moduleAddResults[r.courseId] = 'failed'
@@ -175,7 +196,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
 
     return (
       <div>
-        <PageHeader title="Assignments Created" back={{ label: 'Back to Library', to: onDone }} />
+        <PageHeader title={`${itemNoun}s Created`} back={{ label: 'Back to Library', to: onDone }} />
 
         <div
           className="card domain-accent p-6 space-y-4"
@@ -185,7 +206,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
             <div>
               <div className="flex items-center gap-2 text-[var(--color-success)] font-medium mb-3">
                 <CheckCircle size={16} aria-hidden="true" />
-                Successfully created: {succeeded.length} assignment{succeeded.length !== 1 ? 's' : ''}
+                Successfully created: {succeeded.length} {itemNoun.toLowerCase()}{succeeded.length !== 1 ? 's' : ''}
               </div>
               <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] divide-y divide-[var(--color-border)] overflow-hidden">
                 {succeeded.map(r => (
@@ -203,7 +224,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
                     )}
                     {moduleAddResults[r.courseId] === 'failed' && (
                       <p className="flex items-center gap-1 text-[var(--color-warning)] text-xs mt-0.5">
-                        <AlertCircle size={12} aria-hidden="true" /> Assignment created but could not add to module — add it manually.
+                        <AlertCircle size={12} aria-hidden="true" /> {itemNoun} created but could not add to module — add it manually.
                       </p>
                     )}
                   </div>
@@ -255,12 +276,13 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
         actions={
           <Button
             variant="primary"
-            disabled={selectedIds.size === 0 || deploying}
+            disabled={selectedIds.size === 0 || deploying || unfilledTags.length > 0}
             onClick={deploy}
+            title={unfilledTags.length > 0 ? 'Fill in every template tag first' : undefined}
           >
             {deploying
               ? <><Loader size={14} className="animate-spin" aria-hidden="true" /> Creating…</>
-              : `Create Assignment${selectedIds.size !== 1 ? 's' : ''}`}
+              : `Create ${itemNoun}${selectedIds.size !== 1 ? 's' : ''}`}
           </Button>
         }
       >
@@ -316,11 +338,31 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           </div>
         </div>
 
-        {/* Step 2 — group mapping */}
-        {selectedCourses.length > 0 && (
+        {/* Step 2 — template tags */}
+        {hasTagStep && (
           <div className="space-y-3 pt-2 border-t border-[var(--color-border)]">
             <div>
-              <h3 className="section-label !mb-0">2. Assignment Group Mapping</h3>
+              <h3 className="section-label !mb-0">2. Fill In Template Tags</h3>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                These values replace the tags in the {isPage ? 'page title and body' : 'assignment name and instructions'}, in every selected course.
+              </p>
+            </div>
+            <SettingsBar>
+              <TemplateTagFields
+                tags={tags}
+                values={tagValues}
+                onChange={(name, value) => setTagValues(prev => ({ ...prev, [name]: value }))}
+                idPrefix="deploy-tag"
+              />
+            </SettingsBar>
+          </div>
+        )}
+
+        {/* Group mapping — assignments only; pages have no grade bucket */}
+        {selectedCourses.length > 0 && !isPage && (
+          <div className="space-y-3 pt-2 border-t border-[var(--color-border)]">
+            <div>
+              <h3 className="section-label !mb-0">{stepGroup}. Assignment Group Mapping</h3>
               <p className="text-xs text-[var(--color-text-muted)] mt-1">
                 Pre-filled by name match; created in the target course if it doesn't exist.
               </p>
@@ -343,12 +385,12 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           </div>
         )}
 
-        {/* Step 3 + 4 — dates & publish */}
+        {/* Dates & publish */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-[var(--color-border)]">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="section-label !mb-0">
-                3. Deployment Due Date <span className="normal-case font-normal text-[var(--color-text-muted)]">(optional)</span>
+                {stepDates}. Deployment Due Date <span className="normal-case font-normal text-[var(--color-text-muted)]">(optional)</span>
               </h3>
               <div
                 className="flex items-center gap-2 text-sm text-[var(--color-text-body)] cursor-pointer"
@@ -399,7 +441,7 @@ export default function DeployTemplate({ template, initialCourseId, moduleId, on
           </div>
 
           <div className="space-y-3">
-            <h3 className="section-label !mb-0">4. Publish Preference</h3>
+            <h3 className="section-label !mb-0">{stepPublish}. Publish Preference</h3>
             <SettingsBar className="space-y-2">
               {PUBLISH_OPTIONS.map(opt => (
                 <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
