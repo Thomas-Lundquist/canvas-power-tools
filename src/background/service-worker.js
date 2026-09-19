@@ -9,6 +9,7 @@ import { getEnrollmentsWithGrades } from '../api/enrollments.js'
 import { getAssignmentSubmissions } from '../api/submissions.js'
 import { getAssignments }          from '../api/assignments.js'
 import { resolveTokens, resolveOverallTokens } from '../modules/communication/tokenHelpers.js'
+import { listTemplatesForPicker, deployFromModule } from './templateDeploy.js'
 
 function ensureAlarms() {
   chrome.alarms.get('purgeChangeLogs', alarm => {
@@ -48,12 +49,30 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   }
 })
 
-// Open extension pages from content script messages
+// Messages from content scripts. The injected UI is a trigger only — anything
+// that touches the Canvas API is handled here (design doc 03, Decision 2).
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'OPEN_PAGE') {
     chrome.tabs.create({ url: chrome.runtime.getURL(message.path) })
     sendResponse({ ok: true })
+    return false
   }
+
+  if (message.type === 'TEMPLATE_LIST') {
+    listTemplatesForPicker()
+      .then(sendResponse)
+      .catch(err => sendResponse({ templates: [], folders: [], error: err.message }))
+    return true // async response
+  }
+
+  if (message.type === 'TEMPLATE_DEPLOY_TO_MODULE') {
+    deployFromModule(message.payload ?? {})
+      .then(sendResponse)
+      .catch(err => sendResponse({ ok: false, error: err.message }))
+    return true // async response
+  }
+
+  return false
 })
 
 // ─── Schedule Runner ──────────────────────────────────────────────────────────

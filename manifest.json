@@ -30,7 +30,8 @@
     {
       "matches": [
         "*://*.instructure.com/courses/*/assignments*",
-        "*://*.instructure.com/courses/*/modules*"
+        "*://*.instructure.com/courses/*/modules*",
+        "*://*.instructure.com/courses/*/pages*"
       ],
       "js": ["src/content_scripts/main.js"],
       "run_at": "document_idle"

@@ -1,7 +1,9 @@
 import { findElement } from '../dom/selector-engine.js'
+import { openTemplateModal } from './template-modal.js'
 
 const BULK_BTN_ID = 'cpt-bulk-editor-btn'
 const TEMPLATE_BTN_ID = 'cpt-save-template-btn'
+const PAGE_TEMPLATE_BTN_ID = 'cpt-save-page-template-btn'
 
 function safeMessage(path) {
   try {
@@ -112,6 +114,32 @@ export async function injectSaveAsTemplateButton() {
   anchor.insertAdjacentElement('afterend', btn)
 }
 
+export async function injectSavePageAsTemplateButton() {
+  if (document.getElementById(PAGE_TEMPLATE_BTN_ID)) return
+
+  // The slug may contain hyphens, percent-encoding, and unicode — everything up
+  // to the next `/` or query string belongs to it.
+  const match = window.location.pathname.match(/\/courses\/(\d+)\/pages\/([^/?#]+)/)
+  if (!match) return
+  const [, courseId, pageUrl] = match
+
+  const actionArea = findElement('pageDetailActions')
+  const titleEl = findElement('pageTitle')
+  const anchor = actionArea ?? titleEl
+  if (!anchor) return
+
+  const theme = await getButtonTheme()
+  const btn = makeCptButton(
+    PAGE_TEMPLATE_BTN_ID,
+    'Save as Template',
+    'Save this page as a Canvas Power Tools template',
+    () => safeMessage(`src/pages/templates/index.html?savePageFrom=${courseId}/${encodeURIComponent(pageUrl)}`),
+    false,
+    theme,
+  )
+  anchor.insertAdjacentElement('afterend', btn)
+}
+
 export async function injectModuleButtons() {
   const courseId = courseIdFromPath()
   if (!courseId) return
@@ -128,14 +156,25 @@ export async function injectModuleButtons() {
     const igHeader = moduleEl.querySelector('.ig-header')
     if (!igHeader) return
 
+    const moduleName = moduleEl.querySelector('.ig-header-title')?.textContent?.trim() ?? ''
+
     const btn = makeCptButton(
       btnId,
-      'Power Tools',
-      'Add a Canvas Power Tools template to this module',
-      () => safeMessage(`src/pages/templates/index.html?courseId=${courseId}&moduleId=${rawId}`),
+      'Add from Template',
+      `Add a Canvas Power Tools template to ${moduleName || 'this module'}`,
+      () => openTemplateModal({ courseId, moduleId: rawId, moduleName, theme }),
       true,
       theme,
     )
-    igHeader.appendChild(btn)
+
+    // Sit to the left of Canvas's own module controls (publish, +, kebab), which
+    // live in .ig-header-admin. Appending to .ig-header instead would land the
+    // button after all of them.
+    const adminArea = igHeader.querySelector('.ig-header-admin')
+    if (adminArea) {
+      adminArea.prepend(btn)
+    } else {
+      igHeader.appendChild(btn)
+    }
   })
 }

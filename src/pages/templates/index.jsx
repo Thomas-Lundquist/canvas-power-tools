@@ -9,7 +9,8 @@ import { getTemplates } from '../../storage/templates.js'
 import { getPreferences } from '../../storage/preferences.js'
 import { applyPalette, applyDarkMode, applyTextSize } from '../../utils/color.js'
 import { getAssignment } from '../../api/assignments.js'
-import { assignmentToFormFields } from '../../modules/assignments/templateHelpers.js'
+import { getPage } from '../../api/pages.js'
+import { assignmentToFormFields, pageToFormFields } from '../../modules/assignments/templateHelpers.js'
 import '../../styles/global.css'
 import { ToastProvider, useToast } from '../../components/Toast.jsx'
 import { PinGateProvider } from '../../security/usePinGate.jsx'
@@ -22,6 +23,18 @@ function parseSaveFrom() {
   if (!val) return null
   const [courseId, assignmentId] = val.split('/')
   return courseId && assignmentId ? { courseId, assignmentId } : null
+}
+
+// ?savePageFrom=courseId/pageSlug  →  pre-fill editor from a Canvas page
+function parseSavePageFrom() {
+  const params = new URLSearchParams(window.location.search)
+  const val = params.get('savePageFrom')
+  if (!val) return null
+  // Only the first `/` separates the two — a page slug never contains one, but
+  // splitting on all of them would silently truncate a slug that did.
+  const slash = val.indexOf('/')
+  if (slash < 1) return null
+  return { courseId: val.slice(0, slash), pageUrl: val.slice(slash + 1) }
 }
 
 function parseUrlContext() {
@@ -61,12 +74,20 @@ function App() {
 
   async function handleSaveFromParam() {
     const saveFrom = parseSaveFrom()
-    if (!saveFrom) return
+    const savePageFrom = parseSavePageFrom()
+    if (!saveFrom && !savePageFrom) return
+
     try {
-      const assignment = await getAssignment(saveFrom.courseId, saveFrom.assignmentId)
-      const formFields = assignmentToFormFields(assignment)
-      setPrefillForm(formFields)
-      setPrefillSourceId(assignment.id)
+      if (savePageFrom) {
+        const page = await getPage(savePageFrom.courseId, savePageFrom.pageUrl)
+        setPrefillForm(pageToFormFields(page))
+        // Pages are identified by slug, not a numeric id (see api/pages.js).
+        setPrefillSourceId(page.url)
+      } else {
+        const assignment = await getAssignment(saveFrom.courseId, saveFrom.assignmentId)
+        setPrefillForm(assignmentToFormFields(assignment))
+        setPrefillSourceId(assignment.id)
+      }
       setEditingTemplate(null)
       setView('editor')
     } catch {

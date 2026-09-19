@@ -1,4 +1,4 @@
-import { injectBulkEditorButton, injectSaveAsTemplateButton, injectModuleButtons } from './ui-injector.js'
+import { injectBulkEditorButton, injectSaveAsTemplateButton, injectSavePageAsTemplateButton, injectModuleButtons } from './ui-injector.js'
 import { isSetupComplete } from '../storage/account.js'
 
 function contextValid() {
@@ -48,6 +48,12 @@ async function init() {
 
   if (/\/courses\/\d+\/assignments\/\d+/.test(path)) {
     tryRepeatedly(injectSaveAsTemplateButton, 'cpt-save-template-btn')
+  }
+
+  // A page view is /courses/:id/pages/:slug — the bare /pages index has no slug
+  // and nothing to capture.
+  if (/\/courses\/\d+\/pages\/[^/?#]+/.test(path)) {
+    tryRepeatedly(injectSavePageAsTemplateButton, 'cpt-save-page-template-btn')
   }
 
   if (/\/courses\/\d+\/modules/.test(path)) {

@@ -78,4 +78,32 @@ export const SELECTORS = {
     fallback: 'proximity',
     proximityHint: { anchor: 'h1', position: 'self' },
   },
+
+  pageTitle: {
+    description: 'Title element on a course wiki page view',
+    pagePattern: '/courses/*/pages/*',
+    strategies: [
+      '.page-title',
+      '[data-testid="wikiPage-title"]',
+      '.show-content .page-title',
+      'h1.title',
+      'h2.page-title',
+    ],
+    fallback: 'proximity',
+    proximityHint: { anchor: 'h1', position: 'self' },
+  },
+
+  pageDetailActions: {
+    description: 'Action button area on a course wiki page view (next to Edit)',
+    pagePattern: '/courses/*/pages/*',
+    strategies: [
+      '.header-bar-right',
+      '[data-testid="wikiPage-header-actions"]',
+      '.page-toolbar-right',
+      '.edit-wiki',
+      '.header-bar .pull-right',
+    ],
+    fallback: 'proximity',
+    proximityHint: { anchor: 'h1', position: 'self' },
+  },
 }
