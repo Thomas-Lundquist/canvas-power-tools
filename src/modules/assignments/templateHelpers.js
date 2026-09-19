@@ -1,6 +1,8 @@
-import { getAssignmentGroups } from '../../api/assignmentGroups.js'
+import { getAssignmentGroups, createAssignmentGroup } from '../../api/assignmentGroups.js'
 import { createAssignment } from '../../api/assignments.js'
+import { createPage } from '../../api/pages.js'
 import { newTemplateId } from '../../storage/templates.js'
+import { resolveTemplateFields } from './templateTags.js'
 
 export function validateTemplate(fields) {
   const errors = {}
@@ -92,43 +94,105 @@ export function assignmentToFormFields(assignment) {
   }
 }
 
-// Deploys one template to one course, returns { courseId, courseName, success, warning?, error? }
-// publishOverride: 'auto' (published if due date set) | 'published' | 'unpublished'
-export async function deployTemplateToCourse(template, course, dates, publishOverride = 'unpublished') {
+// Resolves the template's assignment group for one course by name, creating the
+// group when no match exists (design doc 03, Decision 9 — a silent fall-through
+// to the default bucket can quietly change a course's grade weighting).
+// Returns { groupId, warning }.
+async function resolveAssignmentGroup(courseId, groupName) {
+  const wanted = (groupName ?? '').trim()
+  if (!wanted) return { groupId: null, warning: null }
+
+  const groups = await getAssignmentGroups(courseId)
+  const matched = groups.find(g => g.name.toLowerCase() === wanted.toLowerCase())
+  if (matched) return { groupId: matched.id, warning: null }
+
   try {
-    const groups = await getAssignmentGroups(course.id)
-    const matchedGroup = groups.find(g =>
-      g.name.toLowerCase() === (template.fields.assignmentGroup ?? '').toLowerCase()
-    )
+    const created = await createAssignmentGroup(courseId, { name: wanted })
+    return { groupId: created.id, warning: `Created assignment group "${wanted}".` }
+  } catch (err) {
+    // Creating the group is best-effort: a failure here should not cost the
+    // teacher the assignment itself, but it must be reported, since the item
+    // lands in the course's default group instead.
+    return {
+      groupId: null,
+      warning: `Could not create assignment group "${wanted}" (${err.message}) — placed in the course's default group.`,
+    }
+  }
+}
 
-    const groupWarning = template.fields.assignmentGroup && !matchedGroup
-      ? `Assignment group "${template.fields.assignmentGroup}" not found — created in Ungrouped.`
-      : null
+// Builds form fields pre-filled from a Canvas page object (api/pages.js shape).
+// A page template carries no assignment fields at all.
+export function pageToFormFields(page) {
+  return {
+    type: 'page',
+    templateName: page.title ?? '',
+    folderId: null,
+    publishDefault: 'auto',
+    name: page.title ?? '',
+    description: page.body ?? '',
+    points: '',
+    submissionType: 'online',
+    allowedFormats: [],
+    assignmentGroup: '',
+    gradingType: 'points',
+    peerReview: false,
+  }
+}
 
+// Deploys one template to one course.
+// Returns { courseId, courseName, success, assignment?, page?, warning?, error? }
+//
+// publishOverride: 'auto' (published if due date set) | 'published' | 'unpublished'
+// tagValues: prompted tag values, shared across courses; auto tags resolve per course.
+export async function deployTemplateToCourse(template, course, dates, publishOverride = 'unpublished', tagValues = {}) {
+  try {
     const published = publishOverride === 'published' ? true
       : publishOverride === 'unpublished' ? false
       : !!dates.dueAt
 
+    // Auto tags are resolved against *this* course, so {course_name} and
+    // {due_date} differ correctly across a multi-course deploy.
+    const fields = resolveTemplateFields(
+      template.fields,
+      { course, dueAt: dates.dueAt ? toCanvasDate(dates.dueAt) : null },
+      tagValues,
+    )
+
+    if (template.type === 'page') {
+      const page = await createPage(course.id, {
+        title: fields.name,
+        body: fields.description,
+        published,
+      })
+      return { courseId: course.id, courseName: course.name, success: true, page }
+    }
+
+    const { groupId, warning } = await resolveAssignmentGroup(course.id, fields.assignmentGroup)
+
     const payload = {
-      name: template.fields.name,
-      description: template.fields.description,
-      pointsPossible: template.fields.points,
-      submissionTypes: buildSubmissionTypes(template.fields),
-      gradingType: template.fields.gradingType,
-      peerReviews: template.fields.peerReview,
+      name: fields.name,
+      description: fields.description,
+      pointsPossible: fields.points,
+      submissionTypes: buildSubmissionTypes(fields),
+      gradingType: fields.gradingType,
+      peerReviews: fields.peerReview,
       published,
     }
 
-    if (matchedGroup) payload.assignmentGroupId = matchedGroup.id
-    if (dates.dueAt) payload.dueAt = `${dates.dueAt}T23:59:00Z`
-    if (dates.unlockAt) payload.unlockAt = `${dates.unlockAt}T23:59:00Z`
-    if (dates.lockAt) payload.lockAt = `${dates.lockAt}T23:59:00Z`
+    if (groupId) payload.assignmentGroupId = groupId
+    if (dates.dueAt) payload.dueAt = toCanvasDate(dates.dueAt)
+    if (dates.unlockAt) payload.unlockAt = toCanvasDate(dates.unlockAt)
+    if (dates.lockAt) payload.lockAt = toCanvasDate(dates.lockAt)
 
     const created = await createAssignment(course.id, payload)
-    return { courseId: course.id, courseName: course.name, success: true, assignment: created, warning: groupWarning }
+    return { courseId: course.id, courseName: course.name, success: true, assignment: created, warning }
   } catch (err) {
     return { courseId: course.id, courseName: course.name, success: false, error: err.message }
   }
+}
+
+function toCanvasDate(dateStr) {
+  return `${dateStr}T23:59:00Z`
 }
 
 function buildSubmissionTypes(fields) {
