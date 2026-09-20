@@ -32,6 +32,15 @@ function tagLabel(name) {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
+// The template's own publish default, narrowed to what its type can express.
+// A page template saved with 'auto' has always produced a draft, so that is
+// what 'auto' maps to here — the behaviour is unchanged, only made visible.
+function defaultPublishFor(template) {
+  const preferred = template.publishDefault ?? 'auto'
+  if (template.type !== 'page') return preferred
+  return preferred === 'published' ? 'published' : 'unpublished'
+}
+
 const STYLE = `
   :host { all: initial; }
   * { box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -379,20 +388,11 @@ export async function openTemplateModal({ courseId, moduleId, moduleName, theme 
       body.appendChild(fs)
     }
 
-    // Date + publish
+    // Deploy options. A page and an assignment are different things in Canvas,
+    // so they get different forms — a disabled control still reads as "this
+    // should work and doesn't".
     if (selected) {
-      const row = document.createElement('div')
-      row.className = 'row'
-
-      const dueWrap = document.createElement('div')
-      const dueLabel = document.createElement('label')
-      dueLabel.setAttribute('for', 'cpt-due')
-      dueLabel.textContent = 'Due date (optional)'
-      const due = document.createElement('input')
-      due.type = 'date'
-      due.id = 'cpt-due'
-      due.disabled = selected.type === 'page'
-      dueWrap.append(dueLabel, due)
+      const isPage = selected.type === 'page'
 
       const pubWrap = document.createElement('div')
       const pubLabel = document.createElement('label')
@@ -400,21 +400,63 @@ export async function openTemplateModal({ courseId, moduleId, moduleName, theme 
       pubLabel.textContent = 'Publish'
       const publish = document.createElement('select')
       publish.id = 'cpt-publish'
-      for (const [value, text] of [['auto', 'Auto'], ['published', 'Published'], ['unpublished', 'Unpublished']]) {
+
+      // 'Auto' means "published if a due date is set". A page has no due date,
+      // so on a page it would always resolve to Unpublished — three options
+      // with two outcomes. Offer the two real ones instead.
+      const publishOptions = isPage
+        ? [['unpublished', 'Unpublished (draft)'], ['published', 'Published']]
+        : [['auto', 'Auto'], ['published', 'Published'], ['unpublished', 'Unpublished']]
+
+      for (const [value, text] of publishOptions) {
         const opt = document.createElement('option')
         opt.value = value
         opt.textContent = text
         publish.appendChild(opt)
       }
+      publish.value = defaultPublishFor(selected)
       pubWrap.append(pubLabel, publish)
 
-      row.append(dueWrap, pubWrap)
-      body.appendChild(row)
+      if (isPage) {
+        // Full width — there is no date field to sit beside.
+        body.appendChild(pubWrap)
 
-      const autoHint = document.createElement('p')
-      autoHint.className = 'hint'
-      autoHint.textContent = 'Auto publishes if a due date is set, otherwise creates a draft.'
-      body.appendChild(autoHint)
+        const pageHint = document.createElement('p')
+        pageHint.className = 'hint'
+        pageHint.textContent =
+          'Pages have no due date in Canvas. To release this page on a schedule, set an unlock date on the module.'
+        body.appendChild(pageHint)
+
+        // {due_date} resolves to an empty string rather than being left in
+        // place, so on a page it silently disappears from the content.
+        if (tags.some(t => t.name === 'due_date')) {
+          const warn = document.createElement('p')
+          warn.className = 'msg warn'
+          warn.textContent =
+            'This template uses {due_date}. A page has no due date, so that tag will come out blank.'
+          body.appendChild(warn)
+        }
+      } else {
+        const row = document.createElement('div')
+        row.className = 'row'
+
+        const dueWrap = document.createElement('div')
+        const dueLabel = document.createElement('label')
+        dueLabel.setAttribute('for', 'cpt-due')
+        dueLabel.textContent = 'Due date (optional)'
+        const due = document.createElement('input')
+        due.type = 'date'
+        due.id = 'cpt-due'
+        dueWrap.append(dueLabel, due)
+
+        row.append(dueWrap, pubWrap)
+        body.appendChild(row)
+
+        const autoHint = document.createElement('p')
+        autoHint.className = 'hint'
+        autoHint.textContent = 'Auto publishes if a due date is set, otherwise creates a draft.'
+        body.appendChild(autoHint)
+      }
     }
 
     // PIN, only once the background says the session is locked
@@ -446,7 +488,9 @@ export async function openTemplateModal({ courseId, moduleId, moduleName, theme 
     submitBtn.type = 'button'
     submitBtn.id = 'cpt-submit'
     submitBtn.className = 'primary'
-    submitBtn.textContent = busy ? 'Creating…' : 'Create'
+    submitBtn.textContent = busy
+      ? 'Creating…'
+      : selected ? (selected.type === 'page' ? 'Create Page' : 'Create Assignment') : 'Create'
     submitBtn.disabled = blocked
     submitBtn.addEventListener('click', submit)
 

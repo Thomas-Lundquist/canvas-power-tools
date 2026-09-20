@@ -33,6 +33,7 @@ export async function listTemplatesForPicker() {
       instructions: t.fields?.description ?? '',
       points: t.fields?.points ?? null,
       assignmentGroup: t.fields?.assignmentGroup ?? '',
+      publishDefault: t.publishDefault ?? 'auto',
       lastUsed: t.lastUsed ?? null,
     })),
     folders: data.folders.map(f => ({ id: f.id, name: f.name })),
