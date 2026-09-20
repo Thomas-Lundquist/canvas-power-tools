@@ -17,6 +17,7 @@ import BulkActionBar, { INITIAL_ACTIONS } from '../../modules/assignments/BulkAc
 import PreviewDiff from '../../modules/assignments/PreviewDiff.jsx'
 import DeleteAssignmentsModal from '../../modules/assignments/DeleteAssignmentsModal.jsx'
 import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
+import ContentPreview, { PREVIEW_PANE_INSET } from '../../components/ContentPreview.jsx'
 import { useToast } from '../../components/Toast.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
@@ -107,6 +108,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [previewAssignment, setPreviewAssignment] = useState(null)
 
   const filteredAssignments = useMemo(
     () => applyFilters(assignments, search, filters),
@@ -278,6 +280,7 @@ export default function App() {
             sortKey=""
             sortDir="asc"
             onSort={() => {}}
+            onPreview={() => {}}
             loading
             fillHeight
           />
@@ -358,6 +361,7 @@ export default function App() {
               onSort={sort.onSort}
               loading={loadingAssignments}
               groupColorTokens={groupColorTokens}
+              onPreview={setPreviewAssignment}
               fillHeight
               actionBarVisible={selectedIds.size > 0}
             />
@@ -390,11 +394,23 @@ export default function App() {
           </>
         }
       >
-        <div className="flex-1 flex flex-col min-h-0">
-          {renderContent()}
+        <div className="relative flex-1 flex min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {renderContent()}
+          </div>
+          {previewAssignment && (
+            <ContentPreview
+              title={previewAssignment.name}
+              subtitle={previewAssignment.published ? 'Published' : 'Unpublished'}
+              html={previewAssignment.description}
+              emptyNote="This assignment has no description."
+              onClose={() => setPreviewAssignment(null)}
+            />
+          )}
         </div>
       </ToolShell>
       <BulkActionBar
+        rightInset={previewAssignment ? PREVIEW_PANE_INSET : 0}
         selectedCount={selectedIds.size}
         actions={actions}
         onActionsChange={setActions}

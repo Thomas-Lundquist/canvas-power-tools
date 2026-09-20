@@ -43,7 +43,7 @@ function countActiveFields(actions) {
   return count
 }
 
-export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, onDelete, groups = [] }) {
+export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, onDelete, groups = [], rightInset = 0 }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const fieldCount = countActiveFields(actions)
@@ -66,11 +66,12 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
       role="region"
       aria-label="Bulk actions"
       aria-hidden={selectedCount === 0 ? 'true' : undefined}
-      className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[61.5rem] z-20 px-4 transition-transform duration-300 ease-out ${
+      className={`fixed bottom-0 left-0 z-20 px-4 transition-transform duration-300 ease-out ${
         selectedCount === 0 ? 'translate-y-full pointer-events-none' : 'translate-y-0'
       }`}
+      style={{ right: rightInset }}
     >
-      <div className="bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-[var(--radius-card)] shadow-[var(--shadow-lg)]">
+      <div className="mx-auto w-full max-w-[61.5rem] bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-[var(--radius-card)] shadow-[var(--shadow-lg)]">
 
         {/* Header strip */}
         <div

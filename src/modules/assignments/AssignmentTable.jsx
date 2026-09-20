@@ -1,6 +1,6 @@
 import { useRef, useState, useLayoutEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Eye } from 'lucide-react'
 import { formatDate } from '../../components/DateInput.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import Badge from '../../components/Badge.jsx'
@@ -28,7 +28,7 @@ const SKELETON_WIDTHS = [
   ['w-60', 'w-24', 'w-24', 'w-24', 'w-24', 'w-8',  'w-20'],
 ]
 
-export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading, groupColorTokens, fillHeight = false, actionBarVisible = false }) {
+export default function AssignmentTable({ assignments, selectedIds, onToggle, onToggleAll, sortKey, sortDir, onSort, loading, groupColorTokens, onPreview, fillHeight = false, actionBarVisible = false }) {
   const allSelected = assignments.length > 0 && assignments.every(a => selectedIds.has(a.id))
   const someSelected = assignments.some(a => selectedIds.has(a.id))
 
@@ -49,6 +49,11 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
   })
   // NOTE: only handles the design doc's "100-500 rows" virtual-scrolling tier.
   // The >500-row "virtual scrolling + group-based pagination" tier is not implemented.
+  // The preview column is optional so the table keeps working for any caller
+  // that has no content to show. +1 for the checkbox column.
+  const showPreview = typeof onPreview === 'function'
+  const colSpan = COLUMNS.length + 1 + (showPreview ? 1 : 0)
+
   const virtualItems = rowVirtualizer.getVirtualItems()
   const totalSize = rowVirtualizer.getTotalSize()
   const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0
@@ -57,7 +62,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
   return (
     <div ref={parentRef} className={`overflow-auto ${fillHeight ? 'flex-1 min-h-0' : 'max-h-[34rem]'}`}>
       <table
-        className="w-full min-w-[61.5rem] text-sm border-collapse table-fixed"
+        className={`w-full ${showPreview ? 'min-w-[67.5rem]' : 'min-w-[61.5rem]'} text-sm border-collapse table-fixed`}
         role="grid"
         aria-label="Assignments"
         aria-rowcount={assignments.length}
@@ -90,17 +95,26 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
                 </span>
               </th>
             ))}
+            {showPreview && (
+              <th className="table-header-cell w-24 px-3 py-3 text-left font-medium text-sm text-[var(--color-text-secondary)]">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {loading
             ? Array.from({ length: skeletonRowCount }, (_, i) => (
-                <SkeletonRow key={i} widths={SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]} />
+                <SkeletonRow
+                  key={i}
+                  widths={SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}
+                  showPreview={showPreview}
+                />
               ))
             : assignments.length === 0
               ? (
                 <tr>
-                  <td colSpan={COLUMNS.length + 1} className="py-12 text-center text-[var(--color-text-muted)] text-sm">
+                  <td colSpan={colSpan} className="py-12 text-center text-[var(--color-text-muted)] text-sm">
                     No assignments match the current filters.
                   </td>
                 </tr>
@@ -109,7 +123,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
                 <>
                   {paddingTop > 0 && (
                     <tr>
-                      <td colSpan={COLUMNS.length + 1} style={{ height: paddingTop }} />
+                      <td colSpan={colSpan} style={{ height: paddingTop }} />
                     </tr>
                   )}
                   {virtualItems.map(virtualRow => {
@@ -122,17 +136,18 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
                         onToggle={() => onToggle(a.id)}
                         rowIndex={virtualRow.index}
                         groupColor={groupColorCss(a.assignmentGroupId, groupColorTokens)}
+                        onPreview={showPreview ? () => onPreview(a) : null}
                       />
                     )
                   })}
                   {paddingBottom > 0 && (
                     <tr>
-                      <td colSpan={COLUMNS.length + 1} style={{ height: paddingBottom }} />
+                      <td colSpan={colSpan} style={{ height: paddingBottom }} />
                     </tr>
                   )}
                   {actionBarVisible && (
                     <tr aria-hidden="true">
-                      <td colSpan={COLUMNS.length + 1} style={{ height: '14rem' }} />
+                      <td colSpan={colSpan} style={{ height: '14rem' }} />
                     </tr>
                   )}
                 </>
@@ -144,7 +159,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
   )
 }
 
-function SkeletonRow({ widths }) {
+function SkeletonRow({ widths, showPreview = false }) {
   return (
     <tr className="border-b border-[var(--color-border-subtle)]">
       <td className="px-3 py-3.5">
@@ -155,11 +170,16 @@ function SkeletonRow({ widths }) {
           <div className={`h-3.5 ${w} rounded bg-[var(--color-border)] animate-pulse`} />
         </td>
       ))}
+      {showPreview && (
+        <td className="px-3 py-3.5">
+          <div className="h-3.5 w-16 rounded bg-[var(--color-border)] animate-pulse" />
+        </td>
+      )}
     </tr>
   )
 }
 
-function AssignmentRow({ assignment: a, selected, onToggle, rowIndex, groupColor }) {
+function AssignmentRow({ assignment: a, selected, onToggle, rowIndex, groupColor, onPreview }) {
   const trRef = useRef(null)
   const checkboxTdRef = useRef(null)
 
@@ -204,6 +224,19 @@ function AssignmentRow({ assignment: a, selected, onToggle, rowIndex, groupColor
           {a.published ? 'Published' : 'Unpublished'}
         </Badge>
       </td>
+      {onPreview && (
+        <td className="px-3 py-3 align-middle" onClick={e => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={onPreview}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-control)] text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-body)] transition-colors duration-75"
+            aria-label={`Preview ${a.name}`}
+          >
+            <Eye size={12} aria-hidden="true" />
+            Preview
+          </button>
+        </td>
+      )}
     </tr>
   )
 }
