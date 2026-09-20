@@ -24,11 +24,21 @@ export function applyDarkMode(mode = 'system') {
   try { localStorage.setItem('cpt_theme', mode) } catch { /* storage unavailable */ }
 }
 
-// Sets font-size on <html> so all rem-based sizes scale proportionally.
+// Tags <html> with the chosen size so all rem-based sizes scale proportionally.
 // Persists to localStorage so theme-init.js can apply it before first paint.
-const TEXT_SIZE_MAP = { small: '13px', medium: '15px', large: '17px', 'extra-large': '20px' }
+//
+// The sizes themselves live in global.css, keyed off this attribute — this list
+// is only the valid-key whitelist. It deliberately holds no measurements: an
+// earlier version mirrored the px values here, where nothing ever read them, so
+// the two copies could disagree without anything visibly breaking.
+export const TEXT_SIZES = ['small', 'medium', 'large', 'extra-large']
 
 export function applyTextSize(size = 'medium') {
-  document.documentElement.setAttribute('data-text-size', TEXT_SIZE_MAP[size] ? size : 'medium')
-  try { localStorage.setItem('cpt_text_size', size) } catch { /* storage unavailable */ }
+  const resolved = TEXT_SIZES.includes(size) ? size : 'medium'
+  document.documentElement.setAttribute('data-text-size', resolved)
+  // Persist the resolved value, not the raw one: theme-init.js writes whatever
+  // it finds straight onto the attribute before paint, and an unrecognised key
+  // matches no rule — the page would render at the browser default for a frame
+  // and then jump once this ran.
+  try { localStorage.setItem('cpt_text_size', resolved) } catch { /* storage unavailable */ }
 }
