@@ -187,6 +187,55 @@
 :root[data-text-size="large"]       { font-size: 106.25%; } /* 17/16 */
 :root[data-text-size="extra-large"] { font-size: 125%; }    /* 20/16 */
 
+/* ──────────────────────────────────────────────────────────────
+   CONTENT PREVIEW PANE (components/ContentPreview.jsx)
+
+   Width lives here, not in the component, because the right answer is a
+   *layout mode* rather than a number and only a media query can pick it.
+
+   Two constraints pull against each other: Canvas lays course content out in
+   roughly a 60rem column, and the tables need 61.5–67.5rem before they scroll.
+   Above the breakpoint both roughly fit, so the pane docks and the table gives
+   (scrolled, it still shows title and status; a squeezed preview misleads).
+   Below it neither fits at any width, so the pane overlays instead — squeezing
+   both into uselessness is the wrong answer, and an earlier version that capped
+   the width with calc(100vw - 30rem) collapsed the pane to ~96px at high zoom.
+
+   Note the units. `rem` here tracks the text-size setting above (13–20px), so
+   these values rescale with it — but the media query's `em` resolves against
+   the *browser default* font-size, which no page rule can change. That is
+   deliberate: the breakpoint stays put across every text-size setting, which is
+   what keeps the mode switch predictable.
+
+   --cpt-pane-inset is what the fixed bulk action bars re-centre against, so it
+   drops to zero in overlay mode where the pane no longer reserves any width.
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --cpt-pane-width: clamp(30rem, 46vw, 56rem);
+  --cpt-pane-inset: var(--cpt-pane-width);
+}
+
+.cpt-preview-pane {
+  width: var(--cpt-pane-width);
+}
+
+@media (max-width: 64em) {
+  :root {
+    --cpt-pane-width: min(100% - 3rem, 44rem);
+    --cpt-pane-inset: 0px;
+  }
+
+  /* Overlay the table rather than shrink it. The flex row that hosts the pane
+     is position:relative for exactly this. */
+  .cpt-preview-pane {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+  }
+}
+
 @layer base {
   body {
     background-color: var(--color-bg-page);
