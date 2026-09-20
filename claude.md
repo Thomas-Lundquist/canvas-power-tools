@@ -77,6 +77,8 @@ className="bg-[var(--color-surface)] text-[var(--color-text-body)]"
 
 **Units:** `rem` for all text, padding, margin, and layout. `px` only for borders (1–2px) and focus outlines (3px). Never `px` for font-size or content sizing.
 
+Subtracting a `rem` length from a viewport length needs a floor. `:root` font-size here is 13–20px (text-size setting), so `calc(100vw - 30rem)` shrinks from both ends and can reach zero — it once collapsed the preview pane to ~96px at high zoom. Wrap it in `max()`/`clamp()`, or divide space with flex/grid instead. A plain `max-height: calc(100vh - 4rem)` is fine; it's the unfloored *width* of a flex sibling that bites.
+
 **Accessibility (WCAG 2.1 AA required):**
 - Every interactive element keyboard accessible (Tab to reach, Enter/Space to activate)
 - Icons: `aria-label` or `aria-hidden` with visible text
