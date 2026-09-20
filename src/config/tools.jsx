@@ -1,7 +1,7 @@
 import {
   LayoutList, BarChart2, Layers, BookTemplate,
   ClipboardList, Users, SplitSquareVertical, Clock,
-  Bell, TrendingDown, Megaphone, FileQuestion,
+  Bell, TrendingDown, Megaphone, FileQuestion, FileStack,
 } from 'lucide-react'
 
 // Single source of truth for all tool pages.
@@ -13,6 +13,7 @@ export const MODULES = [
   { id: 'grading',       label: 'Grading'       },
   { id: 'communication', label: 'Communication' },
   { id: 'people',        label: 'People'        },
+  { id: 'content',       label: 'Content'       },
 ]
 
 export const TOOLS = [
@@ -130,5 +131,16 @@ export const TOOLS = [
     description: 'Manage group sets, create groups, and auto-assign students by name, randomly, or by size.',
     Icon:        Users,
     path:        'src/pages/student-groups/index.html',
+  },
+
+  // ── Content ────────────────────────────────────────────────────────────────
+  {
+    id:          'pages',
+    module:      'content',
+    label:       'Pages',
+    shortLabel:  'Pages',
+    description: 'Publish, unpublish, set editing permissions, and delete course pages in bulk — with per-page revision restore.',
+    Icon:        FileStack,
+    path:        'src/pages/pages/index.html',
   },
 ]

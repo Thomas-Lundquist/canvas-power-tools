@@ -62,6 +62,7 @@ export default defineConfig({
         announcements:       resolve(__dirname, 'src/pages/announcements/index.html'),
         sections:        resolve(__dirname, 'src/pages/sections/index.html'),
         accommodations:  resolve(__dirname, 'src/pages/accommodations/index.html'),
+        pages:           resolve(__dirname, 'src/pages/pages/index.html'),
       },
     },
   },
