@@ -28,6 +28,28 @@ const MESSAGE =
   'e.g. text-[var(--color-text-muted)] / bg-[var(--color-bg-surface)] / ' +
   'border-[var(--color-border)] — see src/styles/global.css.'
 
+// The named-palette rule above only catches shade-numbered classes, which is how
+// a large body of hardcoded hex accumulated undetected inside arbitrary values
+// (`bg-[#B7102A]`). Those are the same bypass wearing a different hat.
+const ARBITRARY_HEX = `(${COLOR_PREFIX})-\[#[0-9a-fA-F]{3,8}\]`
+
+const ARBITRARY_HEX_MESSAGE =
+  'Hardcoded hex in an arbitrary Tailwind value bypasses the design tokens and ' +
+  'will not respond to the theme switch. Use border-[var(--color-border)] and ' +
+  'friends — see src/styles/global.css.'
+
+// A bare hex string is almost always an inline style or a JS color constant
+// (style={{ borderColor: '#d1d5db' }}), the other way color escaped the tokens.
+// Lengths are pinned to real hex notations so CSS/DOM id strings ('#app') and
+// href anchors do not trip it.
+const BARE_HEX = '^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$'
+
+const BARE_HEX_MESSAGE =
+  'Hardcoded hex color. Inline styles must read a token, e.g. ' +
+  "style={{ borderColor: 'var(--color-border)' }}. The only sanctioned exception " +
+  'is markup injected into a Canvas page, which sits outside our CSS cascade and ' +
+  'has no custom properties to read — disable this rule inline and say so.'
+
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
@@ -53,6 +75,11 @@ export default [
         { selector: `Literal[value=/${RAW_COLOR}/]`, message: MESSAGE },
         // Template-literal className: className={`… ${x} border-gray-200`}
         { selector: `TemplateElement[value.cooked=/${RAW_COLOR}/]`, message: MESSAGE },
+        // Arbitrary hex value: className="border-[#d1d5db]"
+        { selector: `Literal[value=/${ARBITRARY_HEX}/]`, message: ARBITRARY_HEX_MESSAGE },
+        { selector: `TemplateElement[value.cooked=/${ARBITRARY_HEX}/]`, message: ARBITRARY_HEX_MESSAGE },
+        // Bare hex anywhere: style={{ color: '#ef4444' }}, const RED = '#B7102A'
+        { selector: `Literal[value=/${BARE_HEX}/]`, message: BARE_HEX_MESSAGE },
       ],
     },
   },

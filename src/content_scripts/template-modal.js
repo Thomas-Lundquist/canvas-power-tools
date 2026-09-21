@@ -123,6 +123,9 @@ export async function openTemplateModal({ courseId, moduleId, moduleName, theme 
 
   const backdrop = document.createElement('div')
   backdrop.className = 'backdrop'
+  // Seeds --cpt-color for markup injected into Canvas's page, which has none of
+  // our custom properties to read.
+  // eslint-disable-next-line no-restricted-syntax -- see above.
   backdrop.style.setProperty('--cpt-color', theme?.color ?? '#2B54D4')
   backdrop.style.setProperty('--cpt-radius', theme?.radius ?? '6px')
   root.appendChild(backdrop)

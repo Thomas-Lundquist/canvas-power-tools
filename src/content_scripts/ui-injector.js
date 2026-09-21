@@ -18,6 +18,7 @@ function safeMessage(path) {
 // Colors mirror each theme's --cpt-color (Bauhaus red / Modern primary-500);
 // radius mirrors --radius-control (Bauhaus flat 2px / Modern rounded 6px) so an
 // injected button reads as the same shape as the tool it opens.
+// eslint-disable-next-line no-restricted-syntax -- literal by necessity, see above.
 const PALETTE_COLORS = { bauhaus: '#B7102A', modern: '#2B54D4' }
 const PALETTE_RADIUS = { bauhaus: '2px', modern: '6px' }
 
@@ -41,6 +42,7 @@ function darken(hex) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }
 
+// eslint-disable-next-line no-restricted-syntax -- Bauhaus fallback for injected markup.
 function makeCptButton(id, label, title, onClick, small = false, theme = { color: '#B7102A', radius: '2px' }) {
   const { color, radius } = theme
   const hoverColor = darken(color)
@@ -54,6 +56,7 @@ function makeCptButton(id, label, title, onClick, small = false, theme = { color
     gap: '6px',
     padding: small ? '4px 10px' : '6px 18px 6px 14px',
     background: color,
+    // eslint-disable-next-line no-restricted-syntax -- injected markup, no tokens available.
     color: '#fff',
     border: 'none',
     borderRadius: radius,

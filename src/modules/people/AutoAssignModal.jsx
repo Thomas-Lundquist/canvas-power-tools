@@ -97,7 +97,7 @@ export default function AutoAssignModal({ students, categoryName, existingGroupC
             className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
             style={active
               ? { borderColor: 'var(--cpt-color)', backgroundColor: 'var(--cpt-color)' }
-              : { borderColor: '#d1d5db' }}
+              : { borderColor: 'var(--color-border)' }}
           >
             {active && <span className="w-1.5 h-1.5 rounded-full block" style={{ backgroundColor: 'white' }} />}
           </span>

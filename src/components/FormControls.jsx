@@ -26,7 +26,7 @@ export function Checkbox({ checked, onChange, indeterminate, disabled, ariaLabel
       className="inline-flex items-center justify-center w-4 h-4 rounded shrink-0 border-2 transition-all cursor-pointer focus:outline-none focus-visible:ring-2"
       style={{
         backgroundColor: active ? 'var(--cpt-color)' : 'white',
-        borderColor: active ? 'var(--cpt-color)' : '#d1d5db',
+        borderColor: active ? 'var(--cpt-color)' : 'var(--color-border)',
         opacity: disabled ? 0.5 : 1,
         '--tw-ring-color': 'var(--cpt-color)',
       }}

@@ -60,7 +60,7 @@ export default function RadioGroup({
               aria-hidden="true"
               className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 shrink-0 transition-all peer-focus-visible:ring-2"
               style={{
-                borderColor: checked ? 'var(--cpt-color)' : '#d1d5db',
+                borderColor: checked ? 'var(--cpt-color)' : 'var(--color-border)',
                 backgroundColor: 'white',
                 '--tw-ring-color': 'var(--cpt-color)',
               }}
