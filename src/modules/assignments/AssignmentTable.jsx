@@ -147,7 +147,7 @@ export default function AssignmentTable({ assignments, selectedIds, onToggle, on
                   )}
                   {actionBarVisible && (
                     <tr aria-hidden="true">
-                      <td colSpan={colSpan} style={{ height: '14rem' }} />
+                      <td colSpan={colSpan} style={{ height: '17rem' }} />
                     </tr>
                   )}
                 </>

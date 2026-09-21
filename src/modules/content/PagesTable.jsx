@@ -139,7 +139,7 @@ export default function PagesTable({
                   )}
                   {actionBarVisible && (
                     <tr aria-hidden="true">
-                      <td colSpan={colSpan} style={{ height: '11rem' }} />
+                      <td colSpan={colSpan} style={{ height: '14rem' }} />
                     </tr>
                   )}
                 </>
