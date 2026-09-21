@@ -17,7 +17,7 @@ import BulkActionBar, { INITIAL_ACTIONS } from '../../modules/assignments/BulkAc
 import PreviewDiff from '../../modules/assignments/PreviewDiff.jsx'
 import DeleteAssignmentsModal from '../../modules/assignments/DeleteAssignmentsModal.jsx'
 import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
-import ContentPreview, { PREVIEW_PANE_INSET } from '../../components/ContentPreview.jsx'
+import ContentPreview from '../../components/ContentPreview.jsx'
 import { useToast } from '../../components/Toast.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
@@ -395,8 +395,20 @@ export default function App() {
         }
       >
         <div className="relative flex-1 flex min-h-0">
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
             {renderContent()}
+            {/* Inside the table column, not the viewport: the bar then sizes to the
+                space left of the preview pane without being told how wide it is. */}
+            <BulkActionBar
+              selectedCount={selectedIds.size}
+              actions={actions}
+              onActionsChange={setActions}
+              onPreview={() => setShowPreview(true)}
+              onClearAll={clearSelection}
+              onCopyTo={() => setShowCopyModal(true)}
+              onDelete={() => setShowDeleteModal(true)}
+              groups={groups}
+            />
           </div>
           {previewAssignment && (
             <ContentPreview
@@ -409,17 +421,6 @@ export default function App() {
           )}
         </div>
       </ToolShell>
-      <BulkActionBar
-        rightInset={previewAssignment ? PREVIEW_PANE_INSET : 0}
-        selectedCount={selectedIds.size}
-        actions={actions}
-        onActionsChange={setActions}
-        onPreview={() => setShowPreview(true)}
-        onClearAll={clearSelection}
-        onCopyTo={() => setShowCopyModal(true)}
-        onDelete={() => setShowDeleteModal(true)}
-        groups={groups}
-      />
       {showPreview && (
         <PreviewDiff
           selectedAssignments={selectedAssignments}

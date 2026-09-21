@@ -15,7 +15,7 @@ import PagesActionBar, { INITIAL_ACTIONS } from '../../modules/content/PagesActi
 import PagesPreviewDiff from '../../modules/content/PagesPreviewDiff.jsx'
 import DeletePagesModal from '../../modules/content/DeletePagesModal.jsx'
 import PageRevisionsModal from '../../modules/content/PageRevisionsModal.jsx'
-import ContentPreview, { PREVIEW_PANE_INSET } from '../../components/ContentPreview.jsx'
+import ContentPreview from '../../components/ContentPreview.jsx'
 import { applyPageFilters, publishedParamFromFilters, editingRolesKey } from '../../modules/content/pagesHelpers.js'
 import { useToast } from '../../components/Toast.jsx'
 import { getCourses } from '../../api/courses.js'
@@ -341,8 +341,18 @@ export default function App() {
         }
       >
         <div className="relative flex-1 flex min-h-0">
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
             {renderContent()}
+            {/* Inside the table column, not the viewport: the bar then sizes to the
+                space left of the preview pane without being told how wide it is. */}
+            <PagesActionBar
+              selectedCount={selectedIds.size}
+              actions={actions}
+              onActionsChange={setActions}
+              onPreview={() => setShowPreview(true)}
+              onClearAll={clearSelection}
+              onDelete={() => setShowDeleteModal(true)}
+            />
           </div>
           {preview && (
             <ContentPreview
@@ -359,15 +369,6 @@ export default function App() {
           )}
         </div>
       </ToolShell>
-      <PagesActionBar
-        rightInset={preview ? PREVIEW_PANE_INSET : 0}
-        selectedCount={selectedIds.size}
-        actions={actions}
-        onActionsChange={setActions}
-        onPreview={() => setShowPreview(true)}
-        onClearAll={clearSelection}
-        onDelete={() => setShowDeleteModal(true)}
-      />
       {showPreview && (
         <PagesPreviewDiff
           selectedPages={selectedPages}

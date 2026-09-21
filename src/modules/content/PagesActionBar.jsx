@@ -7,7 +7,7 @@ import { EDITING_ROLE_PRESETS, INITIAL_ACTIONS, countActiveFields } from './page
 export { INITIAL_ACTIONS }
 
 export default function PagesActionBar({
-  selectedCount, actions, onActionsChange, onPreview, onClearAll, onDelete, rightInset = 0,
+  selectedCount, actions, onActionsChange, onPreview, onClearAll, onDelete,
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -22,17 +22,23 @@ export default function PagesActionBar({
     onActionsChange({ ...actions, status: actions.status === intent ? null : intent })
   }
 
+  // Absolute inside the table column, not fixed to the viewport: the column is
+  // already the space left of the preview pane, so the bar centres itself there
+  // without being told the pane's width. The wrapper stretches the full column
+  // and is invisible, so it must not swallow clicks in the gutters either side
+  // of the card — only the card itself takes them.
   return (
     <div
       role="region"
       aria-label="Bulk actions"
       aria-hidden={selectedCount === 0 ? 'true' : undefined}
-      className={`fixed bottom-0 left-0 z-20 px-4 transition-transform duration-300 ease-out ${
-        selectedCount === 0 ? 'translate-y-full pointer-events-none' : 'translate-y-0'
+      className={`absolute bottom-0 left-0 right-0 z-20 px-4 pointer-events-none transition-transform duration-300 ease-out ${
+        selectedCount === 0 ? 'translate-y-full' : 'translate-y-0'
       }`}
-      style={{ right: rightInset }}
     >
-      <div className="mx-auto w-full max-w-[61.5rem] bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-[var(--radius-card)] shadow-[var(--shadow-lg)]">
+      <div className={`mx-auto w-full max-w-[61.5rem] bg-[var(--color-bg-surface)] border border-b-0 border-[var(--color-border)] rounded-t-[var(--radius-card)] shadow-[var(--shadow-lg)] ${
+        selectedCount === 0 ? '' : 'pointer-events-auto'
+      }`}>
 
         {/* Header strip */}
         <div

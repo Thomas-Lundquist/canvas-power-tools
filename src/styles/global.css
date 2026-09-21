@@ -207,12 +207,12 @@
    deliberate: the breakpoint stays put across every text-size setting, which is
    what keeps the mode switch predictable.
 
-   --cpt-pane-inset is what the fixed bulk action bars re-centre against, so it
-   drops to zero in overlay mode where the pane no longer reserves any width.
+   Nothing else has to know this width. The bulk action bars are absolutely
+   positioned inside the table column, so they size to whatever space the pane
+   leaves — including none, in overlay mode.
    ────────────────────────────────────────────────────────────── */
 :root {
   --cpt-pane-width: clamp(30rem, 46vw, 56rem);
-  --cpt-pane-inset: var(--cpt-pane-width);
 }
 
 .cpt-preview-pane {
@@ -222,7 +222,6 @@
 @media (max-width: 64em) {
   :root {
     --cpt-pane-width: min(100% - 3rem, 44rem);
-    --cpt-pane-inset: 0px;
   }
 
   /* Overlay the table rather than shrink it. The flex row that hosts the pane

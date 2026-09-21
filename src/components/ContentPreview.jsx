@@ -40,18 +40,6 @@ import { describeEmbed } from '../utils/contentEmbeds.js'
  * Embeds are not rendered — see `extractEmbeds`.
  */
 
-/**
- * The pane's docked width, for callers that need to reserve the same space —
- * the fixed bulk action bars re-centre against it.
- *
- * The value itself lives in global.css (`--cpt-pane-width` / `--cpt-pane-inset`)
- * because the right answer is a layout mode, not a number: past a breakpoint
- * there is no width at which a usable pane and a readable table both fit, so the
- * pane switches from docking to overlaying. Only a media query can make that
- * call, and the inset has to go to zero in the same breath.
- */
-export const PREVIEW_PANE_INSET = 'var(--cpt-pane-inset)'
-
 // A deliberately plain stylesheet, close to Canvas's own content defaults.
 // Anything more opinionated would flatter old content and defeat the purpose.
 const FRAME_STYLES = `
