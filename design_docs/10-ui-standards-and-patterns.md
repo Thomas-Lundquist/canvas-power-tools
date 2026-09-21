@@ -30,6 +30,10 @@ Both themes keep the same behavioral rules (accessibility, error copy, empty sta
 - **Status: heading face deferred.** `h1`–`h6` currently render in **Inter** — same as body — via `--font-heading: var(--font-body)`. This is a placeholder, not a decision: a distinct heading face is still wanted, just not picked yet. Two options were tried and reverted — Oswald (condensed display sans, read too far from Inter) and IBM Plex Mono (monospace-leaning, didn't land visually) — Courier New was considered and rejected outright (system-fallback typewriter face, low x-height, clashes with Inter's grotesque body). Revisit later; swapping the pairing in is a one-line change to `--font-heading` in `global.css`.
 - **Body copy, controls, table cells:** **Inter**, with `font-optical-sizing: auto` and stylistic sets `cv02`/`cv03`/`cv04` enabled.
 - Self-hosted via `@fontsource/inter` (bundled at build time — no runtime font CDN, per the project's security rules). Weights loaded: 400/500/600/700/900.
+- **`0.75rem` is the hard floor for every piece of text in the app.** Nothing renders smaller — not badges, not captions, not the uppercase micro-labels that tempt you downward. The smallest type in the system is `.section-label`, at exactly `0.75rem`. Established 2026-07-22; `.section-label` in `global.css` and `ListGroup.jsx` were corrected to it at the time.
+  - The floor is **`rem`-relative on purpose.** It is a floor against the user's chosen base, so it scales with the Settings text-size option rather than pinning anyone to an absolute pixel count. This is a different question from the unresolved 16px base-size conflict noted in the theme section below — do not conflate them.
+  - In practice this bans `text-[10px]`, `text-[0.625rem]`, `text-[0.6875rem]`, and any `font-size` under `0.75rem` in CSS. Reach for weight, letter-spacing, case, or `--color-text-muted` to make a label recede — never a smaller size.
+  - Known pre-rule violations still in the tree are catalogued in bead `canvas-power-tools-9u4`; new code has no excuse.
 
 ## Categorical Color Coding (cross-theme)
 
