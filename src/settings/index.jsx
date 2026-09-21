@@ -1305,7 +1305,7 @@ function App() {
             <div className="flex gap-2">
               {[
                 { value: 'bauhaus', label: 'Bauhaus', title: 'Flat surfaces, no shadows, per-module accent colors' },
-                { value: 'default', label: 'Default',  title: 'Accessible & Ethical — WCAG AAA contrast target' },
+                { value: 'modern',  label: 'Modern',   title: 'Accessible & Ethical — WCAG AAA contrast target' },
               ].map(({ value, label, title }) => (
                 <button
                   key={value}

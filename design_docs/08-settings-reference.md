@@ -72,7 +72,7 @@ this document.
   settings: {
     general: {
       themeMode: "system",           // "system" | "light" | "dark"
-      palette: "bauhaus",            // "bauhaus" | "default" — full-palette theme;
+      palette: "bauhaus",            // "bauhaus" | "modern" — full-palette theme;
                                      // no per-color customization (see design_docs/10 § Themes)
       textSize: "medium",            // "small" | "medium" | "large" | "extra-large"
       dateFormat: "MM/DD/YYYY",      // "MM/DD/YYYY" | "DD/MM/YYYY" |

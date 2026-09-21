@@ -19,7 +19,7 @@ The prior single runtime-customizable brand accent (`--cpt-color`, hue-rotated b
 | Theme | Settings value | Status |
 |---|---|---|
 | Bauhaus | `palette: "bauhaus"` | **Shipped default.** Flat, no shadows, fixed per-Module domain accent colors. |
-| Default | `palette: "default"` | Accessible & Ethical style (see below). Existing warm-grey/primary token system, formalized as the second theme option. |
+| Modern | `palette: "modern"` | Accessible & Ethical style (see below). Existing warm-grey/primary token system, formalized as the second theme option. Stored as `"default"` before the rename; migrated on upgrade (`migrations.js` v2) and normalized at read time by `normalizePalette()`. |
 
 Both themes keep the same behavioral rules (accessibility, error copy, empty states, keyboard shortcuts, loading/toast behavior) documented later in this file — those are theme-independent.
 
@@ -168,7 +168,7 @@ All colors below are defined as CSS custom properties in `src/styles/global.css`
 
 ---
 
-## Theme: Default (Accessible & Ethical)
+## Theme: Modern (Accessible & Ethical)
 
 Source: `ui-ux-pro-max:ui-styling` style database, "Accessible & Ethical" (category 8). Reuses the existing warm-grey/primary token system already in `src/styles/global.css` — no new hex values — formalized against this style's specific bar rather than replaced with a new palette.
 

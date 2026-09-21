@@ -15,16 +15,18 @@ function safeMessage(path) {
 
 // Injected buttons live in Canvas's page, outside our extension's CSS cascade,
 // so they need literal per-palette values rather than CSS custom properties.
-// Colors mirror each theme's --cpt-color (Bauhaus red / Default primary-500);
-// radius mirrors --radius-control (Bauhaus flat 2px / Default rounded 6px) so an
+// Colors mirror each theme's --cpt-color (Bauhaus red / Modern primary-500);
+// radius mirrors --radius-control (Bauhaus flat 2px / Modern rounded 6px) so an
 // injected button reads as the same shape as the tool it opens.
-const PALETTE_COLORS = { bauhaus: '#B7102A', default: '#2B54D4' }
-const PALETTE_RADIUS = { bauhaus: '2px', default: '6px' }
+const PALETTE_COLORS = { bauhaus: '#B7102A', modern: '#2B54D4' }
+const PALETTE_RADIUS = { bauhaus: '2px', modern: '6px' }
 
 async function getButtonTheme() {
   try {
     const result = await chrome.storage.local.get('preferences')
-    const palette = result.preferences?.palette === 'default' ? 'default' : 'bauhaus'
+    // 'default' is the pre-rename value for 'modern'; anything else falls back to Bauhaus.
+    const stored = result.preferences?.palette
+    const palette = (stored === 'modern' || stored === 'default') ? 'modern' : 'bauhaus'
     return { color: PALETTE_COLORS[palette], radius: PALETTE_RADIUS[palette] }
   } catch {
     return { color: PALETTE_COLORS.bauhaus, radius: PALETTE_RADIUS.bauhaus }

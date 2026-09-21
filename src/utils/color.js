@@ -10,9 +10,18 @@ export function darkenHex(hex, amount = 30) {
 // radii — see the [data-theme="bauhaus"] block in global.css) applies.
 // Persists to localStorage so the inline <head> script can apply it before
 // first paint, avoiding a flash of the wrong palette.
+// The Modern theme was called 'default' before it had a name of its own. Installs
+// that stored the old value are normalized here as well as in the storage
+// migration, because localStorage is written from the page and the service worker
+// that runs migrations cannot reach it.
+export function normalizePalette(name) {
+  return name === 'default' ? 'modern' : (name || 'bauhaus')
+}
+
 export function applyPalette(name = 'bauhaus') {
-  document.documentElement.setAttribute('data-theme', name)
-  try { localStorage.setItem('cpt_palette', name) } catch { /* storage unavailable */ }
+  const palette = normalizePalette(name)
+  document.documentElement.setAttribute('data-theme', palette)
+  try { localStorage.setItem('cpt_palette', palette) } catch { /* storage unavailable */ }
 }
 
 // Applies or removes the 'dark' class on <html> based on mode.
