@@ -20,6 +20,7 @@ Read the relevant doc before writing any feature code. Never guess at a document
 | 04-onboarding-and-settings.md | Onboarding and Settings page |
 | 05-roadmap.md | Feature roadmap by version |
 | 06-technical-infrastructure.md | API layer, storage migration, virtual scrolling, DOM resilience |
+| 07-api-layer.md | Canvas API layer: request pipeline, pagination, rate limiting, error mapping |
 | 08-settings-reference.md | Settings schema and storage structure |
 | 09-dev-environment.md | Development environment setup |
 | 10-ui-standards-and-patterns.md | UI standards, accessibility, design system, color palette |
@@ -29,8 +30,12 @@ Read the relevant doc before writing any feature code. Never guess at a document
 | 14-communication-tools.md | Communication Module |
 | 15-feature-designs.md | Feature designs: Grading, People, and other tools |
 | 16-popup-window-delivery.md | Deferred: popup window delivery |
+| 17-ui-redesign-process.md | **Superseded.** Tombstone for the retired AI-directed redesign process |
+| 18-markdown-quiz-import.md | Quiz Authoring: markdown import format |
+| 19-module-consolidation-and-shell.md | Module consolidation and app shell — **plan of record for navigation; revises doc 05** |
 | 21-pages-tool.md | Content → Pages Tool |
 | 22-fix-links.md | Idea only: stale course-link repair |
+| 23-product-backlog.md | Product backlog |
 
 ---
 
