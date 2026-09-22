@@ -42,6 +42,9 @@ import { describeEmbed } from '../utils/contentEmbeds.js'
 
 // A deliberately plain stylesheet, close to Canvas's own content defaults.
 // Anything more opinionated would flatter old content and defeat the purpose.
+// Literal hex by necessity: this renders inside a sandbox="" iframe, which our
+// custom properties do not reach.
+// eslint-disable-next-line no-restricted-syntax -- see above.
 const FRAME_STYLES = `
   html { background: #ffffff; }
   body {

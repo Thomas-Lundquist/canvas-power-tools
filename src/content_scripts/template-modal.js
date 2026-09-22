@@ -41,6 +41,9 @@ function defaultPublishFor(template) {
   return preferred === 'published' ? 'published' : 'unpublished'
 }
 
+// Literal hex by necessity: shadow-DOM styles for markup injected into Canvas,
+// and `all: initial` severs inheritance, so no custom property is readable here.
+// eslint-disable-next-line no-restricted-syntax -- see above.
 const STYLE = `
   :host { all: initial; }
   * { box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }

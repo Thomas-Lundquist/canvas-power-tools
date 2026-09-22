@@ -31,24 +31,29 @@ const MESSAGE =
 // The named-palette rule above only catches shade-numbered classes, which is how
 // a large body of hardcoded hex accumulated undetected inside arbitrary values
 // (`bg-[#B7102A]`). Those are the same bypass wearing a different hat.
-const ARBITRARY_HEX = `(${COLOR_PREFIX})-\[#[0-9a-fA-F]{3,8}\]`
+const ARBITRARY_HEX = `(${COLOR_PREFIX})-\\[#[0-9a-fA-F]{3,8}\\]`
 
 const ARBITRARY_HEX_MESSAGE =
   'Hardcoded hex in an arbitrary Tailwind value bypasses the design tokens and ' +
   'will not respond to the theme switch. Use border-[var(--color-border)] and ' +
   'friends — see src/styles/global.css.'
 
-// A bare hex string is almost always an inline style or a JS color constant
+// A bare hex is almost always an inline style or a JS color constant
 // (style={{ borderColor: '#d1d5db' }}), the other way color escaped the tokens.
-// Lengths are pinned to real hex notations so CSS/DOM id strings ('#app') and
-// href anchors do not trip it.
-const BARE_HEX = '^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$'
+// Deliberately NOT anchored: the shape that actually ships hardcoded color is a
+// hex inside a longer declaration -- style={{ border: '1px solid #d1d5db' }} --
+// where the property name is a separate AST node, so an anchored pattern sees
+// only '1px solid #d1d5db' and misses it. Lengths are pinned to real hex
+// notations, longest first, so DOM id strings ('#app') and href anchors ('#top')
+// do not trip it.
+const BARE_HEX = '#([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\\b'
 
 const BARE_HEX_MESSAGE =
   'Hardcoded hex color. Inline styles must read a token, e.g. ' +
   "style={{ borderColor: 'var(--color-border)' }}. The only sanctioned exception " +
-  'is markup injected into a Canvas page, which sits outside our CSS cascade and ' +
-  'has no custom properties to read — disable this rule inline and say so.'
+  'is markup that renders outside our CSS cascade — injected Canvas markup, shadow ' +
+  'DOM, or a sandboxed iframe — where no custom property is readable. Disable this ' +
+  'rule inline and say which applies.'
 
 import reactHooks from 'eslint-plugin-react-hooks'
 
@@ -80,6 +85,7 @@ export default [
         { selector: `TemplateElement[value.cooked=/${ARBITRARY_HEX}/]`, message: ARBITRARY_HEX_MESSAGE },
         // Bare hex anywhere: style={{ color: '#ef4444' }}, const RED = '#B7102A'
         { selector: `Literal[value=/${BARE_HEX}/]`, message: BARE_HEX_MESSAGE },
+        { selector: `TemplateElement[value.cooked=/${BARE_HEX}/]`, message: BARE_HEX_MESSAGE },
       ],
     },
   },
