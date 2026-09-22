@@ -66,11 +66,18 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
   // without being told the pane's width. The wrapper stretches the full column
   // and is invisible, so it must not swallow clicks in the gutters either side
   // of the card — only the card itself takes them.
+  //
+  // Stowed, the bar is only translated off-screen, so without inert its controls
+  // stay tabbable inside an aria-hidden subtree — invalid ARIA, and focus would
+  // land somewhere invisible that the column's overflow-hidden has clipped.
+  // React 18 needs the string form: undefined removes the attribute, whereas
+  // inert={false} would still render it and keep the subtree inert.
   return (
     <div
       role="region"
       aria-label="Bulk actions"
       aria-hidden={selectedCount === 0 ? 'true' : undefined}
+      inert={selectedCount === 0 ? '' : undefined}
       className={`absolute bottom-0 left-0 right-0 z-20 px-4 pointer-events-none transition-transform duration-300 ease-out ${
         selectedCount === 0 ? 'translate-y-full' : 'translate-y-0'
       }`}
