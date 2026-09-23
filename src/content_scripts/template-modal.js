@@ -70,9 +70,13 @@ const STYLE = `
   }
   label { display: block; font-size: .8125rem; font-weight: 600; margin-bottom: .25rem; }
   .hint { font-size: .75rem; color: #6b6b6b; margin: .25rem 0 0; }
-  input[type="text"], input[type="search"], input[type="date"], input[type="password"], select {
+  input[type="text"], input[type="search"], input[type="date"], input[type="tel"], select {
     width: 100%; padding: .4375rem .625rem; font-size: .875rem;
     border: 1px solid #c7c7c7; border-radius: var(--cpt-radius, 6px); background: #fff; color: #1a1a1a;
+  }
+  input.pin {
+    text-align: center; font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 1.25rem; letter-spacing: .5em; text-indent: .5em;
   }
   input:focus-visible, select:focus-visible, button:focus-visible, li:focus-visible {
     outline: 3px solid var(--cpt-color, #2B54D4); outline-offset: 1px;
@@ -471,11 +475,19 @@ export async function openTemplateModal({ courseId, moduleId, moduleName, theme 
       const label = document.createElement('label')
       label.setAttribute('for', 'cpt-pin')
       label.textContent = 'PIN'
+      // type="tel" rather than "password": Chrome ignores autocomplete="off"
+      // on password fields and uses them to anchor a synthetic login form,
+      // autofilling saved Canvas credentials into this modal. Masked via CSS
+      // instead, same approach as PinPrompt.jsx.
       const pin = document.createElement('input')
-      pin.type = 'password'
+      pin.type = 'tel'
+      pin.className = 'pin'
       pin.id = 'cpt-pin'
       pin.inputMode = 'numeric'
       pin.autocomplete = 'off'
+      pin.placeholder = '••••'
+      pin.maxLength = 6
+      pin.addEventListener('input', () => { pin.value = pin.value.replace(/\D/g, '').slice(0, 6) })
       const hint = document.createElement('p')
       hint.className = 'hint'
       hint.textContent = 'Your session is locked. Enter your PIN to write to Canvas.'
