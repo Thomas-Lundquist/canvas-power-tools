@@ -18,11 +18,14 @@ import PreviewDiff from '../../modules/assignments/PreviewDiff.jsx'
 import DeleteAssignmentsModal from '../../modules/assignments/DeleteAssignmentsModal.jsx'
 import CopyToCoursesModal from '../../components/CopyToCoursesModal.jsx'
 import ContentPreview from '../../components/ContentPreview.jsx'
+import { toDateInputValue } from '../../components/DateInput.jsx'
+import { buildChangesFromInlineEdits } from '../../modules/assignments/bulkEditorHelpers.js'
 import { useToast } from '../../components/Toast.jsx'
 import { getCourses } from '../../api/courses.js'
 import { getAssignments } from '../../api/assignments.js'
 import { getAssignmentGroups } from '../../api/assignmentGroups.js'
 import { getModules } from '../../api/modules.js'
+import { getSections } from '../../api/sections.js'
 import { getPreferences, setLastUsedCourse, resolveInitialCourseId } from '../../storage/preferences.js'
 import { getGroupColorOverrides } from '../../storage/groupColors.js'
 import { resolveGroupColorTokens } from '../../utils/groupColors.js'
@@ -87,6 +90,21 @@ function readLaunchIntent() {
 
 const LAUNCH_INTENT = readLaunchIntent()
 
+// Total number of staged inline edits across every assignment: base dates,
+// per-section dates, and course-wide fields (status, group).
+function countInlineEdits(edits) {
+  let count = 0
+  for (const id in edits) {
+    const entry = edits[id]
+    if (entry.base) count += Object.keys(entry.base).length
+    if (entry.fields) count += Object.keys(entry.fields).length
+    if (entry.sections) {
+      for (const sectionId in entry.sections) count += Object.keys(entry.sections[sectionId]).length
+    }
+  }
+  return count
+}
+
 export default function App() {
   const toast = useToast()
   const [courses, setCourses] = useState([])
@@ -94,6 +112,7 @@ export default function App() {
   const [selectedCourseName, setSelectedCourseName] = useState('')
   const [assignments, setAssignments] = useState([])
   const [groups, setGroups] = useState([])
+  const [sections, setSections] = useState([])
   const [groupColorTokens, setGroupColorTokens] = useState(() => new Map())
   const [modules, setModules] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(true)
@@ -104,8 +123,18 @@ export default function App() {
   const [showChangeLog, setShowChangeLog] = useState(false)
 
   const [selectedIds, setSelectedIds] = useState(new Set())
+  // Per-assignment inline edits, staged (not written) until Preview/Apply. Shape:
+  //   { [assignmentId]: {
+  //       base:     { dueAt, unlockAt, lockAt },        // course-wide dates
+  //       sections: { [sectionId]: { dueAt, ... } },    // per-section override dates
+  //       fields:   { published, assignmentGroupId },   // course-wide non-date fields
+  //   } }
+  // A date value is 'YYYY-MM-DD' or null (cleared). A field value is its native
+  // type. An absent key means the field is untouched.
+  const [tableEdits, setTableEdits] = useState({})
   const [actions, setActions] = useState(INITIAL_ACTIONS)
   const [showPreview, setShowPreview] = useState(false)
+  const [showInlinePreview, setShowInlinePreview] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [previewAssignment, setPreviewAssignment] = useState(null)
@@ -149,9 +178,11 @@ export default function App() {
     setSelectedCourseName(course?.name ?? '')
     setAssignments([])
     setGroups([])
+    setSections([])
     setGroupColorTokens(new Map())
     setModules([])
     setSelectedIds(new Set())
+    setTableEdits({})
     setActions(INITIAL_ACTIONS)
     setError(null)
     setSearch('')
@@ -159,13 +190,17 @@ export default function App() {
     setLoadingAssignments(true)
     await setLastUsedCourse(courseId)
     try {
-      const [fetchedAssignments, fetchedGroups, fetchedModules, colorOverrides] = await Promise.all([
+      const [fetchedAssignments, fetchedGroups, fetchedModules, colorOverrides, fetchedSections] = await Promise.all([
         getAssignments(courseId),
         getAssignmentGroups(courseId),
         getModules(courseId),
         getGroupColorOverrides(courseId),
+        // A section-fetch failure must not block the whole tool — the target
+        // selector simply stays hidden if we can't list sections.
+        getSections(courseId).catch(() => []),
       ])
       setGroupColorTokens(resolveGroupColorTokens(fetchedGroups, colorOverrides))
+      setSections(fetchedSections)
       const groupNameById = new Map(fetchedGroups.map(g => [g.id, g.name]))
       const assignmentsWithGroups = fetchedAssignments.map(a => ({
         ...a,
@@ -208,6 +243,111 @@ export default function App() {
   function clearSelection() {
     setSelectedIds(new Set())
     setActions(INITIAL_ACTIONS)
+  }
+
+  const inlineEditCount = useMemo(() => countInlineEdits(tableEdits), [tableEdits])
+
+  // The staged inline edits, flattened to the diff shape Preview/Apply consume,
+  // and the assignments they touch (Preview needs these for override lookups).
+  const inlineChanges = useMemo(
+    () => buildChangesFromInlineEdits(tableEdits, assignments, sections),
+    [tableEdits, assignments, sections],
+  )
+  const inlineEditedAssignments = useMemo(
+    () => assignments.filter(a => tableEdits[a.id]),
+    [assignments, tableEdits],
+  )
+
+  function handleInlinePreviewDone() {
+    setShowInlinePreview(false)
+    setTableEdits({})
+    selectCourse(selectedCourseId)
+  }
+
+  function handleInlineViewReport() {
+    setShowInlinePreview(false)
+    setTableEdits({})
+    selectCourse(selectedCourseId)
+    setShowChangeLog(true)
+  }
+
+  // Stage (or un-stage) one inline date edit. Writes nothing to Canvas — the
+  // edit joins the pending set that Preview later turns into a batch. Setting a
+  // field back to its current Canvas value drops the edit, so the pending count
+  // only ever reflects real deltas.
+  function editDate(assignmentId, target, field, newValue) {
+    const a = assignments.find(x => x.id === assignmentId)
+    if (!a) return
+
+    let originalIso
+    if (target === 'base') {
+      originalIso = a[field] ?? null
+    } else {
+      const override = a.overrides.find(o => String(o.courseSectionId) === String(target))
+      // A section with no override inherits the base date as its starting point.
+      originalIso = override ? (override[field] ?? null) : (a[field] ?? null)
+    }
+    const originalDateOnly = originalIso ? toDateInputValue(originalIso) : ''
+    const normalized = newValue || ''
+
+    setTableEdits(prev => {
+      const next = { ...prev }
+      const entry = {
+        base: { ...next[assignmentId]?.base },
+        sections: { ...next[assignmentId]?.sections },
+        fields: { ...next[assignmentId]?.fields },
+      }
+      const bucket = target === 'base'
+        ? entry.base
+        : (entry.sections[target] = { ...entry.sections[target] })
+
+      if (normalized === originalDateOnly) {
+        delete bucket[field]
+      } else {
+        bucket[field] = normalized === '' ? null : normalized
+      }
+
+      if (target !== 'base' && Object.keys(entry.sections[target]).length === 0) {
+        delete entry.sections[target]
+      }
+      const empty = Object.keys(entry.base).length === 0
+        && Object.keys(entry.sections).length === 0
+        && Object.keys(entry.fields).length === 0
+      if (empty) delete next[assignmentId]
+      else next[assignmentId] = entry
+      return next
+    })
+  }
+
+  // Stage one course-wide, non-date field edit (status or group). Same staging
+  // rules as dates: setting a field back to its current Canvas value drops it.
+  function editField(assignmentId, field, newValue) {
+    const a = assignments.find(x => x.id === assignmentId)
+    if (!a) return
+    const original = a[field]
+
+    setTableEdits(prev => {
+      const next = { ...prev }
+      const entry = {
+        base: { ...next[assignmentId]?.base },
+        sections: { ...next[assignmentId]?.sections },
+        fields: { ...next[assignmentId]?.fields },
+      }
+
+      if (newValue === original) delete entry.fields[field]
+      else entry.fields[field] = newValue
+
+      const empty = Object.keys(entry.base).length === 0
+        && Object.keys(entry.sections).length === 0
+        && Object.keys(entry.fields).length === 0
+      if (empty) delete next[assignmentId]
+      else next[assignmentId] = entry
+      return next
+    })
+  }
+
+  function discardInlineEdits() {
+    setTableEdits({})
   }
 
   function handlePreviewDone() {
@@ -342,6 +482,29 @@ export default function App() {
             showChangeLog
           />
         )}
+        {inlineEditCount > 0 && (
+          <div
+            className="flex items-center justify-between gap-3 px-4 py-2 bg-[rgba(var(--cpt-color-rgb),0.08)] border-b border-[var(--color-border)]"
+            role="status"
+          >
+            <span className="text-sm text-[var(--color-text-body)]">
+              {inlineEditCount} pending edit{inlineEditCount !== 1 ? 's' : ''} in the table
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={discardInlineEdits}>
+                Discard all
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowInlinePreview(true)}
+                disabled={inlineChanges.length === 0}
+              >
+                Preview edits →
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {!loadingAssignments && filteredAssignments.length === 0 ? (
             <EmptyState
@@ -361,6 +524,11 @@ export default function App() {
               onSort={sort.onSort}
               loading={loadingAssignments}
               groupColorTokens={groupColorTokens}
+              sections={sections}
+              groups={groups}
+              tableEdits={tableEdits}
+              onEditDate={editDate}
+              onEditField={editField}
               onPreview={setPreviewAssignment}
               fillHeight
               actionBarVisible={selectedIds.size > 0}
@@ -408,6 +576,7 @@ export default function App() {
               onCopyTo={() => setShowCopyModal(true)}
               onDelete={() => setShowDeleteModal(true)}
               groups={groups}
+              sections={sections}
             />
           </div>
           {previewAssignment && (
@@ -428,9 +597,23 @@ export default function App() {
           courseId={selectedCourseId}
           courseName={selectedCourseName}
           groups={groups}
+          sections={sections}
           onCancel={() => setShowPreview(false)}
           onDone={handlePreviewDone}
           onViewReport={handleViewReport}
+        />
+      )}
+      {showInlinePreview && (
+        <PreviewDiff
+          selectedAssignments={inlineEditedAssignments}
+          changes={inlineChanges}
+          courseId={selectedCourseId}
+          courseName={selectedCourseName}
+          groups={groups}
+          sections={sections}
+          onCancel={() => setShowInlinePreview(false)}
+          onDone={handleInlinePreviewDone}
+          onViewReport={handleInlineViewReport}
         />
       )}
       {showCopyModal && (

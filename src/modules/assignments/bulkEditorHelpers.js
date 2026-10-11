@@ -1,4 +1,4 @@
-import { toIsoDate } from '../../components/DateInput.jsx'
+import { toIsoDate } from '../../utils/dates.js'
 
 // Applies a bulk change spec to one assignment's field, returns the new value
 export function resolveFieldChange(currentValue, change) {
@@ -14,29 +14,59 @@ export function resolveFieldChange(currentValue, change) {
   return undefined
 }
 
-// Builds the list of per-assignment, per-field diff rows for preview
-export function buildChanges(selectedAssignments, bulkSpec) {
+const DATE_KEYS = ['dueAt', 'unlockAt', 'lockAt']
+
+// Builds the list of per-assignment, per-field diff rows for preview.
+//
+// dateTarget is 'everyone' (write the assignment's base dates, the historical
+// behavior) or a section id (write that section's assignment_override instead).
+// Points, status and group are never per-section in Canvas, so they always
+// stay course-wide regardless of the target. Each row carries a `scope`:
+//   'assignment' → written via updateAssignment, and revertable via the log
+//   'section'    → written via a section override, pin-gated but not revertable
+export function buildChanges(selectedAssignments, bulkSpec, dateTarget = 'everyone', sections = []) {
   const changes = []
+  const targetSection = dateTarget !== 'everyone'
+    ? sections.find(s => s.id === dateTarget) ?? null
+    : null
+
   for (const assignment of selectedAssignments) {
-    const fields = [
-      { key: 'dueAt', spec: bulkSpec.dueAt },
-      { key: 'unlockAt', spec: bulkSpec.unlockAt },
-      { key: 'lockAt', spec: bulkSpec.lockAt },
+    // Dates first (matches the action bar's row order), routed by target.
+    const existingOverride = targetSection
+      ? assignment.overrides?.find(o => o.courseSectionId === targetSection.id) ?? null
+      : null
+
+    for (const key of DATE_KEYS) {
+      const spec = bulkSpec[key]
+      if (!spec) continue
+      const currentValue = targetSection ? (existingOverride?.[key] ?? null) : assignment[key]
+      const newValue = resolveFieldChange(currentValue, spec)
+      if (newValue === undefined) continue
+      if (newValue === currentValue) continue
+
+      const base = {
+        assignmentId: assignment.id,
+        assignmentName: assignment.name,
+        field: key,
+        previousValue: currentValue,
+        newValue,
+      }
+      changes.push(targetSection
+        ? { ...base, scope: 'section', sectionId: targetSection.id, sectionName: targetSection.name, overrideId: existingOverride?.id ?? null }
+        : { ...base, scope: 'assignment' })
+    }
+
+    // Course-wide fields — unaffected by the date target.
+    const flatFields = [
       { key: 'pointsPossible', spec: bulkSpec.points },
       { key: 'published', spec: bulkSpec.published },
       { key: 'assignmentGroupId', spec: bulkSpec.assignmentGroupId },
     ]
-
-    for (const { key, spec } of fields) {
+    for (const { key, spec } of flatFields) {
       if (!spec) continue
-      let newValue
-      if (key === 'pointsPossible') {
-        newValue = spec.value !== '' && spec.value !== null ? Number(spec.value) : undefined
-      } else if (key === 'published' || key === 'assignmentGroupId') {
-        newValue = spec.value
-      } else {
-        newValue = resolveFieldChange(assignment[key], spec)
-      }
+      const newValue = key === 'pointsPossible'
+        ? (spec.value !== '' && spec.value !== null ? Number(spec.value) : undefined)
+        : spec.value
       if (newValue === undefined) continue
       if (newValue === assignment[key]) continue
 
@@ -46,7 +76,88 @@ export function buildChanges(selectedAssignments, bulkSpec) {
         field: key,
         previousValue: assignment[key],
         newValue,
+        scope: 'assignment',
       })
+    }
+  }
+  return changes
+}
+
+// Merges a section's changed date fields onto its starting dates, so a write
+// never wipes a date the teacher did not touch. Returns the full trio the
+// overrides API expects.
+//
+// Seed order: an existing override's own dates win; otherwise fall back to the
+// base assignment's dates. The fallback matters when the teacher edits one field
+// of a section that currently *inherits* the base dates — a brand-new override
+// must keep the other two inherited dates it was showing, not null them out
+// (Canvas treats a null override date as "no date", not "inherit").
+export function buildSectionOverrideDates(existingOverride, sectionChanges, baseFallback = null) {
+  const seed = existingOverride ?? baseFallback
+  const dates = {
+    dueAt:    seed?.dueAt    ?? null,
+    unlockAt: seed?.unlockAt ?? null,
+    lockAt:   seed?.lockAt   ?? null,
+  }
+  for (const change of sectionChanges) dates[change.field] = change.newValue
+  return dates
+}
+
+// Converts the bulk editor's staged inline edits into the same flat changes[]
+// shape buildChanges() produces, so Preview and Apply need no special-casing.
+//
+// tableEdits shape: { [assignmentId]: { base, sections: {[sectionId]:…}, fields } }
+// Date values are 'YYYY-MM-DD' strings (or null); they become ISO here, matching
+// the bulk bar. A staged value equal to the current Canvas value is dropped, so
+// the diff never shows a no-op row.
+export function buildChangesFromInlineEdits(tableEdits, assignments, sections = []) {
+  const changes = []
+  const assignmentById = new Map(assignments.map(a => [a.id, a]))
+  const sectionById = new Map(sections.map(s => [s.id, s]))
+
+  for (const assignmentId in tableEdits) {
+    const a = assignmentById.get(assignmentId)
+    if (!a) continue
+    const entry = tableEdits[assignmentId]
+
+    // Course-wide base dates → written to the assignment, revertable.
+    for (const field of DATE_KEYS) {
+      if (!entry.base || !(field in entry.base)) continue
+      const newValue = entry.base[field] ? toIsoDate(entry.base[field]) : null
+      const previousValue = a[field] ?? null
+      if (newValue === previousValue) continue
+      changes.push({ assignmentId, assignmentName: a.name, field, previousValue, newValue, scope: 'assignment' })
+    }
+
+    // Course-wide non-date fields (status, group) → assignment, revertable.
+    if (entry.fields) {
+      for (const field in entry.fields) {
+        const newValue = entry.fields[field]
+        const previousValue = a[field]
+        if (newValue === previousValue) continue
+        changes.push({ assignmentId, assignmentName: a.name, field, previousValue, newValue, scope: 'assignment' })
+      }
+    }
+
+    // Per-section dates → that section's override, pin-gated, not logged/reverted.
+    if (entry.sections) {
+      for (const sectionId in entry.sections) {
+        const sec = sectionById.get(sectionId)
+        if (!sec) continue
+        const override = a.overrides?.find(o => String(o.courseSectionId) === String(sectionId)) ?? null
+        const bucket = entry.sections[sectionId]
+        for (const field of DATE_KEYS) {
+          if (!(field in bucket)) continue
+          const newValue = bucket[field] ? toIsoDate(bucket[field]) : null
+          // A section with no override inherits the base date as its baseline.
+          const previousValue = override ? (override[field] ?? null) : (a[field] ?? null)
+          if (newValue === previousValue) continue
+          changes.push({
+            assignmentId, assignmentName: a.name, field, previousValue, newValue,
+            scope: 'section', sectionId, sectionName: sec.name, overrideId: override?.id ?? null,
+          })
+        }
+      }
     }
   }
   return changes

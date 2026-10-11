@@ -65,7 +65,7 @@ function mapDateBody({ dueAt, unlockAt, lockAt }) {
   }
 }
 
-function mapOverride(raw) {
+export function mapOverride(raw) {
   return {
     id:              String(raw.id),
     assignmentId:    String(raw.assignment_id),

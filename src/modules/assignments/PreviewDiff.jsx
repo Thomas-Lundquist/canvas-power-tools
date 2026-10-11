@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { CheckCircle, AlertCircle, Loader, Circle, ChevronRight, ChevronDown } from 'lucide-react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
-import { buildChanges } from './bulkEditorHelpers.js'
+import Callout from '../../components/Callout.jsx'
+import { buildChanges, buildSectionOverrideDates } from './bulkEditorHelpers.js'
 import { updateAssignment } from '../../api/assignments.js'
+import { createSectionOverride, updateSectionOverride } from '../../api/overrides.js'
 import { buildChangeLogEntry, addChangeLogEntry } from '../../storage/changeLogs.js'
 import { usePinGate } from '../../security/usePinGate.jsx'
 import { formatDate } from '../../components/DateInput.jsx'
@@ -73,8 +75,10 @@ function groupChangesByAssignment(changes) {
   return Array.from(map.values())
 }
 
+const DATE_FIELDS = ['dueAt', 'unlockAt', 'lockAt']
+
 export default function PreviewDiff({
-  selectedAssignments, actions, courseId, courseName, groups = [], onCancel, onDone, onViewReport,
+  selectedAssignments, actions, changes: prebuiltChanges, courseId, courseName, groups = [], sections = [], onCancel, onDone, onViewReport,
 }) {
   const groupNameById = new Map(groups.map(g => [g.id, g.name]))
   const [phase, setPhase] = useState('preview')
@@ -84,20 +88,43 @@ export default function PreviewDiff({
   const [showSucceeded, setShowSucceeded] = useState(false)
   const { requirePin } = usePinGate()
 
-  const changes = buildChanges(selectedAssignments, actionsToSpec(actions))
+  // Two entry points share this component. The bulk bar passes `actions` and we
+  // build the diff here. The inline table editor passes a prebuilt `changes`
+  // array (already in the same shape), so there is no bulk-bar date target.
+  const dateTarget = actions?.dateTarget ?? 'everyone'
+  const targetSection = dateTarget !== 'everyone' ? sections.find(s => s.id === dateTarget) ?? null : null
+
+  const changes = prebuiltChanges ?? buildChanges(selectedAssignments, actionsToSpec(actions), dateTarget, sections)
   const grouped = groupChangesByAssignment(changes)
   const totalFields = changes.length
   const totalAssignments = grouped.length
   const succeededFieldCount = succeededAssignments.reduce((sum, a) => sum + a.fields.length, 0)
 
+  // Look up an assignment's existing overrides at apply time, to preserve the
+  // section dates the teacher is not changing and to decide create vs update.
+  const assignmentById = new Map(selectedAssignments.map(a => [a.id, a]))
+
+  // Warn when a course-wide date change is silently hidden: if an assignment
+  // already has a section override, those students keep their own date and will
+  // not see the "Everyone" change. Only relevant while targeting Everyone.
+  const shadowedAssignments = dateTarget !== 'everyone' ? [] : grouped.filter(g => {
+    const full = assignmentById.get(g.id)
+    const hasSectionOverride = full?.overrides?.some(o => o.courseSectionId)
+    // Only a course-wide (assignment-scope) date change is shadowed — a change
+    // written straight to a section's own override is not.
+    const changesABaseDate = g.fields.some(f => DATE_FIELDS.includes(f.field) && f.scope !== 'section')
+    return hasSectionOverride && changesABaseDate
+  })
+
   const MODAL_TITLES = { preview: 'Preview Changes', applying: 'Applying Changes…', result: 'Changes Applied' }
   const modalClose = phase === 'preview' ? onCancel : phase === 'result' ? onDone : undefined
 
   async function handleConfirm() {
+    const targetNote = targetSection ? ` · dates target section "${targetSection.name}"` : ''
     await requirePin(
       {
         action: 'bulk-edit',
-        summary: `${totalFields} field change${totalFields !== 1 ? 's' : ''} across ${totalAssignments} assignment${totalAssignments !== 1 ? 's' : ''} in ${courseName}`,
+        summary: `${totalFields} field change${totalFields !== 1 ? 's' : ''} across ${totalAssignments} assignment${totalAssignments !== 1 ? 's' : ''} in ${courseName}${targetNote}`,
         courseId,
         courseName,
       },
@@ -115,13 +142,38 @@ export default function PreviewDiff({
     for (const assignment of assignmentsToApply) {
       setAssignmentStatus(prev => ({ ...prev, [assignment.id]: 'applying' }))
 
-      const payload = {}
-      for (const change of assignment.fields) payload[change.field] = change.newValue
+      // Course-wide fields go to the assignment itself and stay revertable.
+      // Section-scoped date fields go to that section's override — pin-gated,
+      // but never written to the revert log (a base-date revert would clobber
+      // the section's date, so section overrides are intentionally not logged).
+      const assignmentFields = assignment.fields.filter(f => f.scope !== 'section')
+      const sectionFields = assignment.fields.filter(f => f.scope === 'section')
+      const changesBySection = new Map()
+      for (const f of sectionFields) {
+        if (!changesBySection.has(f.sectionId)) changesBySection.set(f.sectionId, [])
+        changesBySection.get(f.sectionId).push(f)
+      }
+      const full = assignmentById.get(assignment.id)
 
       try {
-        await updateAssignment(courseId, assignment.id, payload)
+        if (assignmentFields.length > 0) {
+          const payload = {}
+          for (const change of assignmentFields) payload[change.field] = change.newValue
+          await updateAssignment(courseId, assignment.id, payload)
+        }
+        for (const [sectionId, sectionChanges] of changesBySection) {
+          const existing = full?.overrides?.find(o => o.courseSectionId === sectionId) ?? null
+          // Seed a brand-new override from the base dates, so untouched fields
+          // keep the dates the section was inheriting instead of going null.
+          const dates = buildSectionOverrideDates(existing, sectionChanges, full)
+          if (existing?.id) {
+            await updateSectionOverride(courseId, assignment.id, existing.id, dates)
+          } else {
+            await createSectionOverride(courseId, assignment.id, sectionId, dates)
+          }
+        }
         batchSuccesses.push(assignment)
-        batchSuccessFields.push(...assignment.fields)
+        batchSuccessFields.push(...assignmentFields)
         setAssignmentStatus(prev => ({ ...prev, [assignment.id]: 'done' }))
       } catch (err) {
         batchFailures.push({
@@ -158,6 +210,14 @@ export default function PreviewDiff({
   if (phase === 'preview') {
     return (
       <Modal title={MODAL_TITLES.preview} onClose={modalClose} size="lg">
+        {shadowedAssignments.length > 0 && (
+          <Callout tone="warning" title="Some sections keep their own dates" className="mb-4">
+            {shadowedAssignments.length} of these assignment{shadowedAssignments.length !== 1 ? 's' : ''} already
+            {shadowedAssignments.length !== 1 ? ' have' : ' has'} section-specific due dates. Students in those
+            sections keep their existing dates and will not see this course-wide change. To change a section
+            directly, pick it in the “Apply to” menu.
+          </Callout>
+        )}
         <div className="overflow-y-auto max-h-[60vh] divide-y divide-[var(--color-border)]">
           {grouped.map(assignment => (
             <AssignmentBlock key={assignment.id} assignment={assignment} groupNameById={groupNameById} />
@@ -303,6 +363,11 @@ function AssignmentBlock({ assignment, groupNameById, status, showStatus = false
               <span className="text-xs font-medium text-[var(--color-text-body)]">
                 {formatValue(change.field, change.newValue, groupNameById)}
               </span>
+              {change.scope === 'section' && (
+                <span className="ml-1 text-[0.625rem] font-semibold uppercase tracking-wide text-[var(--cpt-color)]">
+                  {change.sectionName}
+                </span>
+              )}
             </div>
           ))}
         </div>

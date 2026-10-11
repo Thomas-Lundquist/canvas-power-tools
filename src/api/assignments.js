@@ -1,8 +1,11 @@
 import { canvasGetAll, canvasGet, canvasPut, canvasPost, canvasDelete } from './request.js'
+import { mapOverride } from './overrides.js'
 
 export async function getAssignments(courseId, onProgress) {
   const assignments = await canvasGetAll(`/api/v1/courses/${courseId}/assignments`, {
-    include: ['assignment_group', 'module_ids'],
+    // `overrides` gives us each assignment's per-section / per-student dates, so
+    // the bulk editor can target a section without an extra request per row.
+    include: ['assignment_group', 'module_ids', 'overrides'],
     order_by: 'position',
   }, onProgress)
   return assignments.map(mapAssignment)
@@ -58,6 +61,7 @@ function mapAssignment(raw) {
     moduleIds: raw.module_ids ?? [],
     peerReviews: raw.peer_reviews ?? false,
     position: raw.position ?? 0,
+    overrides: (raw.overrides ?? []).map(mapOverride),
   }
 }
 

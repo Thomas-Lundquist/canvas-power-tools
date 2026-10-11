@@ -15,6 +15,9 @@ export const INITIAL_ACTIONS = {
   points: '',
   status: null,
   assignmentGroupId: '',
+  // 'everyone' writes the base assignment dates; a section id writes that
+  // section's override instead (for cross-listed courses).
+  dateTarget: 'everyone',
 }
 
 const DATE_MODES = [
@@ -43,7 +46,7 @@ function countActiveFields(actions) {
   return count
 }
 
-export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, onDelete, groups = [] }) {
+export default function BulkActionBar({ selectedCount, actions, onActionsChange, onPreview, onClearAll, onCopyTo, onDelete, groups = [], sections = [] }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const fieldCount = countActiveFields(actions)
@@ -156,6 +159,33 @@ export default function BulkActionBar({ selectedCount, actions, onActionsChange,
                 <Calendar size={12} aria-hidden="true" className="text-[var(--color-text-secondary)]" />
                 <span className="section-label !mb-0">Dates</span>
               </div>
+              {/* Cross-listed courses hold several sections in one course. The
+                  target selector lets dates land on one section's override
+                  instead of the course-wide "Everyone" date. Only shown when
+                  the course actually has more than one section. */}
+              {sections.length > 1 && (
+                <div className="mb-2">
+                  <label className="flex items-center gap-2">
+                    <span className="w-24 shrink-0 text-sm text-[var(--color-text-secondary)]">Apply to</span>
+                    <select
+                      value={actions.dateTarget ?? 'everyone'}
+                      onChange={e => onActionsChange({ ...actions, dateTarget: e.target.value })}
+                      className="input flex-1 min-w-0 text-sm"
+                      aria-label="Apply date changes to"
+                    >
+                      <option value="everyone">Everyone (course-wide)</option>
+                      {sections.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {actions.dateTarget && actions.dateTarget !== 'everyone' && (
+                    <p className="mt-1.5 text-xs text-[var(--color-text-muted)]" role="note">
+                      Dates apply to this section only. Points, group and status still apply to everyone.
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col flex-1 divide-y divide-[var(--color-border-subtle)] py-2">
                 {DATE_ROWS.map(({ key, label }) => (
                   <DateRow
