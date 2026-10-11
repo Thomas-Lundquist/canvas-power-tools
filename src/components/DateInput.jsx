@@ -1,7 +1,12 @@
 import { useState, useRef } from 'react'
 import { Calendar } from 'lucide-react'
+// Date math lives in a pure module so tests can import it without the JSX chain.
+// Re-exported here so existing `from '.../DateInput.jsx'` imports keep working.
+import { toDateInputValue, formatDate, toIsoDate } from '../utils/dates.js'
 
-export default function DateInput({ value, onChange, disabled, className = '' }) {
+export { toDateInputValue, formatDate, toIsoDate }
+
+export default function DateInput({ value, onChange, disabled, className = '', ariaLabel }) {
   const [draft, setDraft] = useState(null)
   const dateRef = useRef(null)
   const calBtnRef = useRef(null)
@@ -37,8 +42,9 @@ export default function DateInput({ value, onChange, disabled, className = '' })
         onChange={e => setDraft(e.target.value)}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        placeholder="Jan 15, 2025"
+        placeholder="Mon DD, YYYY"
         disabled={disabled}
+        aria-label={ariaLabel}
         className="input text-sm w-full pr-8"
       />
       <input
@@ -65,22 +71,3 @@ export default function DateInput({ value, onChange, disabled, className = '' })
   )
 }
 
-export function toDateInputValue(isoString) {
-  if (!isoString) return ''
-  return isoString.slice(0, 10)
-}
-
-export function formatDate(isoString) {
-  if (!isoString) return null
-  return new Date(isoString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-}
-
-export function toIsoDate(dateStr) {
-  if (!dateStr) return null
-  return `${dateStr}T23:59:00Z`
-}
