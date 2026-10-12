@@ -1,7 +1,7 @@
 import { Fragment, useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, RotateCcw } from 'lucide-react'
-import DateInput, { toDateInputValue } from '../../components/DateInput.jsx'
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, RotateCcw, Pencil } from 'lucide-react'
+import DateInput, { toDateInputValue, formatDate } from '../../components/DateInput.jsx'
 import { Checkbox } from '../../components/FormControls.jsx'
 import IconButton from '../../components/IconButton.jsx'
 import Badge from '../../components/Badge.jsx'
@@ -513,12 +513,19 @@ function AccordionRows({ assignment: a, sections, colSpan, showPreview, sectionE
   )
 }
 
-// One inline, staged date field. Shows the pending value when edited (ring +
-// revert control), otherwise the current Canvas value. Clicks are stopped from
-// bubbling so editing a date never toggles the row's selection.
+// One inline, staged date field with a click-to-edit affordance. At rest it is
+// plain text; hover or keyboard focus reveals a faint outline and a pencil.
+// Clicking (or Enter/Space) opens the date input and focuses it. An edited cell
+// keeps the input, ring, and revert control shown at all times so a pending edit
+// stays obvious. Clicks are stopped from bubbling so editing never toggles the
+// row's selection.
 function EditableDateCell({ originalIso, pending, onChange, onRevert, ariaLabel, muted = false }) {
+  const [editing, setEditing] = useState(false)
   const edited = pending !== undefined
   const value = edited ? (pending ?? '') : (toDateInputValue(originalIso) || '')
+  // The input shows while actively editing OR whenever a staged edit exists.
+  const showInput = editing || edited
+  const displayText = formatDate(originalIso)
 
   function revert() {
     // Passing the original back makes App's diff see "no change" and drop the
@@ -526,26 +533,53 @@ function EditableDateCell({ originalIso, pending, onChange, onRevert, ariaLabel,
     // plain edit would fan out to other checked sections.
     if (onRevert) onRevert()
     else onChange(toDateInputValue(originalIso) || null)
+    setEditing(false)
+  }
+
+  // Exit edit mode once focus leaves the whole cell. An edited cell still keeps
+  // its box (showInput stays true via `edited`), so this only closes the input
+  // on cells the teacher opened but did not change.
+  function handleCellBlur(e) {
+    if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false)
   }
 
   return (
-    <td className="px-1.5 py-1 align-middle" onClick={e => e.stopPropagation()}>
-      <div className="flex items-center gap-1">
-        <DateInput
-          value={value}
-          onChange={onChange}
-          ariaLabel={ariaLabel}
-          className={`flex-1 min-w-0 rounded-[var(--radius-control)] ${edited ? 'ring-1 ring-[var(--cpt-color)]' : ''} ${muted && !edited ? 'opacity-60' : ''}`}
-        />
-        {edited && (
-          <IconButton
-            icon={RotateCcw}
-            label="Revert this date"
-            size="sm"
-            onClick={revert}
+    <td className="px-1.5 py-1 align-middle" onClick={e => e.stopPropagation()} onBlur={handleCellBlur}>
+      {showInput ? (
+        <div className="flex items-center gap-1">
+          <DateInput
+            value={value}
+            onChange={onChange}
+            ariaLabel={ariaLabel}
+            autoFocus={editing && !edited}
+            className={`flex-1 min-w-0 rounded-[var(--radius-control)] ${edited ? 'ring-1 ring-[var(--cpt-color)]' : ''}`}
           />
-        )}
-      </div>
+          {edited && (
+            <IconButton
+              icon={RotateCcw}
+              label="Revert this date"
+              size="sm"
+              onClick={revert}
+            />
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label={`Edit ${ariaLabel}`}
+          className={`group flex items-center gap-1.5 w-full px-2 py-1 text-left rounded-[var(--radius-control)] border border-transparent hover:border-[var(--color-border)] focus-visible:border-[var(--cpt-color)] transition-colors duration-75 ${muted ? 'opacity-60' : ''}`}
+        >
+          <span className={displayText ? 'text-[var(--color-text-body)]' : 'text-[var(--color-text-disabled)]'}>
+            {displayText || '—'}
+          </span>
+          <Pencil
+            size={11}
+            aria-hidden="true"
+            className="ml-auto shrink-0 opacity-0 group-hover:opacity-60 text-[var(--color-text-muted)] transition-opacity duration-75"
+          />
+        </button>
+      )}
     </td>
   )
 }

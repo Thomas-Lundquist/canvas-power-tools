@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Calendar } from 'lucide-react'
 // Date math lives in a pure module so tests can import it without the JSX chain.
 // Re-exported here so existing `from '.../DateInput.jsx'` imports keep working.
@@ -6,11 +6,18 @@ import { toDateInputValue, formatDate, toIsoDate } from '../utils/dates.js'
 
 export { toDateInputValue, formatDate, toIsoDate }
 
-export default function DateInput({ value, onChange, disabled, className = '', ariaLabel }) {
+export default function DateInput({ value, onChange, disabled, className = '', ariaLabel, autoFocus = false }) {
   const [draft, setDraft] = useState(null)
+  const textRef = useRef(null)
   const dateRef = useRef(null)
   const calBtnRef = useRef(null)
   const isEditing = draft !== null
+
+  // Used by click-to-edit callers: when the field mounts already in edit mode,
+  // move focus straight into the text input so the teacher can type at once.
+  useEffect(() => {
+    if (autoFocus) textRef.current?.focus()
+  }, [autoFocus])
 
   function handleFocus() {
     setDraft(value ? formatDate(value) : '')
@@ -37,6 +44,7 @@ export default function DateInput({ value, onChange, disabled, className = '', a
   return (
     <div className={`relative ${className}`}>
       <input
+        ref={textRef}
         type="text"
         value={isEditing ? draft : (value ? formatDate(value) : '')}
         onChange={e => setDraft(e.target.value)}
